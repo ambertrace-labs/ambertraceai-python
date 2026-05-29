@@ -135,6 +135,20 @@ class PredictionResource(_Resource):
         return self._request("GET", f"/api/v1/platforms/{platform_id}/predictions")
 
 
+class ApiKeyResource(_Resource):
+    def list(self) -> list[dict]:
+        return self._request("GET", "/api/v1/api-keys")
+
+    def create(self, *, scope: str = "platform", platform_id: int | None = None, name: str = "Default") -> dict:
+        body: dict[str, Any] = {"scope": scope, "name": name}
+        if platform_id is not None:
+            body["platform_id"] = platform_id
+        return self._request("POST", "/api/v1/api-keys", json=body)
+
+    def revoke(self, key_id: int) -> dict:
+        return self._request("DELETE", f"/api/v1/api-keys/{key_id}")
+
+
 class JobResource(_Resource):
     def get(self, job_id: int) -> dict:
         return self._request("GET", f"/api/v1/jobs/{job_id}")
@@ -169,6 +183,10 @@ class AmbertraceAPI:
 
     def __exit__(self, *args):
         self.close()
+
+    @property
+    def api_keys(self) -> ApiKeyResource:
+        return ApiKeyResource(self._http)
 
     @property
     def domains(self) -> DomainResource:

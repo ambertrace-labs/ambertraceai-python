@@ -57,6 +57,28 @@ print(answer["explanation"])
 | `api.platforms` | `list`, `create`, `get`, `status`, `query`, `suggest_rules`, `list_suggestions`, `graph` |
 | `api.predictions` | `predict`, `list_configs`, `create_config`, `train`, `list_predictions` |
 | `api.jobs` | `get` |
+| `api.api_keys` | `list`, `create`, `revoke` |
+
+## Agent Keys
+
+AI agents authenticate with **user-scoped API keys** that give full lifecycle access (domains, datasets, platforms, rules, predictions). A human creates the key from the dashboard; the agent can then create narrower platform-scoped keys for its integrations.
+
+```python
+# Agent creates a platform-scoped key for a specific integration
+platform_key = api.api_keys.create(
+    scope="platform",
+    platform_id=42,
+    name="Slack Integration",
+)
+
+# List keys visible to this agent
+keys = api.api_keys.list()
+
+# Revoke a platform key the agent created
+api.api_keys.revoke(platform_key["id"])
+```
+
+User-scoped keys cannot create other user-scoped keys (no self-replication). Chat, conversations, and billing remain human-only.
 
 ## Job Polling
 
