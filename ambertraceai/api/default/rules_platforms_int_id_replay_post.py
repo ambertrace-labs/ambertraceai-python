@@ -6,13 +6,18 @@ import httpx
 
 from ... import errors
 from ...client import AuthenticatedClient, Client
+from ...models.replay_request import ReplayRequest
+from ...models.replay_result import ReplayResult
 from ...models.validation_error_model import ValidationErrorModel
 from ...types import Response
 
 
 def _get_kwargs(
     id: int,
+    *,
+    body: ReplayRequest,
 ) -> dict[str, Any]:
+    headers: dict[str, Any] = {}
 
     _kwargs: dict[str, Any] = {
         "method": "post",
@@ -21,12 +26,22 @@ def _get_kwargs(
         ),
     }
 
+    _kwargs["json"] = body.to_dict()
+
+    headers["Content-Type"] = "application/json"
+
+    _kwargs["headers"] = headers
     return _kwargs
 
 
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> list[ValidationErrorModel] | None:
+) -> ReplayResult | list[ValidationErrorModel] | None:
+    if response.status_code == 200:
+        response_200 = ReplayResult.from_dict(response.json())
+
+        return response_200
+
     if response.status_code == 422:
         response_422 = []
         _response_422 = response.json()
@@ -45,7 +60,7 @@ def _parse_response(
 
 def _build_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> Response[list[ValidationErrorModel]]:
+) -> Response[ReplayResult | list[ValidationErrorModel]]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -58,21 +73,28 @@ def sync_detailed(
     id: int,
     *,
     client: AuthenticatedClient | Client,
-) -> Response[list[ValidationErrorModel]]:
-    """
+    body: ReplayRequest,
+) -> Response[ReplayResult | list[ValidationErrorModel]]:
+    """Replay rule
+
+     Backtests a rule against historical data to measure its impact before approving. Returns fire rate,
+    metric impact (before/after), and optionally row-level details.
+
     Args:
         id (int): Resource ID
+        body (ReplayRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[list[ValidationErrorModel]]
+        Response[ReplayResult | list[ValidationErrorModel]]
     """
 
     kwargs = _get_kwargs(
         id=id,
+        body=body,
     )
 
     response = client.get_httpx_client().request(
@@ -86,22 +108,29 @@ def sync(
     id: int,
     *,
     client: AuthenticatedClient | Client,
-) -> list[ValidationErrorModel] | None:
-    """
+    body: ReplayRequest,
+) -> ReplayResult | list[ValidationErrorModel] | None:
+    """Replay rule
+
+     Backtests a rule against historical data to measure its impact before approving. Returns fire rate,
+    metric impact (before/after), and optionally row-level details.
+
     Args:
         id (int): Resource ID
+        body (ReplayRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        list[ValidationErrorModel]
+        ReplayResult | list[ValidationErrorModel]
     """
 
     return sync_detailed(
         id=id,
         client=client,
+        body=body,
     ).parsed
 
 
@@ -109,21 +138,28 @@ async def asyncio_detailed(
     id: int,
     *,
     client: AuthenticatedClient | Client,
-) -> Response[list[ValidationErrorModel]]:
-    """
+    body: ReplayRequest,
+) -> Response[ReplayResult | list[ValidationErrorModel]]:
+    """Replay rule
+
+     Backtests a rule against historical data to measure its impact before approving. Returns fire rate,
+    metric impact (before/after), and optionally row-level details.
+
     Args:
         id (int): Resource ID
+        body (ReplayRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[list[ValidationErrorModel]]
+        Response[ReplayResult | list[ValidationErrorModel]]
     """
 
     kwargs = _get_kwargs(
         id=id,
+        body=body,
     )
 
     response = await client.get_async_httpx_client().request(**kwargs)
@@ -135,22 +171,29 @@ async def asyncio(
     id: int,
     *,
     client: AuthenticatedClient | Client,
-) -> list[ValidationErrorModel] | None:
-    """
+    body: ReplayRequest,
+) -> ReplayResult | list[ValidationErrorModel] | None:
+    """Replay rule
+
+     Backtests a rule against historical data to measure its impact before approving. Returns fire rate,
+    metric impact (before/after), and optionally row-level details.
+
     Args:
         id (int): Resource ID
+        body (ReplayRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        list[ValidationErrorModel]
+        ReplayResult | list[ValidationErrorModel]
     """
 
     return (
         await asyncio_detailed(
             id=id,
             client=client,
+            body=body,
         )
     ).parsed

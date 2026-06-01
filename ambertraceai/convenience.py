@@ -149,6 +149,31 @@ class ApiKeyResource(_Resource):
         return self._request("DELETE", f"/api/v1/api-keys/{key_id}")
 
 
+class ConnectorResource(_Resource):
+    """Data-source connectors (e.g. FRED, Yahoo Finance).
+
+    Connectors that pull from third-party providers may require *your own*
+    credentials for that provider (e.g. a FRED API key). Pass them in the
+    ``config`` dict — Ambertrace does not supply third-party keys on your behalf.
+    """
+
+    def list(self) -> list[dict]:
+        """List available connectors and their config requirements."""
+        return self._request("GET", "/api/v1/connectors")
+
+    def test(self, *, connector_type: str, config: dict) -> dict:
+        """Validate a connector config by fetching a small sample.
+
+        ``config`` carries any provider credentials the connector needs
+        (e.g. ``{"api_key": "<your FRED key>", ...}``).
+        """
+        return self._request(
+            "POST",
+            "/api/v1/connectors/test",
+            json={"connector_type": connector_type, "config": config},
+        )
+
+
 class JobResource(_Resource):
     def get(self, job_id: int) -> dict:
         return self._request("GET", f"/api/v1/jobs/{job_id}")
@@ -203,6 +228,10 @@ class AmbertraceAPI:
     @property
     def predictions(self) -> PredictionResource:
         return PredictionResource(self._http)
+
+    @property
+    def connectors(self) -> ConnectorResource:
+        return ConnectorResource(self._http)
 
     @property
     def jobs(self) -> JobResource:

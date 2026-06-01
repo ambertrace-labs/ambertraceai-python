@@ -59,7 +59,10 @@ def sync_detailed(
     *,
     client: AuthenticatedClient | Client,
 ) -> Response[list[ValidationErrorModel]]:
-    """Revoke (deactivate) an API key.
+    """Revoke API key
+
+     Deactivates an API key. Session users can revoke any org key. User-scoped keys can only revoke
+    platform keys they created.
 
     Args:
         id (int): Resource ID
@@ -88,7 +91,10 @@ def sync(
     *,
     client: AuthenticatedClient | Client,
 ) -> list[ValidationErrorModel] | None:
-    """Revoke (deactivate) an API key.
+    """Revoke API key
+
+     Deactivates an API key. Session users can revoke any org key. User-scoped keys can only revoke
+    platform keys they created.
 
     Args:
         id (int): Resource ID
@@ -112,7 +118,10 @@ async def asyncio_detailed(
     *,
     client: AuthenticatedClient | Client,
 ) -> Response[list[ValidationErrorModel]]:
-    """Revoke (deactivate) an API key.
+    """Revoke API key
+
+     Deactivates an API key. Session users can revoke any org key. User-scoped keys can only revoke
+    platform keys they created.
 
     Args:
         id (int): Resource ID
@@ -139,7 +148,10 @@ async def asyncio(
     *,
     client: AuthenticatedClient | Client,
 ) -> list[ValidationErrorModel] | None:
-    """Revoke (deactivate) an API key.
+    """Revoke API key
+
+     Deactivates an API key. Session users can revoke any org key. User-scoped keys can only revoke
+    platform keys they created.
 
     Args:
         id (int): Resource ID

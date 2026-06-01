@@ -1,0 +1,22 @@
+name: CI
+
+# Publishing to PyPI is owned by the source repository's `publish-sdk.yml`
+# (the SDK is generated from the live OpenAPI spec there). This workflow only
+# runs the test suite for the public mirror — it does NOT publish.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]"
+      - run: pytest tests/ -v

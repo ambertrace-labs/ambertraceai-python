@@ -6,13 +6,17 @@ import httpx
 
 from ... import errors
 from ...client import AuthenticatedClient, Client
+from ...models.dataset_clean_request import DatasetCleanRequest
 from ...models.validation_error_model import ValidationErrorModel
 from ...types import Response
 
 
 def _get_kwargs(
     id: int,
+    *,
+    body: DatasetCleanRequest,
 ) -> dict[str, Any]:
+    headers: dict[str, Any] = {}
 
     _kwargs: dict[str, Any] = {
         "method": "post",
@@ -21,6 +25,11 @@ def _get_kwargs(
         ),
     }
 
+    _kwargs["json"] = body.to_dict()
+
+    headers["Content-Type"] = "application/json"
+
+    _kwargs["headers"] = headers
     return _kwargs
 
 
@@ -58,10 +67,18 @@ def sync_detailed(
     id: int,
     *,
     client: AuthenticatedClient | Client,
+    body: DatasetCleanRequest,
 ) -> Response[list[ValidationErrorModel]]:
-    """
+    """Clean dataset
+
+     Triggers data cleaning and transitions the dataset status from 'ingested' to 'ready'. Datasets must
+    be in 'ready' status before they can be used for predictions or platform builds. Accepts an optional
+    list of cleaning steps (default: deduplicate, normalize, fill_missing). Returns 202 with a job ID --
+    poll GET /jobs/{id} until the job status is 'completed'.
+
     Args:
         id (int): Resource ID
+        body (DatasetCleanRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -73,6 +90,7 @@ def sync_detailed(
 
     kwargs = _get_kwargs(
         id=id,
+        body=body,
     )
 
     response = client.get_httpx_client().request(
@@ -86,10 +104,18 @@ def sync(
     id: int,
     *,
     client: AuthenticatedClient | Client,
+    body: DatasetCleanRequest,
 ) -> list[ValidationErrorModel] | None:
-    """
+    """Clean dataset
+
+     Triggers data cleaning and transitions the dataset status from 'ingested' to 'ready'. Datasets must
+    be in 'ready' status before they can be used for predictions or platform builds. Accepts an optional
+    list of cleaning steps (default: deduplicate, normalize, fill_missing). Returns 202 with a job ID --
+    poll GET /jobs/{id} until the job status is 'completed'.
+
     Args:
         id (int): Resource ID
+        body (DatasetCleanRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -102,6 +128,7 @@ def sync(
     return sync_detailed(
         id=id,
         client=client,
+        body=body,
     ).parsed
 
 
@@ -109,10 +136,18 @@ async def asyncio_detailed(
     id: int,
     *,
     client: AuthenticatedClient | Client,
+    body: DatasetCleanRequest,
 ) -> Response[list[ValidationErrorModel]]:
-    """
+    """Clean dataset
+
+     Triggers data cleaning and transitions the dataset status from 'ingested' to 'ready'. Datasets must
+    be in 'ready' status before they can be used for predictions or platform builds. Accepts an optional
+    list of cleaning steps (default: deduplicate, normalize, fill_missing). Returns 202 with a job ID --
+    poll GET /jobs/{id} until the job status is 'completed'.
+
     Args:
         id (int): Resource ID
+        body (DatasetCleanRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -124,6 +159,7 @@ async def asyncio_detailed(
 
     kwargs = _get_kwargs(
         id=id,
+        body=body,
     )
 
     response = await client.get_async_httpx_client().request(**kwargs)
@@ -135,10 +171,18 @@ async def asyncio(
     id: int,
     *,
     client: AuthenticatedClient | Client,
+    body: DatasetCleanRequest,
 ) -> list[ValidationErrorModel] | None:
-    """
+    """Clean dataset
+
+     Triggers data cleaning and transitions the dataset status from 'ingested' to 'ready'. Datasets must
+    be in 'ready' status before they can be used for predictions or platform builds. Accepts an optional
+    list of cleaning steps (default: deduplicate, normalize, fill_missing). Returns 202 with a job ID --
+    poll GET /jobs/{id} until the job status is 'completed'.
+
     Args:
         id (int): Resource ID
+        body (DatasetCleanRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -152,5 +196,6 @@ async def asyncio(
         await asyncio_detailed(
             id=id,
             client=client,
+            body=body,
         )
     ).parsed

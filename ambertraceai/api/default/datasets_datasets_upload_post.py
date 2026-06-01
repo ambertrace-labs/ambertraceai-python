@@ -5,9 +5,7 @@ import httpx
 
 from ... import errors
 from ...client import AuthenticatedClient, Client
-from ...models.datasets_datasets_upload_post_response_200 import (
-    DatasetsDatasetsUploadPostResponse200,
-)
+from ...models.dataset_out import DatasetOut
 from ...types import Response
 
 
@@ -23,11 +21,11 @@ def _get_kwargs() -> dict[str, Any]:
 
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> DatasetsDatasetsUploadPostResponse200 | None:
-    if response.status_code == 200:
-        response_200 = DatasetsDatasetsUploadPostResponse200.from_dict(response.json())
+) -> DatasetOut | None:
+    if response.status_code == 201:
+        response_201 = DatasetOut.from_dict(response.json())
 
-        return response_200
+        return response_201
 
     if client.raise_on_unexpected_status:
         raise errors.UnexpectedStatus(response.status_code, response.content)
@@ -37,7 +35,7 @@ def _parse_response(
 
 def _build_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> Response[DatasetsDatasetsUploadPostResponse200]:
+) -> Response[DatasetOut]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -49,14 +47,20 @@ def _build_response(
 def sync_detailed(
     *,
     client: AuthenticatedClient | Client,
-) -> Response[DatasetsDatasetsUploadPostResponse200]:
-    """
+) -> Response[DatasetOut]:
+    """Upload dataset
+
+     Uploads a dataset file (CSV, JSON, JSONL, TSV, or XLSX up to 100 MB). After upload, status is
+    'ingested'. You MUST call POST /datasets/{id}/clean to transition the dataset to 'ready' status
+    before it can be used for predictions or platform builds. The domain_id and optional name are passed
+    as form fields alongside the file.
+
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[DatasetsDatasetsUploadPostResponse200]
+        Response[DatasetOut]
     """
 
     kwargs = _get_kwargs()
@@ -71,14 +75,20 @@ def sync_detailed(
 def sync(
     *,
     client: AuthenticatedClient | Client,
-) -> DatasetsDatasetsUploadPostResponse200 | None:
-    """
+) -> DatasetOut | None:
+    """Upload dataset
+
+     Uploads a dataset file (CSV, JSON, JSONL, TSV, or XLSX up to 100 MB). After upload, status is
+    'ingested'. You MUST call POST /datasets/{id}/clean to transition the dataset to 'ready' status
+    before it can be used for predictions or platform builds. The domain_id and optional name are passed
+    as form fields alongside the file.
+
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        DatasetsDatasetsUploadPostResponse200
+        DatasetOut
     """
 
     return sync_detailed(
@@ -89,14 +99,20 @@ def sync(
 async def asyncio_detailed(
     *,
     client: AuthenticatedClient | Client,
-) -> Response[DatasetsDatasetsUploadPostResponse200]:
-    """
+) -> Response[DatasetOut]:
+    """Upload dataset
+
+     Uploads a dataset file (CSV, JSON, JSONL, TSV, or XLSX up to 100 MB). After upload, status is
+    'ingested'. You MUST call POST /datasets/{id}/clean to transition the dataset to 'ready' status
+    before it can be used for predictions or platform builds. The domain_id and optional name are passed
+    as form fields alongside the file.
+
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[DatasetsDatasetsUploadPostResponse200]
+        Response[DatasetOut]
     """
 
     kwargs = _get_kwargs()
@@ -109,14 +125,20 @@ async def asyncio_detailed(
 async def asyncio(
     *,
     client: AuthenticatedClient | Client,
-) -> DatasetsDatasetsUploadPostResponse200 | None:
-    """
+) -> DatasetOut | None:
+    """Upload dataset
+
+     Uploads a dataset file (CSV, JSON, JSONL, TSV, or XLSX up to 100 MB). After upload, status is
+    'ingested'. You MUST call POST /datasets/{id}/clean to transition the dataset to 'ready' status
+    before it can be used for predictions or platform builds. The domain_id and optional name are passed
+    as form fields alongside the file.
+
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        DatasetsDatasetsUploadPostResponse200
+        DatasetOut
     """
 
     return (

@@ -40,3 +40,9 @@ Repository = "https://github.com/Pilot-Generative-AI/ambertraceai-python"
 
 [tool.setuptools.packages.find]
 include = ["ambertraceai*"]
+
+[tool.pytest.ini_options]
+markers = [
+    "e2e: end-to-end tests that require a live API and an API key (deselected by default)",
+]
+addopts = "-m 'not e2e'"
