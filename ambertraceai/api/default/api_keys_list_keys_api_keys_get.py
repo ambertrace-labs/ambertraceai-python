@@ -5,7 +5,7 @@ import httpx
 
 from ... import errors
 from ...client import AuthenticatedClient, Client
-from ...models.usage_stats_out import UsageStatsOut
+from ...models.validation_error_model import ValidationErrorModel
 from ...types import Response
 
 
@@ -13,7 +13,7 @@ def _get_kwargs() -> dict[str, Any]:
 
     _kwargs: dict[str, Any] = {
         "method": "get",
-        "url": "/api/v1/usage",
+        "url": "/api/v1/api-keys",
     }
 
     return _kwargs
@@ -21,11 +21,16 @@ def _get_kwargs() -> dict[str, Any]:
 
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> UsageStatsOut | None:
-    if response.status_code == 200:
-        response_200 = UsageStatsOut.from_dict(response.json())
+) -> list[ValidationErrorModel] | None:
+    if response.status_code == 422:
+        response_422 = []
+        _response_422 = response.json()
+        for response_422_item_data in _response_422:
+            response_422_item = ValidationErrorModel.from_dict(response_422_item_data)
 
-        return response_200
+            response_422.append(response_422_item)
+
+        return response_422
 
     if client.raise_on_unexpected_status:
         raise errors.UnexpectedStatus(response.status_code, response.content)
@@ -35,7 +40,7 @@ def _parse_response(
 
 def _build_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> Response[UsageStatsOut]:
+) -> Response[list[ValidationErrorModel]]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -47,19 +52,18 @@ def _build_response(
 def sync_detailed(
     *,
     client: AuthenticatedClient | Client,
-) -> Response[UsageStatsOut]:
-    """Get usage stats
+) -> Response[list[ValidationErrorModel]]:
+    """List API keys
 
-     Returns API usage statistics: total requests, total tokens, average response time, and remaining
-    token budget (if using an API key with a budget). For platform-scoped keys, returns stats for that
-    platform only.
+     Returns API keys visible to the caller. Session users see all org keys. User-scoped keys see only
+    platform keys they created. Key secrets are not returned.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[UsageStatsOut]
+        Response[list[ValidationErrorModel]]
     """
 
     kwargs = _get_kwargs()
@@ -74,19 +78,18 @@ def sync_detailed(
 def sync(
     *,
     client: AuthenticatedClient | Client,
-) -> UsageStatsOut | None:
-    """Get usage stats
+) -> list[ValidationErrorModel] | None:
+    """List API keys
 
-     Returns API usage statistics: total requests, total tokens, average response time, and remaining
-    token budget (if using an API key with a budget). For platform-scoped keys, returns stats for that
-    platform only.
+     Returns API keys visible to the caller. Session users see all org keys. User-scoped keys see only
+    platform keys they created. Key secrets are not returned.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        UsageStatsOut
+        list[ValidationErrorModel]
     """
 
     return sync_detailed(
@@ -97,19 +100,18 @@ def sync(
 async def asyncio_detailed(
     *,
     client: AuthenticatedClient | Client,
-) -> Response[UsageStatsOut]:
-    """Get usage stats
+) -> Response[list[ValidationErrorModel]]:
+    """List API keys
 
-     Returns API usage statistics: total requests, total tokens, average response time, and remaining
-    token budget (if using an API key with a budget). For platform-scoped keys, returns stats for that
-    platform only.
+     Returns API keys visible to the caller. Session users see all org keys. User-scoped keys see only
+    platform keys they created. Key secrets are not returned.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[UsageStatsOut]
+        Response[list[ValidationErrorModel]]
     """
 
     kwargs = _get_kwargs()
@@ -122,19 +124,18 @@ async def asyncio_detailed(
 async def asyncio(
     *,
     client: AuthenticatedClient | Client,
-) -> UsageStatsOut | None:
-    """Get usage stats
+) -> list[ValidationErrorModel] | None:
+    """List API keys
 
-     Returns API usage statistics: total requests, total tokens, average response time, and remaining
-    token budget (if using an API key with a budget). For platform-scoped keys, returns stats for that
-    platform only.
+     Returns API keys visible to the caller. Session users see all org keys. User-scoped keys see only
+    platform keys they created. Key secrets are not returned.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        UsageStatsOut
+        list[ValidationErrorModel]
     """
 
     return (
