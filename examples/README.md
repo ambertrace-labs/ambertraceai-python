@@ -34,6 +34,20 @@ Run them in order — each is independent, but they build conceptually.
 | `05_rules_and_suggestions.py` | Ask a platform to suggest symbolic rules | No |
 | `06_predictions.py` | Configure, train, and run a forecast | Yes (self-cleans) |
 | `07_usage.py` | Report API usage (requests, tokens, budget) | No (read-only) |
+| `08_fred_forecast.py` | Ingest FRED macro series → explainable forecast of the 10y yield | Yes (self-cleans) · needs `FRED_API_KEY` |
+| `09_fred_analysis.py` | Ingest FRED series → explainable macro Q&A | Yes (self-cleans) · needs `FRED_API_KEY` |
+
+### Connectors and bring-your-own-key
+
+`api.connectors.list()` shows available data sources. Ingest from one with
+`api.datasets.fetch(domain_id=..., connector_type=..., config={...})`:
+
+- `fred` / `fred_sentiment` — economic data; **bring your own** free FRED key as `config["api_key"]`.
+- `yahoo` — stock/ETF close prices (`config={"symbols": ["AAPL","SPY"]}`), no key.
+- `coinbase` — crypto close prices (`config={"product_ids": ["BTC-USD"]}`), no key.
+- `rest` — any JSON/CSV endpoint (`config={"url": ..., "headers": {...}}`); bring your own auth.
+
+Connectors that hit a credentialed provider always take the key in `config` — the platform never uses a shared key on your behalf.
 
 ```bash
 python 00_quickstart.py

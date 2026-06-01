@@ -133,6 +133,6 @@ class TestPredictionResource:
         respx.post("https://test.ambertrace.ai/api/v1/platforms/1/predict").mock(
             return_value=httpx.Response(200, json=_envelope({"predicted_value": 42.0, "confidence": 0.9}))
         )
-        result = api.predictions.predict(1, input_data={"x": 1})
+        result = api.predictions.predict(1, prediction_config_id=1, feature_overrides={"x": 1})
         assert result["predicted_value"] == 42.0
         assert result["confidence"] == 0.9
