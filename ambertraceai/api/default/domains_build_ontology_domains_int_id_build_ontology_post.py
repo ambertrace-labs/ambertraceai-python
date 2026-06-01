@@ -62,10 +62,10 @@ def sync_detailed(
     """Build ontology
 
      Uses LLM to generate entities, relationships, and constraints from the domain description. Returns
-    202 and runs asynchronously -- poll GET /domains/{id} until the domain status changes from
-    'building' to 'active' (success) or 'draft' (failure). The generated constraints become executable
-    symbolic rules automatically when a platform is built from this domain. If datasets are linked,
-    their rows are used to validate generated rules.
+    202 with a job id -- poll GET /jobs/{job_id} until status is 'completed' (success) or 'failed'. The
+    domain status also moves from 'building' to 'active' (success) or 'draft' (failure). The generated
+    constraints become executable symbolic rules automatically when a platform is built from this
+    domain. If datasets are linked, their rows validate generated rules.
 
     Args:
         id (int): Resource ID
@@ -97,10 +97,10 @@ def sync(
     """Build ontology
 
      Uses LLM to generate entities, relationships, and constraints from the domain description. Returns
-    202 and runs asynchronously -- poll GET /domains/{id} until the domain status changes from
-    'building' to 'active' (success) or 'draft' (failure). The generated constraints become executable
-    symbolic rules automatically when a platform is built from this domain. If datasets are linked,
-    their rows are used to validate generated rules.
+    202 with a job id -- poll GET /jobs/{job_id} until status is 'completed' (success) or 'failed'. The
+    domain status also moves from 'building' to 'active' (success) or 'draft' (failure). The generated
+    constraints become executable symbolic rules automatically when a platform is built from this
+    domain. If datasets are linked, their rows validate generated rules.
 
     Args:
         id (int): Resource ID
@@ -127,10 +127,10 @@ async def asyncio_detailed(
     """Build ontology
 
      Uses LLM to generate entities, relationships, and constraints from the domain description. Returns
-    202 and runs asynchronously -- poll GET /domains/{id} until the domain status changes from
-    'building' to 'active' (success) or 'draft' (failure). The generated constraints become executable
-    symbolic rules automatically when a platform is built from this domain. If datasets are linked,
-    their rows are used to validate generated rules.
+    202 with a job id -- poll GET /jobs/{job_id} until status is 'completed' (success) or 'failed'. The
+    domain status also moves from 'building' to 'active' (success) or 'draft' (failure). The generated
+    constraints become executable symbolic rules automatically when a platform is built from this
+    domain. If datasets are linked, their rows validate generated rules.
 
     Args:
         id (int): Resource ID
@@ -160,10 +160,10 @@ async def asyncio(
     """Build ontology
 
      Uses LLM to generate entities, relationships, and constraints from the domain description. Returns
-    202 and runs asynchronously -- poll GET /domains/{id} until the domain status changes from
-    'building' to 'active' (success) or 'draft' (failure). The generated constraints become executable
-    symbolic rules automatically when a platform is built from this domain. If datasets are linked,
-    their rows are used to validate generated rules.
+    202 with a job id -- poll GET /jobs/{job_id} until status is 'completed' (success) or 'failed'. The
+    domain status also moves from 'building' to 'active' (success) or 'draft' (failure). The generated
+    constraints become executable symbolic rules automatically when a platform is built from this
+    domain. If datasets are linked, their rows validate generated rules.
 
     Args:
         id (int): Resource ID

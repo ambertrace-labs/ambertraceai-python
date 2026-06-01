@@ -6,7 +6,6 @@ import httpx
 
 from ... import errors
 from ...client import AuthenticatedClient, Client
-from ...models.job_out import JobOut
 from ...models.validation_error_model import ValidationErrorModel
 from ...types import Response
 
@@ -16,8 +15,8 @@ def _get_kwargs(
 ) -> dict[str, Any]:
 
     _kwargs: dict[str, Any] = {
-        "method": "get",
-        "url": "/api/v1/jobs/{id}".format(
+        "method": "delete",
+        "url": "/api/v1/platforms/{id}".format(
             id=quote(str(id), safe=""),
         ),
     }
@@ -27,12 +26,7 @@ def _get_kwargs(
 
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> JobOut | list[ValidationErrorModel] | None:
-    if response.status_code == 200:
-        response_200 = JobOut.from_dict(response.json())
-
-        return response_200
-
+) -> list[ValidationErrorModel] | None:
     if response.status_code == 422:
         response_422 = []
         _response_422 = response.json()
@@ -51,7 +45,7 @@ def _parse_response(
 
 def _build_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> Response[JobOut | list[ValidationErrorModel]]:
+) -> Response[list[ValidationErrorModel]]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -64,14 +58,14 @@ def sync_detailed(
     id: int,
     *,
     client: AuthenticatedClient | Client,
-) -> Response[JobOut | list[ValidationErrorModel]]:
-    """Get job status
+) -> Response[list[ValidationErrorModel]]:
+    """Delete platform
 
-     Polls the status of an async job (cleaning, platform build, ontology build, or prediction training).
-    Returns the job type, status (pending/running/completed/failed), progress percentage, current step,
-    and error message if failed. Use this to track async operations started by POST
-    /datasets/{id}/clean, POST /platforms, POST /domains/{id}/build-ontology, or POST
-    /platforms/{id}/prediction-configs/{cid}/train.
+     Permanently deletes a platform and everything derived from it: build jobs, symbolic rules and rule
+    feedback, reports, query audit logs, standing findings, prediction configs/models/forecasts,
+    suggestor usage, usage logs, and any platform-scoped API keys. This is a lifecycle operation:
+    session users and user-scoped (agent) keys may delete platforms in their own organisation; platform-
+    scoped keys are query-only and cannot delete. Irreversible.
 
     Args:
         id (int): Resource ID
@@ -81,7 +75,7 @@ def sync_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[JobOut | list[ValidationErrorModel]]
+        Response[list[ValidationErrorModel]]
     """
 
     kwargs = _get_kwargs(
@@ -99,14 +93,14 @@ def sync(
     id: int,
     *,
     client: AuthenticatedClient | Client,
-) -> JobOut | list[ValidationErrorModel] | None:
-    """Get job status
+) -> list[ValidationErrorModel] | None:
+    """Delete platform
 
-     Polls the status of an async job (cleaning, platform build, ontology build, or prediction training).
-    Returns the job type, status (pending/running/completed/failed), progress percentage, current step,
-    and error message if failed. Use this to track async operations started by POST
-    /datasets/{id}/clean, POST /platforms, POST /domains/{id}/build-ontology, or POST
-    /platforms/{id}/prediction-configs/{cid}/train.
+     Permanently deletes a platform and everything derived from it: build jobs, symbolic rules and rule
+    feedback, reports, query audit logs, standing findings, prediction configs/models/forecasts,
+    suggestor usage, usage logs, and any platform-scoped API keys. This is a lifecycle operation:
+    session users and user-scoped (agent) keys may delete platforms in their own organisation; platform-
+    scoped keys are query-only and cannot delete. Irreversible.
 
     Args:
         id (int): Resource ID
@@ -116,7 +110,7 @@ def sync(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        JobOut | list[ValidationErrorModel]
+        list[ValidationErrorModel]
     """
 
     return sync_detailed(
@@ -129,14 +123,14 @@ async def asyncio_detailed(
     id: int,
     *,
     client: AuthenticatedClient | Client,
-) -> Response[JobOut | list[ValidationErrorModel]]:
-    """Get job status
+) -> Response[list[ValidationErrorModel]]:
+    """Delete platform
 
-     Polls the status of an async job (cleaning, platform build, ontology build, or prediction training).
-    Returns the job type, status (pending/running/completed/failed), progress percentage, current step,
-    and error message if failed. Use this to track async operations started by POST
-    /datasets/{id}/clean, POST /platforms, POST /domains/{id}/build-ontology, or POST
-    /platforms/{id}/prediction-configs/{cid}/train.
+     Permanently deletes a platform and everything derived from it: build jobs, symbolic rules and rule
+    feedback, reports, query audit logs, standing findings, prediction configs/models/forecasts,
+    suggestor usage, usage logs, and any platform-scoped API keys. This is a lifecycle operation:
+    session users and user-scoped (agent) keys may delete platforms in their own organisation; platform-
+    scoped keys are query-only and cannot delete. Irreversible.
 
     Args:
         id (int): Resource ID
@@ -146,7 +140,7 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[JobOut | list[ValidationErrorModel]]
+        Response[list[ValidationErrorModel]]
     """
 
     kwargs = _get_kwargs(
@@ -162,14 +156,14 @@ async def asyncio(
     id: int,
     *,
     client: AuthenticatedClient | Client,
-) -> JobOut | list[ValidationErrorModel] | None:
-    """Get job status
+) -> list[ValidationErrorModel] | None:
+    """Delete platform
 
-     Polls the status of an async job (cleaning, platform build, ontology build, or prediction training).
-    Returns the job type, status (pending/running/completed/failed), progress percentage, current step,
-    and error message if failed. Use this to track async operations started by POST
-    /datasets/{id}/clean, POST /platforms, POST /domains/{id}/build-ontology, or POST
-    /platforms/{id}/prediction-configs/{cid}/train.
+     Permanently deletes a platform and everything derived from it: build jobs, symbolic rules and rule
+    feedback, reports, query audit logs, standing findings, prediction configs/models/forecasts,
+    suggestor usage, usage logs, and any platform-scoped API keys. This is a lifecycle operation:
+    session users and user-scoped (agent) keys may delete platforms in their own organisation; platform-
+    scoped keys are query-only and cannot delete. Irreversible.
 
     Args:
         id (int): Resource ID
@@ -179,7 +173,7 @@ async def asyncio(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        JobOut | list[ValidationErrorModel]
+        list[ValidationErrorModel]
     """
 
     return (
