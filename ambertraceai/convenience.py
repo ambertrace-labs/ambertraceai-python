@@ -98,10 +98,17 @@ class DatasetResource(_Resource):
                 data["name"] = name
             return self._request("POST", "/api/v1/datasets/upload", files=files, data=data)
 
-    def fetch(self, *, url: str, domain_id: int, name: str | None = None) -> dict:
-        body: dict[str, Any] = {"url": url, "domain_id": domain_id}
-        if name:
-            body["name"] = name
+    def fetch(self, *, domain_id: int, connector_type: str, config: dict | None = None) -> dict:
+        """Ingest a dataset from a registered connector (e.g. 'fred', 'yahoo',
+        'coinbase', 'rest'). ``config`` carries connector-specific options and any
+        bring-your-own-key credentials (e.g. {'api_key': ...} for FRED). See
+        api.connectors.list() for available connectors and their requirements.
+        """
+        body: dict[str, Any] = {
+            "domain_id": domain_id,
+            "connector_type": connector_type,
+            "config": config or {},
+        }
         return self._request("POST", "/api/v1/datasets/fetch", json=body)
 
     def quality(self, dataset_id: int) -> dict:
@@ -161,10 +168,16 @@ class PlatformResource(_Resource):
 
 
 class PredictionResource(_Resource):
-    def predict(self, platform_id: int, *, input_data: dict, config_id: int | None = None) -> dict:
-        body: dict[str, Any] = {"input_data": input_data}
-        if config_id is not None:
-            body["config_id"] = config_id
+    def predict(self, platform_id: int, *, prediction_config_id: int,
+                feature_overrides: dict | None = None, explain: bool = True) -> dict:
+        """Run a prediction with a trained config.
+
+        ``feature_overrides`` is an optional dict of what-if feature values
+        (e.g. {"inflation": 5.0}); omit it to predict from the latest data.
+        """
+        body: dict[str, Any] = {"prediction_config_id": prediction_config_id, "explain": explain}
+        if feature_overrides is not None:
+            body["feature_overrides"] = feature_overrides
         return self._request("POST", f"/api/v1/platforms/{platform_id}/predict", json=body)
 
     def list_configs(self, platform_id: int) -> list[dict]:
