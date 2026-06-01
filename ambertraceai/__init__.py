@@ -11,6 +11,7 @@ from .convenience import (
     JobResource,
     PlatformResource,
     PredictionResource,
+    UsageResource,
 )
 
 __all__ = (
@@ -25,4 +26,5 @@ __all__ = (
     "JobResource",
     "PlatformResource",
     "PredictionResource",
+    "UsageResource",
 )

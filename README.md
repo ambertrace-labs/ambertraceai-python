@@ -75,11 +75,12 @@ print(answer["explanation"])
 
 | Resource | Methods |
 |----------|---------|
-| `api.domains` | `list`, `create`, `get`, `update`, `delete`, `build_ontology` |
+| `api.domains` | `list`, `create`, `get`, `update`, `delete`, `build_ontology`, `eval_config`, `set_eval_config`, `delete_eval_config`, `suggest_eval_config`, `list_templates`, `create_template`, `update_template`, `delete_template`, `feedback_stats` |
 | `api.datasets` | `list`, `get`, `upload`, `fetch`, `quality`, `clean`, `preview`, `delete` |
-| `api.platforms` | `list`, `create`, `get`, `status`, `query`, `suggest_rules`, `list_suggestions`, `graph` |
-| `api.predictions` | `predict`, `list_configs`, `create_config`, `train`, `list_predictions` |
+| `api.platforms` | `list`, `create`, `get`, `delete`, `status`, `query`, `suggest_rules`, `list_suggestions`, `approve_suggestion`, `reject_suggestion`, `graph` |
+| `api.predictions` | `predict`, `list_configs`, `create_config`, `delete_config`, `train`, `list_predictions` |
 | `api.connectors` | `list`, `test` |
+| `api.usage` | `get` |
 | `api.jobs` | `get` |
 | `api.api_keys` | `list`, `create`, `revoke` |
 
