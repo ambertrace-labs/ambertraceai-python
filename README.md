@@ -86,22 +86,38 @@ print(answer["explanation"])
 
 ## Connectors
 
-Connectors pull data from external providers (e.g. FRED, Yahoo Finance). List what's
-available, then test a config before ingesting it as a dataset:
+Connectors pull data from external providers. List what's available, optionally test a
+config, then ingest it as a dataset linked to a domain:
 
 ```python
-connectors = api.connectors.list()
+api.connectors.list()   # discover connectors + their required config fields
 
-result = api.connectors.test(
-    connector_type="fred",
-    config={"series_id": "GDP", "api_key": "<your FRED API key>"},
-)
-print(result["columns"], result["rows"])
+# Stocks/ETFs and crypto are keyless:
+api.datasets.fetch(domain_id=1, connector_type="yahoo",
+                   config={"symbols": ["AAPL", "SPY"], "range": "2y"})
+api.datasets.fetch(domain_id=1, connector_type="coinbase",
+                   config={"product_ids": ["BTC-USD", "ETH-USD"]})
+
+# FRED needs your own free key (https://fred.stlouisfed.org):
+api.datasets.fetch(domain_id=1, connector_type="fred",
+                   config={"api_key": "<your FRED key>",
+                           "series_ids": ["GS10", "FEDFUNDS"], "frequency": "monthly"})
+
+# Generic REST/CSV — bring your own auth via headers:
+api.datasets.fetch(domain_id=1, connector_type="rest",
+                   config={"url": "https://api.example.com/series",
+                           "headers": {"Authorization": "Bearer ..."}})
 ```
 
-**Bring your own provider keys.** Connectors that hit third-party APIs require *your own*
-credentials for that provider — pass them in `config`. Ambertrace does not supply
-third-party API keys on your behalf.
+| Connector | Config | Key? |
+|-----------|--------|------|
+| `yahoo` | `symbols`, `interval`, `range` | none |
+| `coinbase` | `product_ids`, `granularity` | none |
+| `fred` / `fred_sentiment` | `series_ids`, `frequency`, **`api_key`** | bring your own |
+| `rest` | `url`, `format`, `records_path`, `headers`, `params` | bring your own (via headers) |
+
+**Bring your own provider keys.** Connectors that hit a credentialed provider require
+*your own* key, passed in `config` — Ambertrace never uses a shared key on your behalf.
 
 ## Agent Keys
 
