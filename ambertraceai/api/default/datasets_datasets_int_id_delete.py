@@ -59,7 +59,10 @@ def sync_detailed(
     *,
     client: AuthenticatedClient | Client,
 ) -> Response[list[ValidationErrorModel]]:
-    """
+    """Delete dataset
+
+     Permanently deletes a dataset and its associated file. This action cannot be undone.
+
     Args:
         id (int): Resource ID
 
@@ -87,7 +90,10 @@ def sync(
     *,
     client: AuthenticatedClient | Client,
 ) -> list[ValidationErrorModel] | None:
-    """
+    """Delete dataset
+
+     Permanently deletes a dataset and its associated file. This action cannot be undone.
+
     Args:
         id (int): Resource ID
 
@@ -110,7 +116,10 @@ async def asyncio_detailed(
     *,
     client: AuthenticatedClient | Client,
 ) -> Response[list[ValidationErrorModel]]:
-    """
+    """Delete dataset
+
+     Permanently deletes a dataset and its associated file. This action cannot be undone.
+
     Args:
         id (int): Resource ID
 
@@ -136,7 +145,10 @@ async def asyncio(
     *,
     client: AuthenticatedClient | Client,
 ) -> list[ValidationErrorModel] | None:
-    """
+    """Delete dataset
+
+     Permanently deletes a dataset and its associated file. This action cannot be undone.
+
     Args:
         id (int): Resource ID
 

@@ -59,7 +59,11 @@ def sync_detailed(
     *,
     client: AuthenticatedClient | Client,
 ) -> Response[list[ValidationErrorModel]]:
-    """
+    """Get eval config
+
+     Returns the evaluation configuration for a domain: target metric, direction (minimize/maximize),
+    significance threshold, and calculation details.
+
     Args:
         id (int): Resource ID
 
@@ -87,7 +91,11 @@ def sync(
     *,
     client: AuthenticatedClient | Client,
 ) -> list[ValidationErrorModel] | None:
-    """
+    """Get eval config
+
+     Returns the evaluation configuration for a domain: target metric, direction (minimize/maximize),
+    significance threshold, and calculation details.
+
     Args:
         id (int): Resource ID
 
@@ -110,7 +118,11 @@ async def asyncio_detailed(
     *,
     client: AuthenticatedClient | Client,
 ) -> Response[list[ValidationErrorModel]]:
-    """
+    """Get eval config
+
+     Returns the evaluation configuration for a domain: target metric, direction (minimize/maximize),
+    significance threshold, and calculation details.
+
     Args:
         id (int): Resource ID
 
@@ -136,7 +148,11 @@ async def asyncio(
     *,
     client: AuthenticatedClient | Client,
 ) -> list[ValidationErrorModel] | None:
-    """
+    """Get eval config
+
+     Returns the evaluation configuration for a domain: target metric, direction (minimize/maximize),
+    significance threshold, and calculation details.
+
     Args:
         id (int): Resource ID
 

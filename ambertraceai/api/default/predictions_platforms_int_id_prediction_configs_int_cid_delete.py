@@ -62,7 +62,12 @@ def sync_detailed(
     *,
     client: AuthenticatedClient | Client,
 ) -> Response[list[ValidationErrorModel]]:
-    """
+    """Delete prediction config
+
+     Deletes a prediction config and all its trained models and forecast history. This cascades: the
+    config, its trained model artifacts (on disk), and all stored forecasts are permanently removed.
+    This action cannot be undone.
+
     Args:
         id (int): Platform ID
         cid (int): Prediction config ID
@@ -93,7 +98,12 @@ def sync(
     *,
     client: AuthenticatedClient | Client,
 ) -> list[ValidationErrorModel] | None:
-    """
+    """Delete prediction config
+
+     Deletes a prediction config and all its trained models and forecast history. This cascades: the
+    config, its trained model artifacts (on disk), and all stored forecasts are permanently removed.
+    This action cannot be undone.
+
     Args:
         id (int): Platform ID
         cid (int): Prediction config ID
@@ -119,7 +129,12 @@ async def asyncio_detailed(
     *,
     client: AuthenticatedClient | Client,
 ) -> Response[list[ValidationErrorModel]]:
-    """
+    """Delete prediction config
+
+     Deletes a prediction config and all its trained models and forecast history. This cascades: the
+    config, its trained model artifacts (on disk), and all stored forecasts are permanently removed.
+    This action cannot be undone.
+
     Args:
         id (int): Platform ID
         cid (int): Prediction config ID
@@ -148,7 +163,12 @@ async def asyncio(
     *,
     client: AuthenticatedClient | Client,
 ) -> list[ValidationErrorModel] | None:
-    """
+    """Delete prediction config
+
+     Deletes a prediction config and all its trained models and forecast history. This cascades: the
+    config, its trained model artifacts (on disk), and all stored forecasts are permanently removed.
+    This action cannot be undone.
+
     Args:
         id (int): Platform ID
         cid (int): Prediction config ID

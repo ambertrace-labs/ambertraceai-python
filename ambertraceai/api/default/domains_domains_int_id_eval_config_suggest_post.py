@@ -6,13 +6,17 @@ import httpx
 
 from ... import errors
 from ...client import AuthenticatedClient, Client
+from ...models.eval_config_suggest_request import EvalConfigSuggestRequest
 from ...models.validation_error_model import ValidationErrorModel
 from ...types import Response
 
 
 def _get_kwargs(
     id: int,
+    *,
+    body: EvalConfigSuggestRequest,
 ) -> dict[str, Any]:
+    headers: dict[str, Any] = {}
 
     _kwargs: dict[str, Any] = {
         "method": "post",
@@ -21,6 +25,11 @@ def _get_kwargs(
         ),
     }
 
+    _kwargs["json"] = body.to_dict()
+
+    headers["Content-Type"] = "application/json"
+
+    _kwargs["headers"] = headers
     return _kwargs
 
 
@@ -58,10 +67,16 @@ def sync_detailed(
     id: int,
     *,
     client: AuthenticatedClient | Client,
+    body: EvalConfigSuggestRequest,
 ) -> Response[list[ValidationErrorModel]]:
-    """
+    """Suggest eval configs
+
+     Uses LLM to suggest evaluation configurations based on the domain's ontology. Returns 202 and runs
+    asynchronously. Specify n_options (1-5) to control how many alternatives are generated.
+
     Args:
         id (int): Resource ID
+        body (EvalConfigSuggestRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -73,6 +88,7 @@ def sync_detailed(
 
     kwargs = _get_kwargs(
         id=id,
+        body=body,
     )
 
     response = client.get_httpx_client().request(
@@ -86,10 +102,16 @@ def sync(
     id: int,
     *,
     client: AuthenticatedClient | Client,
+    body: EvalConfigSuggestRequest,
 ) -> list[ValidationErrorModel] | None:
-    """
+    """Suggest eval configs
+
+     Uses LLM to suggest evaluation configurations based on the domain's ontology. Returns 202 and runs
+    asynchronously. Specify n_options (1-5) to control how many alternatives are generated.
+
     Args:
         id (int): Resource ID
+        body (EvalConfigSuggestRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -102,6 +124,7 @@ def sync(
     return sync_detailed(
         id=id,
         client=client,
+        body=body,
     ).parsed
 
 
@@ -109,10 +132,16 @@ async def asyncio_detailed(
     id: int,
     *,
     client: AuthenticatedClient | Client,
+    body: EvalConfigSuggestRequest,
 ) -> Response[list[ValidationErrorModel]]:
-    """
+    """Suggest eval configs
+
+     Uses LLM to suggest evaluation configurations based on the domain's ontology. Returns 202 and runs
+    asynchronously. Specify n_options (1-5) to control how many alternatives are generated.
+
     Args:
         id (int): Resource ID
+        body (EvalConfigSuggestRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -124,6 +153,7 @@ async def asyncio_detailed(
 
     kwargs = _get_kwargs(
         id=id,
+        body=body,
     )
 
     response = await client.get_async_httpx_client().request(**kwargs)
@@ -135,10 +165,16 @@ async def asyncio(
     id: int,
     *,
     client: AuthenticatedClient | Client,
+    body: EvalConfigSuggestRequest,
 ) -> list[ValidationErrorModel] | None:
-    """
+    """Suggest eval configs
+
+     Uses LLM to suggest evaluation configurations based on the domain's ontology. Returns 202 and runs
+    asynchronously. Specify n_options (1-5) to control how many alternatives are generated.
+
     Args:
         id (int): Resource ID
+        body (EvalConfigSuggestRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -152,5 +188,6 @@ async def asyncio(
         await asyncio_detailed(
             id=id,
             client=client,
+            body=body,
         )
     ).parsed

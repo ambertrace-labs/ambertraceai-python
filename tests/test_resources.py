@@ -87,12 +87,16 @@ class TestDatasetResource:
 
 class TestPlatformResource:
     @respx.mock
-    def test_create_returns_job_reference(self, api):
+    def test_create_returns_platform_and_build_job(self, api):
+        # POST /platforms returns {"platform": {...}, "build_job": {...}}
         respx.post("https://test.ambertrace.ai/api/v1/platforms").mock(
-            return_value=httpx.Response(200, json=_envelope({"platform_id": 1, "job_id": 42}))
+            return_value=httpx.Response(
+                200, json=_envelope({"platform": {"id": 1}, "build_job": {"id": 42}})
+            )
         )
         result = api.platforms.create(domain_id=1, dataset_id=2)
-        assert result["job_id"] == 42
+        assert result["platform"]["id"] == 1
+        assert result["build_job"]["id"] == 42
 
     @respx.mock
     def test_query_returns_answer(self, api):
@@ -102,6 +106,25 @@ class TestPlatformResource:
         result = api.platforms.query(1, query="test?")
         assert result["answer"] == "yes"
         assert result["explanation"] == "because"
+
+
+class TestConnectorResource:
+    @respx.mock
+    def test_list_returns_connectors(self, api):
+        respx.get("https://test.ambertrace.ai/api/v1/connectors").mock(
+            return_value=httpx.Response(200, json=_envelope([{"type": "fred"}]))
+        )
+        result = api.connectors.list()
+        assert result[0]["type"] == "fred"
+
+    @respx.mock
+    def test_test_sends_type_and_config(self, api):
+        route = respx.post("https://test.ambertrace.ai/api/v1/connectors/test").mock(
+            return_value=httpx.Response(200, json=_envelope({"rows": 3, "columns": ["a"], "sample": []}))
+        )
+        result = api.connectors.test(connector_type="fred", config={"series_id": "GDP"})
+        assert route.called
+        assert result["rows"] == 3
 
 
 class TestPredictionResource:

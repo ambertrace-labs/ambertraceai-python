@@ -62,7 +62,10 @@ def sync_detailed(
     *,
     client: AuthenticatedClient | Client,
 ) -> Response[list[ValidationErrorModel]]:
-    """
+    """Delete rule template
+
+     Permanently deletes a rule template from a domain.
+
     Args:
         id (int): Domain ID
         tid (int): Template ID
@@ -93,7 +96,10 @@ def sync(
     *,
     client: AuthenticatedClient | Client,
 ) -> list[ValidationErrorModel] | None:
-    """
+    """Delete rule template
+
+     Permanently deletes a rule template from a domain.
+
     Args:
         id (int): Domain ID
         tid (int): Template ID
@@ -119,7 +125,10 @@ async def asyncio_detailed(
     *,
     client: AuthenticatedClient | Client,
 ) -> Response[list[ValidationErrorModel]]:
-    """
+    """Delete rule template
+
+     Permanently deletes a rule template from a domain.
+
     Args:
         id (int): Domain ID
         tid (int): Template ID
@@ -148,7 +157,10 @@ async def asyncio(
     *,
     client: AuthenticatedClient | Client,
 ) -> list[ValidationErrorModel] | None:
-    """
+    """Delete rule template
+
+     Permanently deletes a rule template from a domain.
+
     Args:
         id (int): Domain ID
         tid (int): Template ID

@@ -6,6 +6,7 @@ import httpx
 
 from ... import errors
 from ...client import AuthenticatedClient, Client
+from ...models.job_out import JobOut
 from ...models.validation_error_model import ValidationErrorModel
 from ...types import Response
 
@@ -26,7 +27,12 @@ def _get_kwargs(
 
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> list[ValidationErrorModel] | None:
+) -> JobOut | list[ValidationErrorModel] | None:
+    if response.status_code == 200:
+        response_200 = JobOut.from_dict(response.json())
+
+        return response_200
+
     if response.status_code == 422:
         response_422 = []
         _response_422 = response.json()
@@ -45,7 +51,7 @@ def _parse_response(
 
 def _build_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> Response[list[ValidationErrorModel]]:
+) -> Response[JobOut | list[ValidationErrorModel]]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -58,8 +64,13 @@ def sync_detailed(
     id: int,
     *,
     client: AuthenticatedClient | Client,
-) -> Response[list[ValidationErrorModel]]:
-    """
+) -> Response[JobOut | list[ValidationErrorModel]]:
+    """Get job status
+
+     Polls the status of an async job (cleaning or platform build). Returns the job type, status
+    (pending/running/completed/failed), progress percentage, current step, and error message if failed.
+    Use this to track async operations started by POST /datasets/{id}/clean or POST /platforms.
+
     Args:
         id (int): Resource ID
 
@@ -68,7 +79,7 @@ def sync_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[list[ValidationErrorModel]]
+        Response[JobOut | list[ValidationErrorModel]]
     """
 
     kwargs = _get_kwargs(
@@ -86,8 +97,13 @@ def sync(
     id: int,
     *,
     client: AuthenticatedClient | Client,
-) -> list[ValidationErrorModel] | None:
-    """
+) -> JobOut | list[ValidationErrorModel] | None:
+    """Get job status
+
+     Polls the status of an async job (cleaning or platform build). Returns the job type, status
+    (pending/running/completed/failed), progress percentage, current step, and error message if failed.
+    Use this to track async operations started by POST /datasets/{id}/clean or POST /platforms.
+
     Args:
         id (int): Resource ID
 
@@ -96,7 +112,7 @@ def sync(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        list[ValidationErrorModel]
+        JobOut | list[ValidationErrorModel]
     """
 
     return sync_detailed(
@@ -109,8 +125,13 @@ async def asyncio_detailed(
     id: int,
     *,
     client: AuthenticatedClient | Client,
-) -> Response[list[ValidationErrorModel]]:
-    """
+) -> Response[JobOut | list[ValidationErrorModel]]:
+    """Get job status
+
+     Polls the status of an async job (cleaning or platform build). Returns the job type, status
+    (pending/running/completed/failed), progress percentage, current step, and error message if failed.
+    Use this to track async operations started by POST /datasets/{id}/clean or POST /platforms.
+
     Args:
         id (int): Resource ID
 
@@ -119,7 +140,7 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[list[ValidationErrorModel]]
+        Response[JobOut | list[ValidationErrorModel]]
     """
 
     kwargs = _get_kwargs(
@@ -135,8 +156,13 @@ async def asyncio(
     id: int,
     *,
     client: AuthenticatedClient | Client,
-) -> list[ValidationErrorModel] | None:
-    """
+) -> JobOut | list[ValidationErrorModel] | None:
+    """Get job status
+
+     Polls the status of an async job (cleaning or platform build). Returns the job type, status
+    (pending/running/completed/failed), progress percentage, current step, and error message if failed.
+    Use this to track async operations started by POST /datasets/{id}/clean or POST /platforms.
+
     Args:
         id (int): Resource ID
 
@@ -145,7 +171,7 @@ async def asyncio(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        list[ValidationErrorModel]
+        JobOut | list[ValidationErrorModel]
     """
 
     return (
