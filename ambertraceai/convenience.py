@@ -51,6 +51,37 @@ class DomainResource(_Resource):
     def build_ontology(self, domain_id: int) -> dict:
         return self._request("POST", f"/api/v1/domains/{domain_id}/build-ontology")
 
+    # -- Evaluation config --
+
+    def eval_config(self, domain_id: int) -> dict:
+        return self._request("GET", f"/api/v1/domains/{domain_id}/eval-config")
+
+    def set_eval_config(self, domain_id: int, **kwargs) -> dict:
+        return self._request("PUT", f"/api/v1/domains/{domain_id}/eval-config", json=kwargs)
+
+    def delete_eval_config(self, domain_id: int) -> dict:
+        return self._request("DELETE", f"/api/v1/domains/{domain_id}/eval-config")
+
+    def suggest_eval_config(self, domain_id: int) -> dict:
+        return self._request("POST", f"/api/v1/domains/{domain_id}/eval-config/suggest")
+
+    # -- Rule templates --
+
+    def list_templates(self, domain_id: int) -> list[dict]:
+        return self._request("GET", f"/api/v1/domains/{domain_id}/templates")
+
+    def create_template(self, domain_id: int, **kwargs) -> dict:
+        return self._request("POST", f"/api/v1/domains/{domain_id}/templates", json=kwargs)
+
+    def update_template(self, domain_id: int, template_id: int, **kwargs) -> dict:
+        return self._request("PUT", f"/api/v1/domains/{domain_id}/templates/{template_id}", json=kwargs)
+
+    def delete_template(self, domain_id: int, template_id: int) -> dict:
+        return self._request("DELETE", f"/api/v1/domains/{domain_id}/templates/{template_id}")
+
+    def feedback_stats(self, domain_id: int) -> dict:
+        return self._request("GET", f"/api/v1/domains/{domain_id}/feedback-stats")
+
 
 class DatasetResource(_Resource):
     def list(self) -> list[dict]:
@@ -76,8 +107,13 @@ class DatasetResource(_Resource):
     def quality(self, dataset_id: int) -> dict:
         return self._request("GET", f"/api/v1/datasets/{dataset_id}/quality")
 
-    def clean(self, dataset_id: int) -> dict:
-        return self._request("POST", f"/api/v1/datasets/{dataset_id}/clean")
+    def clean(self, dataset_id: int, *, steps: list[str] | None = None) -> dict:
+        # The endpoint expects a JSON body even though all fields default
+        # server-side; send {} (or the chosen steps) so validation passes.
+        body: dict[str, Any] = {}
+        if steps is not None:
+            body["steps"] = steps
+        return self._request("POST", f"/api/v1/datasets/{dataset_id}/clean", json=body)
 
     def preview(self, dataset_id: int) -> dict:
         return self._request("GET", f"/api/v1/datasets/{dataset_id}/preview")
@@ -99,6 +135,9 @@ class PlatformResource(_Resource):
     def get(self, platform_id: int) -> dict:
         return self._request("GET", f"/api/v1/platforms/{platform_id}")
 
+    def delete(self, platform_id: int) -> dict:
+        return self._request("DELETE", f"/api/v1/platforms/{platform_id}")
+
     def status(self, platform_id: int) -> dict:
         return self._request("GET", f"/api/v1/platforms/{platform_id}/status")
 
@@ -110,6 +149,12 @@ class PlatformResource(_Resource):
 
     def list_suggestions(self, platform_id: int) -> list[dict]:
         return self._request("GET", f"/api/v1/platforms/{platform_id}/suggestions")
+
+    def approve_suggestion(self, platform_id: int, suggestion_id: int) -> dict:
+        return self._request("POST", f"/api/v1/platforms/{platform_id}/suggestions/{suggestion_id}/approve")
+
+    def reject_suggestion(self, platform_id: int, suggestion_id: int) -> dict:
+        return self._request("POST", f"/api/v1/platforms/{platform_id}/suggestions/{suggestion_id}/reject")
 
     def graph(self, platform_id: int) -> dict:
         return self._request("GET", f"/api/v1/platforms/{platform_id}/graph")
@@ -127,6 +172,9 @@ class PredictionResource(_Resource):
 
     def create_config(self, platform_id: int, **kwargs) -> dict:
         return self._request("POST", f"/api/v1/platforms/{platform_id}/prediction-configs", json=kwargs)
+
+    def delete_config(self, platform_id: int, config_id: int) -> dict:
+        return self._request("DELETE", f"/api/v1/platforms/{platform_id}/prediction-configs/{config_id}")
 
     def train(self, platform_id: int, config_id: int) -> dict:
         return self._request("POST", f"/api/v1/platforms/{platform_id}/prediction-configs/{config_id}/train")
@@ -177,6 +225,12 @@ class ConnectorResource(_Resource):
 class JobResource(_Resource):
     def get(self, job_id: int) -> dict:
         return self._request("GET", f"/api/v1/jobs/{job_id}")
+
+
+class UsageResource(_Resource):
+    def get(self) -> dict:
+        """Return the caller's API usage summary."""
+        return self._request("GET", "/api/v1/usage")
 
 
 class AmbertraceAPI:
@@ -236,6 +290,10 @@ class AmbertraceAPI:
     @property
     def jobs(self) -> JobResource:
         return JobResource(self._http)
+
+    @property
+    def usage(self) -> UsageResource:
+        return UsageResource(self._http)
 
     def wait_for_job(self, job_id: int, *, timeout: int = 600, poll_interval: int = 5) -> dict:
         """Poll a job until it reaches a terminal status or times out."""
