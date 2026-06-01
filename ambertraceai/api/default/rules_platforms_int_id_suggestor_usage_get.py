@@ -59,7 +59,9 @@ def sync_detailed(
     *,
     client: AuthenticatedClient | Client,
 ) -> Response[list[ValidationErrorModel]]:
-    """Per-call log of local-suggestor usage for a platform.
+    """Get suggestor usage log
+
+     Returns per-call usage records for the LLM rule suggestor on this platform.
 
     Args:
         id (int): Resource ID
@@ -88,7 +90,9 @@ def sync(
     *,
     client: AuthenticatedClient | Client,
 ) -> list[ValidationErrorModel] | None:
-    """Per-call log of local-suggestor usage for a platform.
+    """Get suggestor usage log
+
+     Returns per-call usage records for the LLM rule suggestor on this platform.
 
     Args:
         id (int): Resource ID
@@ -112,7 +116,9 @@ async def asyncio_detailed(
     *,
     client: AuthenticatedClient | Client,
 ) -> Response[list[ValidationErrorModel]]:
-    """Per-call log of local-suggestor usage for a platform.
+    """Get suggestor usage log
+
+     Returns per-call usage records for the LLM rule suggestor on this platform.
 
     Args:
         id (int): Resource ID
@@ -139,7 +145,9 @@ async def asyncio(
     *,
     client: AuthenticatedClient | Client,
 ) -> list[ValidationErrorModel] | None:
-    """Per-call log of local-suggestor usage for a platform.
+    """Get suggestor usage log
+
+     Returns per-call usage records for the LLM rule suggestor on this platform.
 
     Args:
         id (int): Resource ID

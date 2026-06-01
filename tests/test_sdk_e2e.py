@@ -1,16 +1,11 @@
-"""SDK E2E integration test — exercises the full lifecycle against a running server.
+"""SDK E2E integration test — exercises the full lifecycle against a live API.
 
 Marked with @pytest.mark.e2e so it's skipped during regular unit test runs.
-Requires a running Ambertrace Docker container and a valid API key.
+Requires network access to an Ambertrace API instance and a valid API key.
 
 Usage:
-    # Start the server
-    bash docker/up.sh
-
-    # Run with the e2e mark
-    cd openapi/generated/python-client
-    AMBERTRACE_E2E_URL=http://localhost:8060 \
-    AMBERTRACE_E2E_API_KEY=at_test_... \
+    AMBERTRACE_E2E_URL=https://app.ambertrace.ai \
+    AMBERTRACE_E2E_API_KEY=at_... \
     pytest tests/test_sdk_e2e.py -v -m e2e
 """
 
@@ -21,7 +16,7 @@ import pytest
 
 pytestmark = pytest.mark.e2e
 
-BASE_URL = os.environ.get('AMBERTRACE_E2E_URL', 'http://localhost:8060')
+BASE_URL = os.environ.get('AMBERTRACE_E2E_URL', 'https://app.ambertrace.ai')
 API_KEY = os.environ.get('AMBERTRACE_E2E_API_KEY', '')
 
 

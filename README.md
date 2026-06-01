@@ -8,6 +8,27 @@ Python client for the [Ambertrace](https://ambertrace.ai) neurosymbolic AI platf
 pip install ambertraceai
 ```
 
+## Authentication
+
+The SDK authenticates with an Ambertrace API key (prefix `at_...`). Create one from the
+dashboard at [app.ambertrace.ai](https://app.ambertrace.ai) → **Settings → API Keys**, then
+pass it to the client:
+
+```python
+from ambertraceai import AmbertraceAPI
+
+api = AmbertraceAPI(base_url="https://app.ambertrace.ai", api_key="at_...")
+```
+
+Keep the key out of source control — read it from an environment variable in real code:
+
+```python
+import os
+api = AmbertraceAPI(base_url="https://app.ambertrace.ai", api_key=os.environ["AMBERTRACE_API_KEY"])
+```
+
+See [Agent Keys](#agent-keys) for the user- vs. platform-scoped key model.
+
 ## Quick Start
 
 ```python
@@ -30,18 +51,20 @@ dataset = api.datasets.upload(
     file_path="contracts.csv",
 )
 
-# Build a platform (async — returns a job)
+# Build a platform (async — returns the platform and a build job)
 result = api.platforms.create(
     domain_id=domain["id"],
     dataset_id=dataset["id"],
 )
+platform_id = result["platform"]["id"]
+build_job_id = result["build_job"]["id"]
 
 # Wait for the build to finish
-job = api.wait_for_job(result["job_id"], timeout=600)
+job = api.wait_for_job(build_job_id, timeout=600)
 
 # Query the platform
 answer = api.platforms.query(
-    platform_id=result["platform_id"],
+    platform_id=platform_id,
     query="What are the highest-risk clauses?",
 )
 print(answer["answer"])
@@ -56,8 +79,28 @@ print(answer["explanation"])
 | `api.datasets` | `list`, `get`, `upload`, `fetch`, `quality`, `clean`, `preview`, `delete` |
 | `api.platforms` | `list`, `create`, `get`, `status`, `query`, `suggest_rules`, `list_suggestions`, `graph` |
 | `api.predictions` | `predict`, `list_configs`, `create_config`, `train`, `list_predictions` |
+| `api.connectors` | `list`, `test` |
 | `api.jobs` | `get` |
 | `api.api_keys` | `list`, `create`, `revoke` |
+
+## Connectors
+
+Connectors pull data from external providers (e.g. FRED, Yahoo Finance). List what's
+available, then test a config before ingesting it as a dataset:
+
+```python
+connectors = api.connectors.list()
+
+result = api.connectors.test(
+    connector_type="fred",
+    config={"series_id": "GDP", "api_key": "<your FRED API key>"},
+)
+print(result["columns"], result["rows"])
+```
+
+**Bring your own provider keys.** Connectors that hit third-party APIs require *your own*
+credentials for that provider — pass them in `config`. Ambertrace does not supply
+third-party API keys on your behalf.
 
 ## Agent Keys
 

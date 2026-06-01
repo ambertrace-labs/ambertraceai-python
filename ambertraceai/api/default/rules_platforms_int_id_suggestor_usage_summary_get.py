@@ -59,7 +59,9 @@ def sync_detailed(
     *,
     client: AuthenticatedClient | Client,
 ) -> Response[list[ValidationErrorModel]]:
-    """Rolled-up totals — calls, tokens, wall_ms, cost_cents.
+    """Get suggestor usage summary
+
+     Returns rolled-up totals for suggestor usage: calls, tokens, wall_ms, cost_cents.
 
     Args:
         id (int): Resource ID
@@ -88,7 +90,9 @@ def sync(
     *,
     client: AuthenticatedClient | Client,
 ) -> list[ValidationErrorModel] | None:
-    """Rolled-up totals — calls, tokens, wall_ms, cost_cents.
+    """Get suggestor usage summary
+
+     Returns rolled-up totals for suggestor usage: calls, tokens, wall_ms, cost_cents.
 
     Args:
         id (int): Resource ID
@@ -112,7 +116,9 @@ async def asyncio_detailed(
     *,
     client: AuthenticatedClient | Client,
 ) -> Response[list[ValidationErrorModel]]:
-    """Rolled-up totals — calls, tokens, wall_ms, cost_cents.
+    """Get suggestor usage summary
+
+     Returns rolled-up totals for suggestor usage: calls, tokens, wall_ms, cost_cents.
 
     Args:
         id (int): Resource ID
@@ -139,7 +145,9 @@ async def asyncio(
     *,
     client: AuthenticatedClient | Client,
 ) -> list[ValidationErrorModel] | None:
-    """Rolled-up totals — calls, tokens, wall_ms, cost_cents.
+    """Get suggestor usage summary
+
+     Returns rolled-up totals for suggestor usage: calls, tokens, wall_ms, cost_cents.
 
     Args:
         id (int): Resource ID

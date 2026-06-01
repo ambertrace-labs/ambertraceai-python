@@ -5,7 +5,7 @@ import httpx
 
 from ... import errors
 from ...client import AuthenticatedClient, Client
-from ...models.usage_usage_get_response_200 import UsageUsageGetResponse200
+from ...models.usage_stats_out import UsageStatsOut
 from ...types import Response
 
 
@@ -21,9 +21,9 @@ def _get_kwargs() -> dict[str, Any]:
 
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> UsageUsageGetResponse200 | None:
+) -> UsageStatsOut | None:
     if response.status_code == 200:
-        response_200 = UsageUsageGetResponse200.from_dict(response.json())
+        response_200 = UsageStatsOut.from_dict(response.json())
 
         return response_200
 
@@ -35,7 +35,7 @@ def _parse_response(
 
 def _build_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> Response[UsageUsageGetResponse200]:
+) -> Response[UsageStatsOut]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -47,14 +47,19 @@ def _build_response(
 def sync_detailed(
     *,
     client: AuthenticatedClient | Client,
-) -> Response[UsageUsageGetResponse200]:
-    """
+) -> Response[UsageStatsOut]:
+    """Get usage stats
+
+     Returns API usage statistics: total requests, total tokens, average response time, and remaining
+    token budget (if using an API key with a budget). For platform-scoped keys, returns stats for that
+    platform only.
+
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[UsageUsageGetResponse200]
+        Response[UsageStatsOut]
     """
 
     kwargs = _get_kwargs()
@@ -69,14 +74,19 @@ def sync_detailed(
 def sync(
     *,
     client: AuthenticatedClient | Client,
-) -> UsageUsageGetResponse200 | None:
-    """
+) -> UsageStatsOut | None:
+    """Get usage stats
+
+     Returns API usage statistics: total requests, total tokens, average response time, and remaining
+    token budget (if using an API key with a budget). For platform-scoped keys, returns stats for that
+    platform only.
+
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        UsageUsageGetResponse200
+        UsageStatsOut
     """
 
     return sync_detailed(
@@ -87,14 +97,19 @@ def sync(
 async def asyncio_detailed(
     *,
     client: AuthenticatedClient | Client,
-) -> Response[UsageUsageGetResponse200]:
-    """
+) -> Response[UsageStatsOut]:
+    """Get usage stats
+
+     Returns API usage statistics: total requests, total tokens, average response time, and remaining
+    token budget (if using an API key with a budget). For platform-scoped keys, returns stats for that
+    platform only.
+
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[UsageUsageGetResponse200]
+        Response[UsageStatsOut]
     """
 
     kwargs = _get_kwargs()
@@ -107,14 +122,19 @@ async def asyncio_detailed(
 async def asyncio(
     *,
     client: AuthenticatedClient | Client,
-) -> UsageUsageGetResponse200 | None:
-    """
+) -> UsageStatsOut | None:
+    """Get usage stats
+
+     Returns API usage statistics: total requests, total tokens, average response time, and remaining
+    token budget (if using an API key with a budget). For platform-scoped keys, returns stats for that
+    platform only.
+
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        UsageUsageGetResponse200
+        UsageStatsOut
     """
 
     return (

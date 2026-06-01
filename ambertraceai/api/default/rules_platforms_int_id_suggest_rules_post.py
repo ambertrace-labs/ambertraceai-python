@@ -59,7 +59,12 @@ def sync_detailed(
     *,
     client: AuthenticatedClient | Client,
 ) -> Response[list[ValidationErrorModel]]:
-    """
+    """Suggest rules
+
+     Uses LLM to discover additional symbolic rules beyond the auto-compiled ontology constraints.
+    Returns 202 and runs asynchronously. Suggested rules start in a pending state and require explicit
+    approval via the approve endpoint before they fire in queries. The platform must be active.
+
     Args:
         id (int): Resource ID
 
@@ -87,7 +92,12 @@ def sync(
     *,
     client: AuthenticatedClient | Client,
 ) -> list[ValidationErrorModel] | None:
-    """
+    """Suggest rules
+
+     Uses LLM to discover additional symbolic rules beyond the auto-compiled ontology constraints.
+    Returns 202 and runs asynchronously. Suggested rules start in a pending state and require explicit
+    approval via the approve endpoint before they fire in queries. The platform must be active.
+
     Args:
         id (int): Resource ID
 
@@ -110,7 +120,12 @@ async def asyncio_detailed(
     *,
     client: AuthenticatedClient | Client,
 ) -> Response[list[ValidationErrorModel]]:
-    """
+    """Suggest rules
+
+     Uses LLM to discover additional symbolic rules beyond the auto-compiled ontology constraints.
+    Returns 202 and runs asynchronously. Suggested rules start in a pending state and require explicit
+    approval via the approve endpoint before they fire in queries. The platform must be active.
+
     Args:
         id (int): Resource ID
 
@@ -136,7 +151,12 @@ async def asyncio(
     *,
     client: AuthenticatedClient | Client,
 ) -> list[ValidationErrorModel] | None:
-    """
+    """Suggest rules
+
+     Uses LLM to discover additional symbolic rules beyond the auto-compiled ontology constraints.
+    Returns 202 and runs asynchronously. Suggested rules start in a pending state and require explicit
+    approval via the approve endpoint before they fire in queries. The platform must be active.
+
     Args:
         id (int): Resource ID
 

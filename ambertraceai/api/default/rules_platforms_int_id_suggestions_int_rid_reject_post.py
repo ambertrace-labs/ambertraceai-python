@@ -6,6 +6,7 @@ import httpx
 
 from ... import errors
 from ...client import AuthenticatedClient, Client
+from ...models.reject_request import RejectRequest
 from ...models.validation_error_model import ValidationErrorModel
 from ...types import Response
 
@@ -13,7 +14,10 @@ from ...types import Response
 def _get_kwargs(
     id: int,
     rid: int,
+    *,
+    body: RejectRequest,
 ) -> dict[str, Any]:
+    headers: dict[str, Any] = {}
 
     _kwargs: dict[str, Any] = {
         "method": "post",
@@ -23,6 +27,11 @@ def _get_kwargs(
         ),
     }
 
+    _kwargs["json"] = body.to_dict()
+
+    headers["Content-Type"] = "application/json"
+
+    _kwargs["headers"] = headers
     return _kwargs
 
 
@@ -61,11 +70,17 @@ def sync_detailed(
     rid: int,
     *,
     client: AuthenticatedClient | Client,
+    body: RejectRequest,
 ) -> Response[list[ValidationErrorModel]]:
-    """
+    """Reject rule suggestion
+
+     Rejects a suggested rule. The rule will not be activated. Optionally include a reason for the
+    rejection decision.
+
     Args:
         id (int): Platform ID
         rid (int): Rule/suggestion ID
+        body (RejectRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -78,6 +93,7 @@ def sync_detailed(
     kwargs = _get_kwargs(
         id=id,
         rid=rid,
+        body=body,
     )
 
     response = client.get_httpx_client().request(
@@ -92,11 +108,17 @@ def sync(
     rid: int,
     *,
     client: AuthenticatedClient | Client,
+    body: RejectRequest,
 ) -> list[ValidationErrorModel] | None:
-    """
+    """Reject rule suggestion
+
+     Rejects a suggested rule. The rule will not be activated. Optionally include a reason for the
+    rejection decision.
+
     Args:
         id (int): Platform ID
         rid (int): Rule/suggestion ID
+        body (RejectRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -110,6 +132,7 @@ def sync(
         id=id,
         rid=rid,
         client=client,
+        body=body,
     ).parsed
 
 
@@ -118,11 +141,17 @@ async def asyncio_detailed(
     rid: int,
     *,
     client: AuthenticatedClient | Client,
+    body: RejectRequest,
 ) -> Response[list[ValidationErrorModel]]:
-    """
+    """Reject rule suggestion
+
+     Rejects a suggested rule. The rule will not be activated. Optionally include a reason for the
+    rejection decision.
+
     Args:
         id (int): Platform ID
         rid (int): Rule/suggestion ID
+        body (RejectRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -135,6 +164,7 @@ async def asyncio_detailed(
     kwargs = _get_kwargs(
         id=id,
         rid=rid,
+        body=body,
     )
 
     response = await client.get_async_httpx_client().request(**kwargs)
@@ -147,11 +177,17 @@ async def asyncio(
     rid: int,
     *,
     client: AuthenticatedClient | Client,
+    body: RejectRequest,
 ) -> list[ValidationErrorModel] | None:
-    """
+    """Reject rule suggestion
+
+     Rejects a suggested rule. The rule will not be activated. Optionally include a reason for the
+    rejection decision.
+
     Args:
         id (int): Platform ID
         rid (int): Rule/suggestion ID
+        body (RejectRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -166,5 +202,6 @@ async def asyncio(
             id=id,
             rid=rid,
             client=client,
+            body=body,
         )
     ).parsed
