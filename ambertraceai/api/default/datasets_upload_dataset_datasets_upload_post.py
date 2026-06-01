@@ -6,6 +6,7 @@ import httpx
 from ... import errors
 from ...client import AuthenticatedClient, Client
 from ...models.dataset_out import DatasetOut
+from ...models.validation_error_model import ValidationErrorModel
 from ...types import Response
 
 
@@ -21,11 +22,21 @@ def _get_kwargs() -> dict[str, Any]:
 
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> DatasetOut | None:
+) -> DatasetOut | list[ValidationErrorModel] | None:
     if response.status_code == 201:
         response_201 = DatasetOut.from_dict(response.json())
 
         return response_201
+
+    if response.status_code == 422:
+        response_422 = []
+        _response_422 = response.json()
+        for response_422_item_data in _response_422:
+            response_422_item = ValidationErrorModel.from_dict(response_422_item_data)
+
+            response_422.append(response_422_item)
+
+        return response_422
 
     if client.raise_on_unexpected_status:
         raise errors.UnexpectedStatus(response.status_code, response.content)
@@ -35,7 +46,7 @@ def _parse_response(
 
 def _build_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> Response[DatasetOut]:
+) -> Response[DatasetOut | list[ValidationErrorModel]]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -47,7 +58,7 @@ def _build_response(
 def sync_detailed(
     *,
     client: AuthenticatedClient | Client,
-) -> Response[DatasetOut]:
+) -> Response[DatasetOut | list[ValidationErrorModel]]:
     """Upload dataset
 
      Uploads a dataset file (CSV, JSON, JSONL, TSV, or XLSX up to 100 MB). After upload, status is
@@ -60,7 +71,7 @@ def sync_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[DatasetOut]
+        Response[DatasetOut | list[ValidationErrorModel]]
     """
 
     kwargs = _get_kwargs()
@@ -75,7 +86,7 @@ def sync_detailed(
 def sync(
     *,
     client: AuthenticatedClient | Client,
-) -> DatasetOut | None:
+) -> DatasetOut | list[ValidationErrorModel] | None:
     """Upload dataset
 
      Uploads a dataset file (CSV, JSON, JSONL, TSV, or XLSX up to 100 MB). After upload, status is
@@ -88,7 +99,7 @@ def sync(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        DatasetOut
+        DatasetOut | list[ValidationErrorModel]
     """
 
     return sync_detailed(
@@ -99,7 +110,7 @@ def sync(
 async def asyncio_detailed(
     *,
     client: AuthenticatedClient | Client,
-) -> Response[DatasetOut]:
+) -> Response[DatasetOut | list[ValidationErrorModel]]:
     """Upload dataset
 
      Uploads a dataset file (CSV, JSON, JSONL, TSV, or XLSX up to 100 MB). After upload, status is
@@ -112,7 +123,7 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[DatasetOut]
+        Response[DatasetOut | list[ValidationErrorModel]]
     """
 
     kwargs = _get_kwargs()
@@ -125,7 +136,7 @@ async def asyncio_detailed(
 async def asyncio(
     *,
     client: AuthenticatedClient | Client,
-) -> DatasetOut | None:
+) -> DatasetOut | list[ValidationErrorModel] | None:
     """Upload dataset
 
      Uploads a dataset file (CSV, JSON, JSONL, TSV, or XLSX up to 100 MB). After upload, status is
@@ -138,7 +149,7 @@ async def asyncio(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        DatasetOut
+        DatasetOut | list[ValidationErrorModel]
     """
 
     return (

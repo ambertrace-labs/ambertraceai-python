@@ -19,23 +19,35 @@ T = TypeVar("T", bound="ValidationErrorModel")
 class ValidationErrorModel:
     """
     Attributes:
-        ctx (None | Unset | ValidationErrorModelCtxType0): an optional object which contains values required to render
+        input_ (Any): The input provided for validation.
+        loc (list[Any]): The error's location as a list.
+        msg (str): A human readable explanation of the error.
+        type_ (str): A computer-readable identifier of the error type.
+        ctx (None | Unset | ValidationErrorModelCtxType0): An optional object which contains values required to render
             the error message.
-        loc (list[str] | None | Unset): the error's location as a list.
-        msg (None | str | Unset): a computer-readable identifier of the error type.
-        type_ (None | str | Unset): a human readable explanation of the error.
+        url (None | str | Unset): The URL to further information about the error.
     """
 
+    input_: Any
+    loc: list[Any]
+    msg: str
+    type_: str
     ctx: None | Unset | ValidationErrorModelCtxType0 = UNSET
-    loc: list[str] | None | Unset = UNSET
-    msg: None | str | Unset = UNSET
-    type_: None | str | Unset = UNSET
+    url: None | str | Unset = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         from ..models.validation_error_model_ctx_type_0 import (
             ValidationErrorModelCtxType0,
         )
+
+        input_ = self.input_
+
+        loc = self.loc
+
+        msg = self.msg
+
+        type_ = self.type_
 
         ctx: dict[str, Any] | None | Unset
         if isinstance(self.ctx, Unset):
@@ -45,38 +57,26 @@ class ValidationErrorModel:
         else:
             ctx = self.ctx
 
-        loc: list[str] | None | Unset
-        if isinstance(self.loc, Unset):
-            loc = UNSET
-        elif isinstance(self.loc, list):
-            loc = self.loc
-
+        url: None | str | Unset
+        if isinstance(self.url, Unset):
+            url = UNSET
         else:
-            loc = self.loc
-
-        msg: None | str | Unset
-        if isinstance(self.msg, Unset):
-            msg = UNSET
-        else:
-            msg = self.msg
-
-        type_: None | str | Unset
-        if isinstance(self.type_, Unset):
-            type_ = UNSET
-        else:
-            type_ = self.type_
+            url = self.url
 
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
-        field_dict.update({})
+        field_dict.update(
+            {
+                "input": input_,
+                "loc": loc,
+                "msg": msg,
+                "type": type_,
+            }
+        )
         if ctx is not UNSET:
             field_dict["ctx"] = ctx
-        if loc is not UNSET:
-            field_dict["loc"] = loc
-        if msg is not UNSET:
-            field_dict["msg"] = msg
-        if type_ is not UNSET:
-            field_dict["type_"] = type_
+        if url is not UNSET:
+            field_dict["url"] = url
 
         return field_dict
 
@@ -87,6 +87,13 @@ class ValidationErrorModel:
         )
 
         d = dict(src_dict)
+        input_ = d.pop("input")
+
+        loc = cast(list[Any], d.pop("loc"))
+
+        msg = d.pop("msg")
+
+        type_ = d.pop("type")
 
         def _parse_ctx(data: object) -> None | Unset | ValidationErrorModelCtxType0:
             if data is None:
@@ -105,46 +112,22 @@ class ValidationErrorModel:
 
         ctx = _parse_ctx(d.pop("ctx", UNSET))
 
-        def _parse_loc(data: object) -> list[str] | None | Unset:
-            if data is None:
-                return data
-            if isinstance(data, Unset):
-                return data
-            try:
-                if not isinstance(data, list):
-                    raise TypeError()
-                loc_type_0 = cast(list[str], data)
-
-                return loc_type_0
-            except (TypeError, ValueError, AttributeError, KeyError):
-                pass
-            return cast(list[str] | None | Unset, data)
-
-        loc = _parse_loc(d.pop("loc", UNSET))
-
-        def _parse_msg(data: object) -> None | str | Unset:
+        def _parse_url(data: object) -> None | str | Unset:
             if data is None:
                 return data
             if isinstance(data, Unset):
                 return data
             return cast(None | str | Unset, data)
 
-        msg = _parse_msg(d.pop("msg", UNSET))
-
-        def _parse_type_(data: object) -> None | str | Unset:
-            if data is None:
-                return data
-            if isinstance(data, Unset):
-                return data
-            return cast(None | str | Unset, data)
-
-        type_ = _parse_type_(d.pop("type_", UNSET))
+        url = _parse_url(d.pop("url", UNSET))
 
         validation_error_model = cls(
-            ctx=ctx,
+            input_=input_,
             loc=loc,
             msg=msg,
             type_=type_,
+            ctx=ctx,
+            url=url,
         )
 
         validation_error_model.additional_properties = d
