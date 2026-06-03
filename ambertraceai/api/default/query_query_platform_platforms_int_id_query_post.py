@@ -82,6 +82,14 @@ def sync_detailed(
     explainability trace. Ontology constraints (compiled at build time) and any approved suggested rules
     all fire automatically. Requires an active platform (status 'active').
 
+    Verified-profile platforms additionally: gate input facts by the confidence threshold τ (rejected
+    facts appear in explanation.rejected_facts), evaluate rules with a fail-closed Prolog engine, and
+    independently re-derive the decision against the trusted kernel. The response then carries
+    proof_checked=true and a proof_summary (full derivation in explanation.proof). If a verified
+    decision cannot be certified — engine/kernel disagreement, a non-stratifiable or manifest-violating
+    active rule set, or the engine being unavailable — the query fails closed with HTTP 503 and returns
+    no answer. For non-verified platforms proof_checked is null.
+
     Args:
         id (int): Resource ID
         body (QueryRequest):
@@ -119,6 +127,14 @@ def sync(
     explainability trace. Ontology constraints (compiled at build time) and any approved suggested rules
     all fire automatically. Requires an active platform (status 'active').
 
+    Verified-profile platforms additionally: gate input facts by the confidence threshold τ (rejected
+    facts appear in explanation.rejected_facts), evaluate rules with a fail-closed Prolog engine, and
+    independently re-derive the decision against the trusted kernel. The response then carries
+    proof_checked=true and a proof_summary (full derivation in explanation.proof). If a verified
+    decision cannot be certified — engine/kernel disagreement, a non-stratifiable or manifest-violating
+    active rule set, or the engine being unavailable — the query fails closed with HTTP 503 and returns
+    no answer. For non-verified platforms proof_checked is null.
+
     Args:
         id (int): Resource ID
         body (QueryRequest):
@@ -150,6 +166,14 @@ async def asyncio_detailed(
     evaluation (ontology constraints auto-fire), graph context enrichment, LLM answer generation, and
     explainability trace. Ontology constraints (compiled at build time) and any approved suggested rules
     all fire automatically. Requires an active platform (status 'active').
+
+    Verified-profile platforms additionally: gate input facts by the confidence threshold τ (rejected
+    facts appear in explanation.rejected_facts), evaluate rules with a fail-closed Prolog engine, and
+    independently re-derive the decision against the trusted kernel. The response then carries
+    proof_checked=true and a proof_summary (full derivation in explanation.proof). If a verified
+    decision cannot be certified — engine/kernel disagreement, a non-stratifiable or manifest-violating
+    active rule set, or the engine being unavailable — the query fails closed with HTTP 503 and returns
+    no answer. For non-verified platforms proof_checked is null.
 
     Args:
         id (int): Resource ID
@@ -185,6 +209,14 @@ async def asyncio(
     evaluation (ontology constraints auto-fire), graph context enrichment, LLM answer generation, and
     explainability trace. Ontology constraints (compiled at build time) and any approved suggested rules
     all fire automatically. Requires an active platform (status 'active').
+
+    Verified-profile platforms additionally: gate input facts by the confidence threshold τ (rejected
+    facts appear in explanation.rejected_facts), evaluate rules with a fail-closed Prolog engine, and
+    independently re-derive the decision against the trusted kernel. The response then carries
+    proof_checked=true and a proof_summary (full derivation in explanation.proof). If a verified
+    decision cannot be certified — engine/kernel disagreement, a non-stratifiable or manifest-violating
+    active rule set, or the engine being unavailable — the query fails closed with HTTP 503 and returns
+    no answer. For non-verified platforms proof_checked is null.
 
     Args:
         id (int): Resource ID

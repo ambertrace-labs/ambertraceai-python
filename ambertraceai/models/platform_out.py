@@ -30,6 +30,11 @@ class PlatformOut:
         description (None | str | Unset):
         neural_config (None | PlatformOutNeuralConfigType0 | Unset):
         updated_at (None | str | Unset):
+        verified_min_confidence (float | None | Unset): The certified-fact confidence threshold τ, surfaced from
+            neural_config.
+        verified_profile (bool | Unset): Whether this platform runs in the verified profile (proof-carrying queries,
+            certified-fact gating, fail-closed engine). If a verified build was downgraded via override_verification_gate,
+            this is False and ``config.verification_gate_violations`` records why. Default: False.
         version (int | Unset):  Default: 1.
     """
 
@@ -43,6 +48,8 @@ class PlatformOut:
     description: None | str | Unset = UNSET
     neural_config: None | PlatformOutNeuralConfigType0 | Unset = UNSET
     updated_at: None | str | Unset = UNSET
+    verified_min_confidence: float | None | Unset = UNSET
+    verified_profile: bool | Unset = False
     version: int | Unset = 1
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
@@ -96,6 +103,14 @@ class PlatformOut:
         else:
             updated_at = self.updated_at
 
+        verified_min_confidence: float | None | Unset
+        if isinstance(self.verified_min_confidence, Unset):
+            verified_min_confidence = UNSET
+        else:
+            verified_min_confidence = self.verified_min_confidence
+
+        verified_profile = self.verified_profile
+
         version = self.version
 
         field_dict: dict[str, Any] = {}
@@ -119,6 +134,10 @@ class PlatformOut:
             field_dict["neural_config"] = neural_config
         if updated_at is not UNSET:
             field_dict["updated_at"] = updated_at
+        if verified_min_confidence is not UNSET:
+            field_dict["verified_min_confidence"] = verified_min_confidence
+        if verified_profile is not UNSET:
+            field_dict["verified_profile"] = verified_profile
         if version is not UNSET:
             field_dict["version"] = version
 
@@ -205,6 +224,19 @@ class PlatformOut:
 
         updated_at = _parse_updated_at(d.pop("updated_at", UNSET))
 
+        def _parse_verified_min_confidence(data: object) -> float | None | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(float | None | Unset, data)
+
+        verified_min_confidence = _parse_verified_min_confidence(
+            d.pop("verified_min_confidence", UNSET)
+        )
+
+        verified_profile = d.pop("verified_profile", UNSET)
+
         version = d.pop("version", UNSET)
 
         platform_out = cls(
@@ -218,6 +250,8 @@ class PlatformOut:
             description=description,
             neural_config=neural_config,
             updated_at=updated_at,
+            verified_min_confidence=verified_min_confidence,
+            verified_profile=verified_profile,
             version=version,
         )
 
