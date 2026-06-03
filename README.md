@@ -77,7 +77,7 @@ print(answer["explanation"])
 |----------|---------|
 | `api.domains` | `list`, `create`, `get`, `update`, `delete`, `build_ontology`, `eval_config`, `set_eval_config`, `delete_eval_config`, `suggest_eval_config`, `list_templates`, `create_template`, `update_template`, `delete_template`, `feedback_stats` |
 | `api.datasets` | `list`, `get`, `upload`, `fetch`, `quality`, `clean`, `preview`, `delete` |
-| `api.platforms` | `list`, `create`, `get`, `delete`, `status`, `query`, `suggest_rules`, `list_suggestions`, `approve_suggestion`, `reject_suggestion`, `graph` |
+| `api.platforms` | `list`, `create`, `get`, `delete`, `update`, `status`, `query`, `suggest_rules`, `list_suggestions`, `approve_suggestion`, `reject_suggestion`, `graph`, `list_rules`, `create_rule`, `update_rule`, `delete_rule`, `capture_drift_baseline`, `check_drift` |
 | `api.predictions` | `predict`, `list_configs`, `create_config`, `delete_config`, `train`, `list_predictions` |
 | `api.connectors` | `list`, `test` |
 | `api.usage` | `get` |
@@ -139,6 +139,51 @@ api.api_keys.revoke(platform_key["id"])
 ```
 
 User-scoped keys cannot create other user-scoped keys (no self-replication). Chat, conversations, and billing remain human-only.
+
+## Verified Profile
+
+Platforms can be built with the verified profile for proof-carrying queries:
+
+```python
+result = api.platforms.create(
+    domain_id=domain["id"],
+    dataset_id=dataset["id"],
+    verified_profile=True,
+    verified_min_confidence=0.85,
+    invariant_manifest=[
+        {"name": "no_unconditional_delete", "kind": "forbid",
+         "target": "permit_delete", "assumed_absent": ["permit_delete"]},
+    ],
+)
+
+# Query — response includes proof certificate
+answer = api.platforms.query(platform_id, query="What permissions does alice have?")
+print(answer["proof_checked"])   # True
+print(answer["proof_summary"])   # Human-readable certificate
+
+# Drift monitoring
+api.platforms.capture_drift_baseline(platform_id)
+drift = api.platforms.check_drift(platform_id)
+print(drift["drift_detected"])   # False
+```
+
+## Rules CRUD
+
+Manage symbolic rules on a platform:
+
+```python
+rules = api.platforms.list_rules(platform_id)
+
+rule = api.platforms.create_rule(
+    platform_id,
+    name="viewer_read_only",
+    condition={"field": "role", "operator": "==", "value": "viewer"},
+    action={"type": "derive", "value": "read_only"},
+)
+
+api.platforms.update_rule(platform_id, rule["id"], description="Updated desc")
+api.platforms.delete_rule(platform_id, rule["id"])
+```
 
 ## Job Polling
 

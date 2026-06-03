@@ -136,3 +136,69 @@ class TestPredictionResource:
         result = api.predictions.predict(1, prediction_config_id=1, feature_overrides={"x": 1})
         assert result["predicted_value"] == 42.0
         assert result["confidence"] == 0.9
+
+
+class TestPlatformRulesCRUD:
+    @respx.mock
+    def test_list_rules(self, api):
+        respx.get("https://test.ambertrace.ai/api/v1/platforms/1/rules").mock(
+            return_value=httpx.Response(200, json=_envelope([{"id": 1, "name": "r1"}]))
+        )
+        result = api.platforms.list_rules(1)
+        assert len(result) == 1
+
+    @respx.mock
+    def test_create_rule(self, api):
+        route = respx.post("https://test.ambertrace.ai/api/v1/platforms/1/rules").mock(
+            return_value=httpx.Response(200, json=_envelope({"id": 10, "name": "test_rule"}))
+        )
+        result = api.platforms.create_rule(
+            1, name="test_rule",
+            condition={"field": "x", "operator": "==", "value": 1},
+            action={"type": "derive", "value": "y"},
+        )
+        assert result["id"] == 10
+        assert route.called
+
+    @respx.mock
+    def test_update_rule(self, api):
+        route = respx.patch("https://test.ambertrace.ai/api/v1/platforms/1/rules/10").mock(
+            return_value=httpx.Response(200, json=_envelope({"id": 10, "description": "updated"}))
+        )
+        api.platforms.update_rule(1, 10, description="updated")
+        assert route.called
+
+    @respx.mock
+    def test_delete_rule(self, api):
+        route = respx.delete("https://test.ambertrace.ai/api/v1/platforms/1/rules/10").mock(
+            return_value=httpx.Response(200, json=_envelope({"deleted": True}))
+        )
+        api.platforms.delete_rule(1, 10)
+        assert route.called
+
+
+class TestPlatformDrift:
+    @respx.mock
+    def test_capture_drift_baseline(self, api):
+        route = respx.post("https://test.ambertrace.ai/api/v1/platforms/1/drift/baseline").mock(
+            return_value=httpx.Response(200, json=_envelope({"platform_id": 1, "certified_rejection_rate": 0.02}))
+        )
+        result = api.platforms.capture_drift_baseline(1)
+        assert result["certified_rejection_rate"] == 0.02
+        assert route.called
+
+    @respx.mock
+    def test_check_drift(self, api):
+        respx.get("https://test.ambertrace.ai/api/v1/platforms/1/drift/check").mock(
+            return_value=httpx.Response(200, json=_envelope({"platform_id": 1, "drift_detected": False, "alerts": []}))
+        )
+        result = api.platforms.check_drift(1)
+        assert result["drift_detected"] is False
+
+    @respx.mock
+    def test_update_verified_settings(self, api):
+        route = respx.patch("https://test.ambertrace.ai/api/v1/platforms/1").mock(
+            return_value=httpx.Response(200, json=_envelope({"id": 1, "verified_profile": True}))
+        )
+        api.platforms.update(1, verified_min_confidence=0.9)
+        assert route.called
