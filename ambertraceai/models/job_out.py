@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Any, TypeVar, cast
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
 from ..types import UNSET, Unset
+
+if TYPE_CHECKING:
+    from ..models.job_out_result_type_0 import JobOutResultType0
+
 
 T = TypeVar("T", bound="JobOut")
 
@@ -21,6 +25,7 @@ class JobOut:
         created_at (None | str | Unset):
         error_message (None | str | Unset):
         progress (int | None | Unset):
+        result (JobOutResultType0 | None | Unset):
         step (None | str | Unset):
         updated_at (None | str | Unset):
     """
@@ -31,11 +36,14 @@ class JobOut:
     created_at: None | str | Unset = UNSET
     error_message: None | str | Unset = UNSET
     progress: int | None | Unset = UNSET
+    result: JobOutResultType0 | None | Unset = UNSET
     step: None | str | Unset = UNSET
     updated_at: None | str | Unset = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        from ..models.job_out_result_type_0 import JobOutResultType0
+
         id = self.id
 
         status = self.status
@@ -59,6 +67,14 @@ class JobOut:
             progress = UNSET
         else:
             progress = self.progress
+
+        result: dict[str, Any] | None | Unset
+        if isinstance(self.result, Unset):
+            result = UNSET
+        elif isinstance(self.result, JobOutResultType0):
+            result = self.result.to_dict()
+        else:
+            result = self.result
 
         step: None | str | Unset
         if isinstance(self.step, Unset):
@@ -87,6 +103,8 @@ class JobOut:
             field_dict["error_message"] = error_message
         if progress is not UNSET:
             field_dict["progress"] = progress
+        if result is not UNSET:
+            field_dict["result"] = result
         if step is not UNSET:
             field_dict["step"] = step
         if updated_at is not UNSET:
@@ -96,6 +114,8 @@ class JobOut:
 
     @classmethod
     def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
+        from ..models.job_out_result_type_0 import JobOutResultType0
+
         d = dict(src_dict)
         id = d.pop("id")
 
@@ -130,6 +150,23 @@ class JobOut:
 
         progress = _parse_progress(d.pop("progress", UNSET))
 
+        def _parse_result(data: object) -> JobOutResultType0 | None | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            try:
+                if not isinstance(data, dict):
+                    raise TypeError()
+                result_type_0 = JobOutResultType0.from_dict(data)
+
+                return result_type_0
+            except (TypeError, ValueError, AttributeError, KeyError):
+                pass
+            return cast(JobOutResultType0 | None | Unset, data)
+
+        result = _parse_result(d.pop("result", UNSET))
+
         def _parse_step(data: object) -> None | str | Unset:
             if data is None:
                 return data
@@ -155,6 +192,7 @@ class JobOut:
             created_at=created_at,
             error_message=error_message,
             progress=progress,
+            result=result,
             step=step,
             updated_at=updated_at,
         )

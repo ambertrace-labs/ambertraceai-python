@@ -1,0 +1,39 @@
+name: Publish to PyPI
+
+# Publishes the public ambertraceai SDK to PyPI on a version tag (v*).
+# Authentication is OIDC "trusted publishing" — this repo
+# (Pilot-Generative-AI/ambertraceai-python) is registered as the trusted
+# publisher for the `ambertraceai` PyPI project against this workflow file, so
+# no API token is needed. The package ships the pre-generated client (synced
+# from the private AmbertraceAI source repo), so there's no codegen step here —
+# just build the committed package and publish.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    name: Build & Publish to PyPI
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write   # OIDC trusted publishing
+      contents: read    # actions/checkout (a permissions block defaults the
+                        # rest to `none`)
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Build sdist + wheel
+        run: |
+          python -m pip install --upgrade build
+          python -m build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/

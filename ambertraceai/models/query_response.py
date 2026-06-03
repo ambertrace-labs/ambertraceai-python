@@ -23,12 +23,22 @@ class QueryResponse:
         platform_id (int):
         query (str):
         explanation (None | QueryResponseExplanationType0 | Unset):
+        proof_checked (bool | None | Unset): Verified profile only. ``True`` when the decision was independently re-
+            derived and certified against the trusted kernel (the engine's fired-rule set matched the kernel's, and the
+            active rule set is stratifiable and satisfies the platform's invariant manifest). ``null`` for non-verified
+            platforms (no proof is generated). A verified query that cannot be certified fails closed with HTTP 503 rather
+            than returning ``proof_checked: false``.
+        proof_summary (None | str | Unset): Human-readable summary of the machine-checked certificate (rules fired,
+            facts derived, input facts). ``null`` for non-verified platforms. The full derivation proof and any
+            ``rejected_facts`` are in ``explanation.proof`` / ``explanation.rejected_facts``.
     """
 
     answer: str
     platform_id: int
     query: str
     explanation: None | QueryResponseExplanationType0 | Unset = UNSET
+    proof_checked: bool | None | Unset = UNSET
+    proof_summary: None | str | Unset = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -50,6 +60,18 @@ class QueryResponse:
         else:
             explanation = self.explanation
 
+        proof_checked: bool | None | Unset
+        if isinstance(self.proof_checked, Unset):
+            proof_checked = UNSET
+        else:
+            proof_checked = self.proof_checked
+
+        proof_summary: None | str | Unset
+        if isinstance(self.proof_summary, Unset):
+            proof_summary = UNSET
+        else:
+            proof_summary = self.proof_summary
+
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
@@ -61,6 +83,10 @@ class QueryResponse:
         )
         if explanation is not UNSET:
             field_dict["explanation"] = explanation
+        if proof_checked is not UNSET:
+            field_dict["proof_checked"] = proof_checked
+        if proof_summary is not UNSET:
+            field_dict["proof_summary"] = proof_summary
 
         return field_dict
 
@@ -96,11 +122,31 @@ class QueryResponse:
 
         explanation = _parse_explanation(d.pop("explanation", UNSET))
 
+        def _parse_proof_checked(data: object) -> bool | None | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(bool | None | Unset, data)
+
+        proof_checked = _parse_proof_checked(d.pop("proof_checked", UNSET))
+
+        def _parse_proof_summary(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        proof_summary = _parse_proof_summary(d.pop("proof_summary", UNSET))
+
         query_response = cls(
             answer=answer,
             platform_id=platform_id,
             query=query,
             explanation=explanation,
+            proof_checked=proof_checked,
+            proof_summary=proof_summary,
         )
 
         query_response.additional_properties = d
