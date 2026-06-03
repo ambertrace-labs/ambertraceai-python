@@ -163,8 +163,50 @@ class PlatformResource(_Resource):
     def reject_suggestion(self, platform_id: int, suggestion_id: int) -> dict:
         return self._request("POST", f"/api/v1/platforms/{platform_id}/suggestions/{suggestion_id}/reject")
 
+    def update(self, platform_id: int, **kwargs) -> dict:
+        """Update a platform's verified-profile settings.
+
+        Accepted fields: ``verified_profile``, ``verified_min_confidence``,
+        ``invariant_manifest``.  Enabling the verified profile re-validates
+        existing active rules and may raise :class:`AmbertraceError` (409).
+        """
+        return self._request("PATCH", f"/api/v1/platforms/{platform_id}", json=kwargs)
+
     def graph(self, platform_id: int) -> dict:
         return self._request("GET", f"/api/v1/platforms/{platform_id}/graph")
+
+    # -- Rules CRUD --
+
+    def list_rules(self, platform_id: int, *, include_inactive: bool = False) -> list[dict]:
+        params = {"include_inactive": "true"} if include_inactive else {}
+        return self._request("GET", f"/api/v1/platforms/{platform_id}/rules", params=params)
+
+    def create_rule(self, platform_id: int, *, name: str, condition: dict,
+                    action: dict, description: str | None = None,
+                    is_active: bool = True, priority: int | None = None) -> dict:
+        body: dict[str, Any] = {
+            "name": name, "condition": condition, "action": action,
+            "is_active": is_active,
+        }
+        if description is not None:
+            body["description"] = description
+        if priority is not None:
+            body["priority"] = priority
+        return self._request("POST", f"/api/v1/platforms/{platform_id}/rules", json=body)
+
+    def update_rule(self, platform_id: int, rule_id: int, **kwargs) -> dict:
+        return self._request("PATCH", f"/api/v1/platforms/{platform_id}/rules/{rule_id}", json=kwargs)
+
+    def delete_rule(self, platform_id: int, rule_id: int) -> dict:
+        return self._request("DELETE", f"/api/v1/platforms/{platform_id}/rules/{rule_id}")
+
+    # -- Drift monitoring --
+
+    def capture_drift_baseline(self, platform_id: int) -> dict:
+        return self._request("POST", f"/api/v1/platforms/{platform_id}/drift/baseline")
+
+    def check_drift(self, platform_id: int) -> dict:
+        return self._request("GET", f"/api/v1/platforms/{platform_id}/drift/check")
 
 
 class PredictionResource(_Resource):
