@@ -17,6 +17,9 @@ jobs:
   publish:
     name: Build & Publish to PyPI
     runs-on: ubuntu-latest
+    environment: pypi   # must match the PyPI trusted publisher's configured
+                        # environment (else OIDC claim is environment:MISSING
+                        # and PyPI rejects with invalid-publisher)
     permissions:
       id-token: write   # OIDC trusted publishing
       contents: read    # actions/checkout (a permissions block defaults the
