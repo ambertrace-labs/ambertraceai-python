@@ -6,7 +6,7 @@ import httpx
 
 from ... import errors
 from ...client import AuthenticatedClient, Client
-from ...models.job_out import JobOut
+from ...models.drift_baseline_out import DriftBaselineOut
 from ...models.validation_error_model import ValidationErrorModel
 from ...types import Response
 
@@ -16,8 +16,8 @@ def _get_kwargs(
 ) -> dict[str, Any]:
 
     _kwargs: dict[str, Any] = {
-        "method": "get",
-        "url": "/api/v1/jobs/{id}".format(
+        "method": "post",
+        "url": "/api/v1/platforms/{id}/drift/baseline".format(
             id=quote(str(id), safe=""),
         ),
     }
@@ -27,9 +27,9 @@ def _get_kwargs(
 
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> JobOut | list[ValidationErrorModel] | None:
+) -> DriftBaselineOut | list[ValidationErrorModel] | None:
     if response.status_code == 200:
-        response_200 = JobOut.from_dict(response.json())
+        response_200 = DriftBaselineOut.from_dict(response.json())
 
         return response_200
 
@@ -51,7 +51,7 @@ def _parse_response(
 
 def _build_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> Response[JobOut | list[ValidationErrorModel]]:
+) -> Response[DriftBaselineOut | list[ValidationErrorModel]]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -64,16 +64,13 @@ def sync_detailed(
     id: int,
     *,
     client: AuthenticatedClient | Client,
-) -> Response[JobOut | list[ValidationErrorModel]]:
-    """Get job status
+) -> Response[DriftBaselineOut | list[ValidationErrorModel]]:
+    """Capture drift baseline
 
-     Polls the status of an async job (cleaning, platform build, ontology build, prediction training, or
-    rule suggestion). Returns the job type, status (pending/running/completed/failed), progress
-    percentage, current step, error message if failed, and a job-type-specific result payload when
-    completed (rule-suggestion jobs carry stats, rejected_rules, and the stored suggestions). Use this
-    to track async operations started by POST /datasets/{id}/clean, POST /platforms, POST
-    /domains/{id}/build-ontology, POST /platforms/{id}/prediction-configs/{cid}/train, or POST
-    /platforms/{id}/suggest-rules.
+     Captures the current drift metrics (certified-fact rejection rate and per-rule firing rates over
+    recent query history) as the approval-time baseline for this platform, stored in the platform
+    config. Call this at approval time so later drift checks have a reference point. Lifecycle
+    operation: session users and user-scoped keys only.
 
     Args:
         id (int): Resource ID
@@ -83,7 +80,7 @@ def sync_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[JobOut | list[ValidationErrorModel]]
+        Response[DriftBaselineOut | list[ValidationErrorModel]]
     """
 
     kwargs = _get_kwargs(
@@ -101,16 +98,13 @@ def sync(
     id: int,
     *,
     client: AuthenticatedClient | Client,
-) -> JobOut | list[ValidationErrorModel] | None:
-    """Get job status
+) -> DriftBaselineOut | list[ValidationErrorModel] | None:
+    """Capture drift baseline
 
-     Polls the status of an async job (cleaning, platform build, ontology build, prediction training, or
-    rule suggestion). Returns the job type, status (pending/running/completed/failed), progress
-    percentage, current step, error message if failed, and a job-type-specific result payload when
-    completed (rule-suggestion jobs carry stats, rejected_rules, and the stored suggestions). Use this
-    to track async operations started by POST /datasets/{id}/clean, POST /platforms, POST
-    /domains/{id}/build-ontology, POST /platforms/{id}/prediction-configs/{cid}/train, or POST
-    /platforms/{id}/suggest-rules.
+     Captures the current drift metrics (certified-fact rejection rate and per-rule firing rates over
+    recent query history) as the approval-time baseline for this platform, stored in the platform
+    config. Call this at approval time so later drift checks have a reference point. Lifecycle
+    operation: session users and user-scoped keys only.
 
     Args:
         id (int): Resource ID
@@ -120,7 +114,7 @@ def sync(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        JobOut | list[ValidationErrorModel]
+        DriftBaselineOut | list[ValidationErrorModel]
     """
 
     return sync_detailed(
@@ -133,16 +127,13 @@ async def asyncio_detailed(
     id: int,
     *,
     client: AuthenticatedClient | Client,
-) -> Response[JobOut | list[ValidationErrorModel]]:
-    """Get job status
+) -> Response[DriftBaselineOut | list[ValidationErrorModel]]:
+    """Capture drift baseline
 
-     Polls the status of an async job (cleaning, platform build, ontology build, prediction training, or
-    rule suggestion). Returns the job type, status (pending/running/completed/failed), progress
-    percentage, current step, error message if failed, and a job-type-specific result payload when
-    completed (rule-suggestion jobs carry stats, rejected_rules, and the stored suggestions). Use this
-    to track async operations started by POST /datasets/{id}/clean, POST /platforms, POST
-    /domains/{id}/build-ontology, POST /platforms/{id}/prediction-configs/{cid}/train, or POST
-    /platforms/{id}/suggest-rules.
+     Captures the current drift metrics (certified-fact rejection rate and per-rule firing rates over
+    recent query history) as the approval-time baseline for this platform, stored in the platform
+    config. Call this at approval time so later drift checks have a reference point. Lifecycle
+    operation: session users and user-scoped keys only.
 
     Args:
         id (int): Resource ID
@@ -152,7 +143,7 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[JobOut | list[ValidationErrorModel]]
+        Response[DriftBaselineOut | list[ValidationErrorModel]]
     """
 
     kwargs = _get_kwargs(
@@ -168,16 +159,13 @@ async def asyncio(
     id: int,
     *,
     client: AuthenticatedClient | Client,
-) -> JobOut | list[ValidationErrorModel] | None:
-    """Get job status
+) -> DriftBaselineOut | list[ValidationErrorModel] | None:
+    """Capture drift baseline
 
-     Polls the status of an async job (cleaning, platform build, ontology build, prediction training, or
-    rule suggestion). Returns the job type, status (pending/running/completed/failed), progress
-    percentage, current step, error message if failed, and a job-type-specific result payload when
-    completed (rule-suggestion jobs carry stats, rejected_rules, and the stored suggestions). Use this
-    to track async operations started by POST /datasets/{id}/clean, POST /platforms, POST
-    /domains/{id}/build-ontology, POST /platforms/{id}/prediction-configs/{cid}/train, or POST
-    /platforms/{id}/suggest-rules.
+     Captures the current drift metrics (certified-fact rejection rate and per-rule firing rates over
+    recent query history) as the approval-time baseline for this platform, stored in the platform
+    config. Call this at approval time so later drift checks have a reference point. Lifecycle
+    operation: session users and user-scoped keys only.
 
     Args:
         id (int): Resource ID
@@ -187,7 +175,7 @@ async def asyncio(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        JobOut | list[ValidationErrorModel]
+        DriftBaselineOut | list[ValidationErrorModel]
     """
 
     return (

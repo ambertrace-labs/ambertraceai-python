@@ -1,8 +1,10 @@
 name: CI
 
-# Publishing to PyPI is owned by the source repository's `publish-sdk.yml`
-# (the SDK is generated from the live OpenAPI spec there). This workflow only
-# runs the test suite for the public mirror — it does NOT publish.
+# This workflow only runs the test suite for the public mirror — it does NOT
+# publish. PyPI publishing lives in `publish.yml` (triggered by a `v*` tag),
+# because this repo — not the private source repo — is the registered PyPI
+# trusted publisher for the `ambertraceai` project. The SDK itself is generated
+# in the private AmbertraceAI source repo and synced here.
 
 on:
   push:
