@@ -1,0 +1,51 @@
+application_id,candidate_name,age,gender,ethnicity,disability_status,role_applied,department,years_experience,highest_qualification,qualification_relevant,skills_match_score,interview_score,reference_check,right_to_work,salary_expectation,role_salary_band_min,role_salary_band_max,decision,rejection_reason
+APP-001,James Mitchell,34,Male,White British,None,Senior Developer,Engineering,12,MSc Computer Science,Yes,92,85,Pass,Yes,75000,65000,85000,Hired,
+APP-002,Priya Sharma,29,Female,British Indian,None,Senior Developer,Engineering,8,MSc Computer Science,Yes,89,82,Pass,Yes,72000,65000,85000,Hired,
+APP-003,David Thompson,52,Male,White British,None,Data Analyst,Analytics,25,BSc Mathematics,Yes,78,71,Pass,Yes,48000,40000,55000,Hired,
+APP-004,Fatima Al-Hassan,26,Female,British Arab,None,Data Analyst,Analytics,3,MSc Data Science,Yes,81,76,Pass,Yes,44000,40000,55000,Hired,
+APP-005,Chen Wei,31,Male,British Chinese,None,Product Manager,Product,7,MBA,Yes,85,80,Pass,Yes,68000,60000,78000,Hired,
+APP-006,Sarah O'Brien,44,Female,White Irish,None,Product Manager,Product,18,MBA,Yes,88,83,Pass,Yes,74000,60000,78000,Hired,
+APP-007,Marcus Johnson,23,Male,Black British,None,Junior Developer,Engineering,1,BSc Computer Science,Yes,71,65,Pass,Yes,32000,28000,38000,Hired,
+APP-008,Emily Watson,38,Female,White British,Hearing impairment,UX Designer,Design,14,BA Graphic Design,Yes,90,87,Pass,Yes,58000,50000,65000,Hired,
+APP-009,Raj Patel,41,Male,British Indian,None,Engineering Manager,Engineering,16,MSc Software Engineering,Yes,93,89,Pass,Yes,92000,85000,105000,Hired,
+APP-010,Sophie Laurent,33,Female,White Other,None,Marketing Lead,Marketing,9,BA Marketing,Yes,84,79,Pass,Yes,56000,50000,65000,Hired,
+APP-011,Daniel Brown,16,Male,White British,None,Junior Developer,Engineering,0,GCSEs,No,45,0,Pending,Yes,22000,28000,38000,Rejected,underage_applicant
+APP-012,Aisha Mohammed,17,Female,Black British,None,Data Analyst,Analytics,0,A-Levels in progress,No,38,0,Pending,Yes,25000,40000,55000,Rejected,underage_applicant
+APP-013,Thomas Clark,45,Male,White British,None,Senior Developer,Engineering,20,BSc Computer Science,Yes,91,84,Pass,Yes,95000,65000,85000,Rejected,salary_exceeds_band
+APP-014,Linda Martinez,39,Female,White Other,None,Product Manager,Product,14,MBA,Yes,86,81,Pass,Yes,88000,60000,78000,Rejected,salary_exceeds_band
+APP-015,Ahmed Khan,28,Male,British Pakistani,None,Marketing Lead,Marketing,5,BA Communications,No,62,58,Pass,Yes,54000,50000,65000,Rejected,low_skills_match
+APP-016,Rebecca Jones,36,Female,White British,None,Data Analyst,Analytics,10,BA English Literature,No,55,52,Pass,Yes,46000,40000,55000,Rejected,low_skills_match
+APP-017,Kwame Asante,30,Male,Black British,None,UX Designer,Design,6,BA Fine Art,No,59,54,Fail,Yes,52000,50000,65000,Rejected,low_skills_match
+APP-018,Hannah Green,27,Female,White British,None,Junior Developer,Engineering,2,BSc Biology,No,48,44,Pass,Yes,30000,28000,38000,Rejected,qualification_not_relevant
+APP-019,Yuki Tanaka,35,Male,Japanese,None,Senior Developer,Engineering,10,MSc Computer Science,Yes,88,82,Pass,No,78000,65000,85000,Rejected,no_right_to_work
+APP-020,Maria Gonzalez,42,Female,White Other,None,Engineering Manager,Engineering,17,MSc Engineering,Yes,87,84,Pass,No,95000,85000,105000,Rejected,no_right_to_work
+APP-021,Oliver Smith,29,Male,White British,None,Junior Developer,Engineering,3,BSc Computer Science,Yes,76,70,Fail,Yes,34000,28000,38000,Rejected,failed_reference_check
+APP-022,Zara Hussain,31,Female,British Pakistani,None,Marketing Lead,Marketing,7,MSc Marketing,Yes,83,77,Fail,Yes,58000,50000,65000,Rejected,failed_reference_check
+APP-023,Patrick O'Neill,55,Male,White Irish,Mobility impairment,Data Analyst,Analytics,28,BSc Statistics,Yes,82,75,Pass,Yes,50000,40000,55000,Hired,
+APP-024,Mei Lin,28,Female,British Chinese,None,Junior Developer,Engineering,2,MSc Computer Science,Yes,79,73,Pass,Yes,35000,28000,38000,Hired,
+APP-025,James Okafor,37,Male,Black British,None,Product Manager,Product,11,MBA,Yes,87,82,Pass,Yes,70000,60000,78000,Hired,
+APP-026,Charlotte Davis,46,Female,White British,Visual impairment,Senior Developer,Engineering,22,BSc Computer Science,Yes,94,90,Pass,Yes,82000,65000,85000,Hired,
+APP-027,Arjun Reddy,33,Male,British Indian,None,Data Analyst,Analytics,8,MSc Statistics,Yes,86,80,Pass,Yes,49000,40000,55000,Hired,
+APP-028,Emma Wilson,25,Female,White British,None,UX Designer,Design,3,BA Design,Yes,77,72,Pass,Yes,52000,50000,65000,Hired,
+APP-029,Samuel Adeyemi,40,Male,Black British,None,Engineering Manager,Engineering,15,MSc Computer Science,Yes,91,86,Pass,Yes,90000,85000,105000,Hired,
+APP-030,Laura Murphy,32,Female,White Irish,Dyslexia,Marketing Lead,Marketing,8,MSc Marketing,Yes,85,80,Pass,Yes,60000,50000,65000,Hired,
+APP-031,Michael Harris,48,Male,White British,None,Senior Developer,Engineering,23,HND Computing,No,72,68,Pass,Yes,70000,65000,85000,Rejected,qualification_not_relevant
+APP-032,Nadia Petrov,30,Female,White Other,None,Data Analyst,Analytics,5,PhD Statistics,Yes,95,88,Pass,Yes,62000,40000,55000,Rejected,salary_exceeds_band
+APP-033,Robert Taylor,53,Male,White British,None,Junior Developer,Engineering,0,Career changer bootcamp,No,52,48,Pass,Yes,36000,28000,38000,Rejected,low_skills_match
+APP-034,Amara Diallo,27,Female,Black British,None,Product Manager,Product,4,BSc Business,Yes,74,69,Pass,Yes,64000,60000,78000,Hired,
+APP-035,George Williams,62,Male,White British,None,Data Analyst,Analytics,35,BSc Mathematics,Yes,80,74,Pass,Yes,52000,40000,55000,Hired,
+APP-036,Suki Nakamura,29,Female,Japanese,None,UX Designer,Design,5,MA Interaction Design,Yes,88,83,Pass,No,56000,50000,65000,Rejected,no_right_to_work
+APP-037,Peter Anderson,43,Male,White British,None,Marketing Lead,Marketing,18,BA Marketing,Yes,82,76,Pass,Yes,64000,50000,65000,Hired,
+APP-038,Blessing Eze,35,Female,Black British,None,Senior Developer,Engineering,10,MSc Computer Science,Yes,90,85,Pass,Yes,78000,65000,85000,Hired,
+APP-039,Liam Kelly,24,Male,White Irish,ADHD,Junior Developer,Engineering,1,BSc Computer Science,Yes,73,67,Pass,Yes,30000,28000,38000,Hired,
+APP-040,Anya Kowalski,37,Female,White Other,None,Engineering Manager,Engineering,13,MSc Software Engineering,Yes,89,84,Pass,Yes,88000,85000,105000,Hired,
+APP-041,Jamal Richards,31,Male,Black British,None,Senior Developer,Engineering,7,BSc Computer Science,Yes,84,0,Pending,Yes,72000,65000,85000,Rejected,gender_bias_flag
+APP-042,Priya Nair,28,Female,British Indian,None,Engineering Manager,Engineering,5,MSc Computer Science,Yes,80,0,Pending,Yes,86000,85000,105000,Rejected,gender_bias_flag
+APP-043,Oluwaseun Adebayo,33,Male,Black British,None,Product Manager,Product,9,MBA,Yes,86,0,Pending,Yes,68000,60000,78000,Rejected,ethnicity_bias_flag
+APP-044,Wei Zhang,39,Male,British Chinese,None,Senior Developer,Engineering,14,PhD Computer Science,Yes,96,0,Pending,Yes,80000,65000,85000,Rejected,ethnicity_bias_flag
+APP-045,Sandra Miller,50,Female,White British,None,Data Analyst,Analytics,22,MSc Data Science,Yes,83,0,Pending,Yes,50000,40000,55000,Rejected,age_bias_flag
+APP-046,Richard Evans,58,Male,White British,None,Junior Developer,Engineering,2,Career changer MSc,Yes,75,0,Pending,Yes,34000,28000,38000,Rejected,age_bias_flag
+APP-047,Fiona Campbell,34,Female,White British,Wheelchair user,Product Manager,Product,10,MBA,Yes,87,0,Pending,Yes,72000,60000,78000,Rejected,disability_bias_flag
+APP-048,Derek Hughes,41,Male,White British,Autism spectrum,Senior Developer,Engineering,15,MSc Computer Science,Yes,92,0,Pending,Yes,76000,65000,85000,Rejected,disability_bias_flag
+APP-049,Abigail Foster,26,Female,White British,None,Junior Developer,Engineering,2,BSc Computer Science,Yes,78,72,Pass,Yes,33000,28000,38000,Hired,
+APP-050,Mohammed Ali,36,Male,British Pakistani,None,Data Analyst,Analytics,11,MSc Statistics,Yes,87,81,Pass,Yes,48000,40000,55000,Hired,
