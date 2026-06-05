@@ -1,0 +1,61 @@
+reading_id,facility_id,facility_name,facility_type,permit_id,reading_date,pollutant,measurement_value,measurement_unit,regulatory_limit,permit_limit,monitoring_method,zone_classification,permit_active,inspector_verified,breach_status,corrective_action
+ENV-001,FAC-01,Riverside Chemical Works,chemical_plant,PRM-101,2024-01-15,nitrogen_dioxide,38.5,ug/m3,40.0,35.0,continuous,urban_residential,Yes,Yes,within_limit,
+ENV-002,FAC-01,Riverside Chemical Works,chemical_plant,PRM-101,2024-02-12,nitrogen_dioxide,42.1,ug/m3,40.0,35.0,continuous,urban_residential,Yes,Yes,exceeds_regulatory,enforcement_notice
+ENV-003,FAC-01,Riverside Chemical Works,chemical_plant,PRM-101,2024-03-08,sulphur_dioxide,18.2,ug/m3,20.0,15.0,continuous,urban_residential,Yes,Yes,exceeds_permit,warning_issued
+ENV-004,FAC-02,Northern Steel Mill,steel_plant,PRM-102,2024-01-20,particulate_matter,48.7,ug/m3,50.0,45.0,continuous,industrial,Yes,Yes,exceeds_permit,warning_issued
+ENV-005,FAC-02,Northern Steel Mill,steel_plant,PRM-102,2024-02-18,particulate_matter,53.2,ug/m3,50.0,45.0,continuous,industrial,Yes,Yes,exceeds_regulatory,enforcement_notice
+ENV-006,FAC-02,Northern Steel Mill,steel_plant,PRM-102,2024-03-15,carbon_monoxide,8.4,mg/m3,10.0,8.0,continuous,industrial,Yes,Yes,exceeds_permit,warning_issued
+ENV-007,FAC-03,Greenfield Power Station,power_station,PRM-103,2024-01-10,nitrogen_dioxide,35.0,ug/m3,40.0,35.0,continuous,rural,Yes,Yes,at_permit_limit,monitoring_increased
+ENV-008,FAC-03,Greenfield Power Station,power_station,PRM-103,2024-02-14,sulphur_dioxide,12.8,ug/m3,20.0,15.0,continuous,rural,Yes,Yes,within_limit,
+ENV-009,FAC-03,Greenfield Power Station,power_station,PRM-103,2024-03-20,carbon_monoxide,6.2,mg/m3,10.0,8.0,continuous,rural,Yes,Yes,within_limit,
+ENV-010,FAC-04,Eastside Waste Processing,waste_facility,PRM-104,2024-01-25,methane,4.8,percent,5.0,4.0,periodic,urban_residential,Yes,Yes,exceeds_permit,warning_issued
+ENV-011,FAC-04,Eastside Waste Processing,waste_facility,PRM-104,2024-02-22,hydrogen_sulphide,9.5,ppm,10.0,8.0,periodic,urban_residential,Yes,Yes,exceeds_permit,warning_issued
+ENV-012,FAC-04,Eastside Waste Processing,waste_facility,PRM-104,2024-03-18,methane,5.3,percent,5.0,4.0,periodic,urban_residential,Yes,Yes,exceeds_regulatory,enforcement_notice
+ENV-013,FAC-05,Lakeside Pharmaceuticals,chemical_plant,PRM-105,2024-01-12,volatile_organic,145.0,ug/m3,150.0,120.0,continuous,urban_residential,Yes,Yes,exceeds_permit,warning_issued
+ENV-014,FAC-05,Lakeside Pharmaceuticals,chemical_plant,PRM-105,2024-02-16,volatile_organic,162.0,ug/m3,150.0,120.0,continuous,urban_residential,Yes,Yes,exceeds_regulatory,enforcement_notice
+ENV-015,FAC-05,Lakeside Pharmaceuticals,chemical_plant,PRM-105,2024-03-22,nitrogen_dioxide,28.3,ug/m3,40.0,35.0,continuous,urban_residential,Yes,Yes,within_limit,
+ENV-016,FAC-06,Highland Cement Factory,cement_plant,PRM-106,2024-01-18,particulate_matter,44.1,ug/m3,50.0,45.0,continuous,rural,Yes,Yes,within_limit,
+ENV-017,FAC-06,Highland Cement Factory,cement_plant,PRM-106,2024-02-20,particulate_matter,46.8,ug/m3,50.0,45.0,continuous,rural,Yes,Yes,exceeds_permit,warning_issued
+ENV-018,FAC-06,Highland Cement Factory,cement_plant,PRM-106,2024-03-25,sulphur_dioxide,14.2,ug/m3,20.0,15.0,continuous,rural,Yes,Yes,within_limit,
+ENV-019,FAC-07,Coastal Refinery,oil_refinery,PRM-107,2024-01-22,benzene,4.2,ug/m3,5.0,3.5,continuous,coastal_protected,Yes,Yes,exceeds_permit,warning_issued
+ENV-020,FAC-07,Coastal Refinery,oil_refinery,PRM-107,2024-02-19,benzene,5.8,ug/m3,5.0,3.5,continuous,coastal_protected,Yes,Yes,exceeds_regulatory,enforcement_notice
+ENV-021,FAC-07,Coastal Refinery,oil_refinery,PRM-107,2024-03-17,volatile_organic,138.0,ug/m3,150.0,120.0,continuous,coastal_protected,Yes,Yes,exceeds_permit,warning_issued
+ENV-022,FAC-08,Metro Incinerator,waste_facility,PRM-108,2024-01-14,dioxins_furans,0.08,ng/m3,0.1,0.05,periodic,urban_residential,Yes,Yes,exceeds_permit,warning_issued
+ENV-023,FAC-08,Metro Incinerator,waste_facility,PRM-108,2024-02-11,dioxins_furans,0.12,ng/m3,0.1,0.05,periodic,urban_residential,Yes,Yes,exceeds_regulatory,enforcement_notice
+ENV-024,FAC-08,Metro Incinerator,waste_facility,PRM-108,2024-03-09,particulate_matter,47.5,ug/m3,50.0,45.0,periodic,urban_residential,Yes,Yes,exceeds_permit,warning_issued
+ENV-025,FAC-01,Riverside Chemical Works,chemical_plant,PRM-101,2024-04-10,nitrogen_dioxide,44.8,ug/m3,40.0,35.0,continuous,urban_residential,Yes,No,exceeds_regulatory,pending_inspection
+ENV-026,FAC-01,Riverside Chemical Works,chemical_plant,PRM-101,2024-05-08,sulphur_dioxide,22.1,ug/m3,20.0,15.0,continuous,urban_residential,Yes,No,exceeds_regulatory,pending_inspection
+ENV-027,FAC-09,Valley Textiles,textile_plant,PRM-109,2024-01-30,volatile_organic,95.0,ug/m3,150.0,120.0,continuous,industrial,Yes,Yes,within_limit,
+ENV-028,FAC-09,Valley Textiles,textile_plant,PRM-109,2024-02-28,wastewater_bod,22.0,mg/l,25.0,20.0,periodic,industrial,Yes,Yes,exceeds_permit,warning_issued
+ENV-029,FAC-09,Valley Textiles,textile_plant,PRM-109,2024-03-30,wastewater_bod,18.5,mg/l,25.0,20.0,periodic,industrial,Yes,Yes,within_limit,
+ENV-030,FAC-10,Southport Glass Works,glass_plant,PRM-110,2024-01-16,nitrogen_dioxide,31.0,ug/m3,40.0,35.0,continuous,industrial,Yes,Yes,within_limit,
+ENV-031,FAC-10,Southport Glass Works,glass_plant,PRM-110,2024-02-13,particulate_matter,39.5,ug/m3,50.0,45.0,continuous,industrial,Yes,Yes,within_limit,
+ENV-032,FAC-10,Southport Glass Works,glass_plant,PRM-110,2024-03-12,carbon_monoxide,7.1,mg/m3,10.0,8.0,continuous,industrial,Yes,Yes,within_limit,
+ENV-033,FAC-11,Harbour Chemicals,chemical_plant,PRM-111,2024-01-20,benzene,3.1,ug/m3,5.0,3.5,continuous,coastal_protected,Yes,Yes,within_limit,
+ENV-034,FAC-11,Harbour Chemicals,chemical_plant,PRM-111,2024-02-17,volatile_organic,110.0,ug/m3,150.0,120.0,continuous,coastal_protected,Yes,Yes,within_limit,
+ENV-035,FAC-11,Harbour Chemicals,chemical_plant,PRM-111,2024-03-16,nitrogen_dioxide,26.4,ug/m3,40.0,35.0,continuous,coastal_protected,Yes,Yes,within_limit,
+ENV-036,FAC-12,Midlands Power Plant,power_station,PRM-112,2024-01-11,sulphur_dioxide,19.8,ug/m3,20.0,15.0,continuous,urban_residential,Yes,Yes,exceeds_permit,warning_issued
+ENV-037,FAC-12,Midlands Power Plant,power_station,PRM-112,2024-02-09,nitrogen_dioxide,37.2,ug/m3,40.0,35.0,continuous,urban_residential,Yes,Yes,exceeds_permit,warning_issued
+ENV-038,FAC-12,Midlands Power Plant,power_station,PRM-112,2024-03-07,carbon_monoxide,9.8,mg/m3,10.0,8.0,continuous,urban_residential,Yes,Yes,exceeds_permit,warning_issued
+ENV-039,FAC-13,Dockside Recycling,waste_facility,,2024-01-28,methane,4.2,percent,5.0,4.0,periodic,industrial,No,No,exceeds_permit,facility_shutdown
+ENV-040,FAC-13,Dockside Recycling,waste_facility,,2024-02-25,hydrogen_sulphide,11.3,ppm,10.0,8.0,periodic,industrial,No,No,exceeds_regulatory,facility_shutdown
+ENV-041,FAC-14,Greenway Biotech,chemical_plant,PRM-114,2024-01-19,volatile_organic,88.0,ug/m3,150.0,120.0,continuous,rural,Yes,Yes,within_limit,
+ENV-042,FAC-14,Greenway Biotech,chemical_plant,PRM-114,2024-02-16,nitrogen_dioxide,22.5,ug/m3,40.0,35.0,continuous,rural,Yes,Yes,within_limit,
+ENV-043,FAC-14,Greenway Biotech,chemical_plant,PRM-114,2024-03-15,sulphur_dioxide,10.1,ug/m3,20.0,15.0,continuous,rural,Yes,Yes,within_limit,
+ENV-044,FAC-07,Coastal Refinery,oil_refinery,PRM-107,2024-04-14,benzene,6.5,ug/m3,5.0,3.5,continuous,coastal_protected,Yes,No,exceeds_regulatory,pending_inspection
+ENV-045,FAC-07,Coastal Refinery,oil_refinery,PRM-107,2024-05-12,volatile_organic,175.0,ug/m3,150.0,120.0,continuous,coastal_protected,Yes,No,exceeds_regulatory,pending_inspection
+ENV-046,FAC-02,Northern Steel Mill,steel_plant,PRM-102,2024-04-12,particulate_matter,55.9,ug/m3,50.0,45.0,continuous,industrial,Yes,No,exceeds_regulatory,pending_inspection
+ENV-047,FAC-08,Metro Incinerator,waste_facility,PRM-108,2024-04-06,dioxins_furans,0.15,ng/m3,0.1,0.05,periodic,urban_residential,Yes,No,exceeds_regulatory,enforcement_notice
+ENV-048,FAC-05,Lakeside Pharmaceuticals,chemical_plant,PRM-105,2024-04-19,volatile_organic,158.0,ug/m3,150.0,120.0,continuous,urban_residential,Yes,Yes,exceeds_regulatory,enforcement_notice
+ENV-049,FAC-04,Eastside Waste Processing,waste_facility,PRM-104,2024-04-15,methane,5.7,percent,5.0,4.0,periodic,urban_residential,Yes,Yes,exceeds_regulatory,enforcement_notice
+ENV-050,FAC-12,Midlands Power Plant,power_station,PRM-112,2024-04-04,sulphur_dioxide,21.5,ug/m3,20.0,15.0,continuous,urban_residential,Yes,Yes,exceeds_regulatory,enforcement_notice
+ENV-051,FAC-01,Riverside Chemical Works,chemical_plant,PRM-101,2024-06-05,nitrogen_dioxide,46.2,ug/m3,40.0,35.0,continuous,urban_residential,Yes,No,exceeds_regulatory,licence_suspension
+ENV-052,FAC-07,Coastal Refinery,oil_refinery,PRM-107,2024-06-09,benzene,7.1,ug/m3,5.0,3.5,continuous,coastal_protected,Yes,No,exceeds_regulatory,licence_suspension
+ENV-053,FAC-08,Metro Incinerator,waste_facility,PRM-108,2024-05-04,dioxins_furans,0.18,ng/m3,0.1,0.05,periodic,urban_residential,Yes,No,exceeds_regulatory,licence_suspension
+ENV-054,FAC-15,Westfield Food Processing,food_plant,PRM-115,2024-01-23,wastewater_bod,16.0,mg/l,25.0,20.0,periodic,industrial,Yes,Yes,within_limit,
+ENV-055,FAC-15,Westfield Food Processing,food_plant,PRM-115,2024-02-20,volatile_organic,72.0,ug/m3,150.0,120.0,continuous,industrial,Yes,Yes,within_limit,
+ENV-056,FAC-15,Westfield Food Processing,food_plant,PRM-115,2024-03-19,wastewater_bod,14.5,mg/l,25.0,20.0,periodic,industrial,Yes,Yes,within_limit,
+ENV-057,FAC-16,Pennine Quarry,quarry,PRM-116,2024-01-26,particulate_matter,42.0,ug/m3,50.0,45.0,periodic,rural,Yes,Yes,within_limit,
+ENV-058,FAC-16,Pennine Quarry,quarry,PRM-116,2024-02-23,particulate_matter,51.3,ug/m3,50.0,45.0,periodic,rural,Yes,Yes,exceeds_regulatory,enforcement_notice
+ENV-059,FAC-16,Pennine Quarry,quarry,PRM-116,2024-03-22,noise_level,72.0,dB,75.0,65.0,periodic,rural,Yes,Yes,exceeds_permit,warning_issued
+ENV-060,FAC-16,Pennine Quarry,quarry,PRM-116,2024-04-19,noise_level,78.0,dB,75.0,65.0,periodic,rural,Yes,Yes,exceeds_regulatory,enforcement_notice
