@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import random
 import time
 from typing import Any
 
@@ -15,21 +16,86 @@ class AmbertraceError(Exception):
         super().__init__(message)
 
 
+# --- Cold-start resilience -------------------------------------------------
+#
+# The platform runs scale-to-zero (the machine suspends when idle and is woken
+# by incoming traffic). During the wake / rolling-restart window Fly's proxy has
+# no healthy instance yet and returns a 5xx WITHOUT the app's JSON envelope (or
+# the connection fails outright). The SDK rides over that window transparently
+# so callers don't see spurious failures — while NEVER masking a real app
+# response: a deliberate verified-profile fail-closed 503 (which carries the
+# app's ``{"error": ...}`` envelope) is surfaced immediately, not retried.
+_RETRY_STATUSES = frozenset({502, 503, 504})
+_MAX_RETRIES = 5            # retries after the first attempt
+_BASE_DELAY = 0.5           # seconds
+_MAX_DELAY = 8.0
+_HEALTH_PATH = "/ambertrace/health"
+
+
+def _backoff_delay(attempt: int) -> float:
+    """Exponential backoff with jitter for the ``attempt``-th retry (0-based)."""
+    base = min(_MAX_DELAY, _BASE_DELAY * (2 ** attempt))
+    return base + random.uniform(0, base * 0.25)
+
+
+def _parse_envelope(resp: httpx.Response):
+    """Return ``(body, is_envelope)``. ``is_envelope`` is True when the response
+    is the app's JSON object envelope (``{"data": ...}`` / ``{"error": ...}``) —
+    i.e. a genuine app response, as opposed to a Fly proxy 5xx (HTML/empty) seen
+    while the backend is waking."""
+    try:
+        body = resp.json()
+    except Exception:
+        return None, False
+    return (body, True) if isinstance(body, dict) else (body, False)
+
+
 class _Resource:
     def __init__(self, client: httpx.Client):
         self._http = client
 
     def _request(self, method: str, path: str, **kwargs) -> Any:
-        resp = self._http.request(method, path, **kwargs)
-        body = resp.json()
-        if resp.status_code >= 400:
-            err = body.get("error", {})
-            raise AmbertraceError(
-                resp.status_code,
-                err.get("code", "unknown"),
-                err.get("message", resp.text),
-            )
-        return body.get("data", body)
+        attempt = 0
+        while True:
+            try:
+                resp = self._http.request(method, path, **kwargs)
+            except httpx.TransportError as exc:
+                # No response — the machine is almost certainly waking from
+                # suspend (the proxy rejects before routing, so even a POST has
+                # not reached the app). Retry over the wake window.
+                if attempt >= _MAX_RETRIES:
+                    raise AmbertraceError(
+                        503, "backend_unavailable",
+                        f"backend unreachable after {attempt + 1} attempt(s): {exc}",
+                    ) from exc
+                time.sleep(_backoff_delay(attempt))
+                attempt += 1
+                continue
+
+            body, is_envelope = _parse_envelope(resp)
+
+            # Infra/proxy 5xx WITHOUT the app envelope = no healthy instance yet
+            # (waking / rolling restart). Retry. A 5xx WITH the envelope is a
+            # real app response (e.g. verified fail-closed 503) — fall through.
+            if resp.status_code in _RETRY_STATUSES and not is_envelope:
+                if attempt >= _MAX_RETRIES:
+                    raise AmbertraceError(
+                        resp.status_code, "backend_unavailable",
+                        f"backend unavailable after {attempt + 1} attempt(s) "
+                        f"(HTTP {resp.status_code})",
+                    )
+                time.sleep(_backoff_delay(attempt))
+                attempt += 1
+                continue
+
+            if resp.status_code >= 400:
+                err = body.get("error", {}) if isinstance(body, dict) else {}
+                raise AmbertraceError(
+                    resp.status_code,
+                    err.get("code", "unknown"),
+                    err.get("message", resp.text),
+                )
+            return body.get("data", body) if isinstance(body, dict) else body
 
 
 class DomainResource(_Resource):
@@ -298,7 +364,8 @@ class AmbertraceAPI:
         job = api.wait_for_job(platform["job_id"])
     """
 
-    def __init__(self, *, base_url: str, api_key: str, timeout: float = 30.0):
+    def __init__(self, *, base_url: str, api_key: str, timeout: float = 30.0,
+                 warm: bool = True):
         if not base_url:
             raise ValueError("base_url is required")
         if not api_key:
@@ -308,6 +375,25 @@ class AmbertraceAPI:
             headers={"Authorization": f"Bearer {api_key}"},
             timeout=timeout,
         )
+        # Proactively wake the scale-to-zero machine so it is (or is becoming)
+        # ready by the time the caller issues its first real request — the wake
+        # then overlaps the caller's setup rather than stalling the first call.
+        # Best-effort: never raises. Pass ``warm=False`` to skip (e.g. tests).
+        if warm:
+            self._ping_health()
+
+    def _ping_health(self) -> None:
+        """Best-effort ping to the UI health endpoint (the process Fly health-
+        checks). Wakes a suspended machine via auto-start and keeps it warm
+        during long operations. Never raises."""
+        try:
+            self._http.get(_HEALTH_PATH, timeout=5.0)
+        except Exception:
+            pass
+
+    def warm(self) -> None:
+        """Proactively wake / keep the platform warm (public, best-effort)."""
+        self._ping_health()
 
     def close(self):
         self._http.close()
@@ -360,4 +446,8 @@ class AmbertraceAPI:
                 return job
             if time.monotonic() >= deadline:
                 raise TimeoutError(f"Job {job_id} did not complete within {timeout}s (last status: {status})")
+            # Keep the UI process (the health-gated one) warm alongside the API
+            # status polls, so a long build doesn't let the machine suspend
+            # mid-job. Best-effort.
+            self._ping_health()
             time.sleep(poll_interval)

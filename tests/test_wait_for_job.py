@@ -15,7 +15,7 @@ def _envelope(data):
 
 @pytest.fixture
 def api():
-    client = AmbertraceAPI(base_url="https://test.ambertrace.ai", api_key="at_test")
+    client = AmbertraceAPI(base_url="https://test.ambertrace.ai", api_key="at_test", warm=False)
     yield client
     client.close()
 
