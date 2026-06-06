@@ -6,12 +6,12 @@ from ambertraceai import AmbertraceAPI
 
 class TestAmbertraceAPIClient:
     def test_init_sets_base_url(self):
-        api = AmbertraceAPI(base_url="https://example.com", api_key="at_test")
+        api = AmbertraceAPI(base_url="https://example.com", api_key="at_test", warm=False)
         assert api._http.base_url == "https://example.com"
         api.close()
 
     def test_init_sets_auth_header(self):
-        api = AmbertraceAPI(base_url="https://example.com", api_key="at_test")
+        api = AmbertraceAPI(base_url="https://example.com", api_key="at_test", warm=False)
         assert api._http.headers["authorization"] == "Bearer at_test"
         api.close()
 
@@ -24,34 +24,34 @@ class TestAmbertraceAPIClient:
             AmbertraceAPI(base_url="", api_key="at_test")
 
     def test_domains_property_returns_resource(self):
-        api = AmbertraceAPI(base_url="https://example.com", api_key="at_test")
+        api = AmbertraceAPI(base_url="https://example.com", api_key="at_test", warm=False)
         from ambertraceai import DomainResource
         assert isinstance(api.domains, DomainResource)
         api.close()
 
     def test_datasets_property_returns_resource(self):
-        api = AmbertraceAPI(base_url="https://example.com", api_key="at_test")
+        api = AmbertraceAPI(base_url="https://example.com", api_key="at_test", warm=False)
         from ambertraceai import DatasetResource
         assert isinstance(api.datasets, DatasetResource)
         api.close()
 
     def test_platforms_property_returns_resource(self):
-        api = AmbertraceAPI(base_url="https://example.com", api_key="at_test")
+        api = AmbertraceAPI(base_url="https://example.com", api_key="at_test", warm=False)
         from ambertraceai import PlatformResource
         assert isinstance(api.platforms, PlatformResource)
         api.close()
 
     def test_predictions_property_returns_resource(self):
-        api = AmbertraceAPI(base_url="https://example.com", api_key="at_test")
+        api = AmbertraceAPI(base_url="https://example.com", api_key="at_test", warm=False)
         from ambertraceai import PredictionResource
         assert isinstance(api.predictions, PredictionResource)
         api.close()
 
     def test_context_manager(self):
-        with AmbertraceAPI(base_url="https://example.com", api_key="at_test") as api:
+        with AmbertraceAPI(base_url="https://example.com", api_key="at_test", warm=False) as api:
             assert api._http is not None
 
     def test_strips_trailing_slash_from_base_url(self):
-        api = AmbertraceAPI(base_url="https://example.com/", api_key="at_test")
+        api = AmbertraceAPI(base_url="https://example.com/", api_key="at_test", warm=False)
         assert str(api._http.base_url) == "https://example.com"
         api.close()
