@@ -7,7 +7,7 @@ checks, bias detection). Every answer comes back as an Amber Report.
 
 Creates resources on your account. Run with --help for options.
 
-    python 13_recruitment_compliance.py
+    python 14_recruitment_compliance.py
 """
 
 from __future__ import annotations

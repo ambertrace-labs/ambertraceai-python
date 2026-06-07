@@ -1,52 +1,36 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Any, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
-T = TypeVar("T", bound="HealthData")
+if TYPE_CHECKING:
+    from ..models.version_data import VersionData
+
+
+T = TypeVar("T", bound="VersionResponse")
 
 
 @_attrs_define
-class HealthData:
+class VersionResponse:
     """
     Attributes:
-        built_at (str):
-        git_sha (str):
-        service (str):
-        status (str):
-        version (str):
+        data (VersionData):
     """
 
-    built_at: str
-    git_sha: str
-    service: str
-    status: str
-    version: str
+    data: VersionData
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
-        built_at = self.built_at
-
-        git_sha = self.git_sha
-
-        service = self.service
-
-        status = self.status
-
-        version = self.version
+        data = self.data.to_dict()
 
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
             {
-                "built_at": built_at,
-                "git_sha": git_sha,
-                "service": service,
-                "status": status,
-                "version": version,
+                "data": data,
             }
         )
 
@@ -54,27 +38,17 @@ class HealthData:
 
     @classmethod
     def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
+        from ..models.version_data import VersionData
+
         d = dict(src_dict)
-        built_at = d.pop("built_at")
+        data = VersionData.from_dict(d.pop("data"))
 
-        git_sha = d.pop("git_sha")
-
-        service = d.pop("service")
-
-        status = d.pop("status")
-
-        version = d.pop("version")
-
-        health_data = cls(
-            built_at=built_at,
-            git_sha=git_sha,
-            service=service,
-            status=status,
-            version=version,
+        version_response = cls(
+            data=data,
         )
 
-        health_data.additional_properties = d
-        return health_data
+        version_response.additional_properties = d
+        return version_response
 
     @property
     def additional_keys(self) -> list[str]:

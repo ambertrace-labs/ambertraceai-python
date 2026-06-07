@@ -24,10 +24,9 @@ class QueryResponse:
         query (str):
         explanation (None | QueryResponseExplanationType0 | Unset):
         proof_checked (bool | None | Unset): Verified profile only. ``True`` when the decision was independently re-
-            derived and certified against the trusted kernel (the engine's fired-rule set matched the kernel's, and the
-            active rule set is stratifiable and satisfies the platform's invariant manifest). ``null`` for non-verified
-            platforms (no proof is generated). A verified query that cannot be certified fails closed with HTTP 503 rather
-            than returning ``proof_checked: false``.
+            derived and verified (the active rule set satisfies the platform's invariant manifest and the proof certificate
+            is valid). ``null`` for non-verified platforms (no proof is generated). A verified query that cannot be
+            certified returns HTTP 503 rather than ``proof_checked: false``.
         proof_summary (None | str | Unset): Human-readable summary of the machine-checked certificate (rules fired,
             facts derived, input facts). ``null`` for non-verified platforms. The full derivation proof and any
             ``rejected_facts`` are in ``explanation.proof`` / ``explanation.rejected_facts``.

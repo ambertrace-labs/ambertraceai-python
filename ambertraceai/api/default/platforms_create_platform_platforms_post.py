@@ -70,22 +70,21 @@ def sync_detailed(
     client: AuthenticatedClient | Client,
     body: BuildRequest,
 ) -> Response[PlatformOut | list[ValidationErrorModel]]:
-    r""" Build platform
+    r"""Build platform
 
      Builds a neurosymbolic platform from a domain and its datasets. Returns 202 with a job ID. The build
     process creates a knowledge graph, compiles ontology constraints into symbolic rules, and prepares
     the platform for queries and predictions. Poll GET /jobs/{id} until status is 'ready'. The domain
     must have status 'active' and at least one entity defined.
 
-    Verified profile: set verified_profile=true to build a formally-verifiable platform — queries then
-    run a fail-closed Prolog engine, gate facts by the confidence threshold verified_min_confidence (τ),
-    and return a machine-checked proof certificate (see proof_checked on the query response). Supply
-    invariant_manifest to declare forbid/require safety obligations enforced at build and on every
-    query. If the generated rule set is non-stratifiable or violates the manifest the build fails —
-    unless override_verification_gate=true, which instead builds a standard (non-verified) platform and
-    records the violations in config.verification_gate_violations. Example invariant_manifest: [{\"name\
-    ":\"no_unconditional_delete\",\"kind\":\"forbid\",\"target\":\"permit_delete\",\"assumed_absent\":[\
-    "permit_delete\"]}].
+    Verified profile: set verified_profile=true to build a verified platform — queries then gate facts
+    by the confidence threshold verified_min_confidence (τ) and return a proof certificate (see
+    proof_checked on the query response). Supply invariant_manifest to declare forbid/require safety
+    obligations enforced at build and on every query. If the generated rule set violates the
+    verification gate the build fails — unless override_verification_gate=true, which instead builds a
+    standard (non-verified) platform and records the violations in config.verification_gate_violations.
+    Example invariant_manifest: [{\"name\":\"no_unconditional_delete\",\"kind\":\"forbid\",\"target\":\"
+    permit_delete\",\"assumed_absent\":[\"permit_delete\"]}].
 
     Args:
         body (BuildRequest):
@@ -96,7 +95,7 @@ def sync_detailed(
 
     Returns:
         Response[PlatformOut | list[ValidationErrorModel]]
-     """
+    """
 
     kwargs = _get_kwargs(
         body=body,
@@ -114,22 +113,21 @@ def sync(
     client: AuthenticatedClient | Client,
     body: BuildRequest,
 ) -> PlatformOut | list[ValidationErrorModel] | None:
-    r""" Build platform
+    r"""Build platform
 
      Builds a neurosymbolic platform from a domain and its datasets. Returns 202 with a job ID. The build
     process creates a knowledge graph, compiles ontology constraints into symbolic rules, and prepares
     the platform for queries and predictions. Poll GET /jobs/{id} until status is 'ready'. The domain
     must have status 'active' and at least one entity defined.
 
-    Verified profile: set verified_profile=true to build a formally-verifiable platform — queries then
-    run a fail-closed Prolog engine, gate facts by the confidence threshold verified_min_confidence (τ),
-    and return a machine-checked proof certificate (see proof_checked on the query response). Supply
-    invariant_manifest to declare forbid/require safety obligations enforced at build and on every
-    query. If the generated rule set is non-stratifiable or violates the manifest the build fails —
-    unless override_verification_gate=true, which instead builds a standard (non-verified) platform and
-    records the violations in config.verification_gate_violations. Example invariant_manifest: [{\"name\
-    ":\"no_unconditional_delete\",\"kind\":\"forbid\",\"target\":\"permit_delete\",\"assumed_absent\":[\
-    "permit_delete\"]}].
+    Verified profile: set verified_profile=true to build a verified platform — queries then gate facts
+    by the confidence threshold verified_min_confidence (τ) and return a proof certificate (see
+    proof_checked on the query response). Supply invariant_manifest to declare forbid/require safety
+    obligations enforced at build and on every query. If the generated rule set violates the
+    verification gate the build fails — unless override_verification_gate=true, which instead builds a
+    standard (non-verified) platform and records the violations in config.verification_gate_violations.
+    Example invariant_manifest: [{\"name\":\"no_unconditional_delete\",\"kind\":\"forbid\",\"target\":\"
+    permit_delete\",\"assumed_absent\":[\"permit_delete\"]}].
 
     Args:
         body (BuildRequest):
@@ -140,7 +138,7 @@ def sync(
 
     Returns:
         PlatformOut | list[ValidationErrorModel]
-     """
+    """
 
     return sync_detailed(
         client=client,
@@ -153,22 +151,21 @@ async def asyncio_detailed(
     client: AuthenticatedClient | Client,
     body: BuildRequest,
 ) -> Response[PlatformOut | list[ValidationErrorModel]]:
-    r""" Build platform
+    r"""Build platform
 
      Builds a neurosymbolic platform from a domain and its datasets. Returns 202 with a job ID. The build
     process creates a knowledge graph, compiles ontology constraints into symbolic rules, and prepares
     the platform for queries and predictions. Poll GET /jobs/{id} until status is 'ready'. The domain
     must have status 'active' and at least one entity defined.
 
-    Verified profile: set verified_profile=true to build a formally-verifiable platform — queries then
-    run a fail-closed Prolog engine, gate facts by the confidence threshold verified_min_confidence (τ),
-    and return a machine-checked proof certificate (see proof_checked on the query response). Supply
-    invariant_manifest to declare forbid/require safety obligations enforced at build and on every
-    query. If the generated rule set is non-stratifiable or violates the manifest the build fails —
-    unless override_verification_gate=true, which instead builds a standard (non-verified) platform and
-    records the violations in config.verification_gate_violations. Example invariant_manifest: [{\"name\
-    ":\"no_unconditional_delete\",\"kind\":\"forbid\",\"target\":\"permit_delete\",\"assumed_absent\":[\
-    "permit_delete\"]}].
+    Verified profile: set verified_profile=true to build a verified platform — queries then gate facts
+    by the confidence threshold verified_min_confidence (τ) and return a proof certificate (see
+    proof_checked on the query response). Supply invariant_manifest to declare forbid/require safety
+    obligations enforced at build and on every query. If the generated rule set violates the
+    verification gate the build fails — unless override_verification_gate=true, which instead builds a
+    standard (non-verified) platform and records the violations in config.verification_gate_violations.
+    Example invariant_manifest: [{\"name\":\"no_unconditional_delete\",\"kind\":\"forbid\",\"target\":\"
+    permit_delete\",\"assumed_absent\":[\"permit_delete\"]}].
 
     Args:
         body (BuildRequest):
@@ -179,7 +176,7 @@ async def asyncio_detailed(
 
     Returns:
         Response[PlatformOut | list[ValidationErrorModel]]
-     """
+    """
 
     kwargs = _get_kwargs(
         body=body,
@@ -195,22 +192,21 @@ async def asyncio(
     client: AuthenticatedClient | Client,
     body: BuildRequest,
 ) -> PlatformOut | list[ValidationErrorModel] | None:
-    r""" Build platform
+    r"""Build platform
 
      Builds a neurosymbolic platform from a domain and its datasets. Returns 202 with a job ID. The build
     process creates a knowledge graph, compiles ontology constraints into symbolic rules, and prepares
     the platform for queries and predictions. Poll GET /jobs/{id} until status is 'ready'. The domain
     must have status 'active' and at least one entity defined.
 
-    Verified profile: set verified_profile=true to build a formally-verifiable platform — queries then
-    run a fail-closed Prolog engine, gate facts by the confidence threshold verified_min_confidence (τ),
-    and return a machine-checked proof certificate (see proof_checked on the query response). Supply
-    invariant_manifest to declare forbid/require safety obligations enforced at build and on every
-    query. If the generated rule set is non-stratifiable or violates the manifest the build fails —
-    unless override_verification_gate=true, which instead builds a standard (non-verified) platform and
-    records the violations in config.verification_gate_violations. Example invariant_manifest: [{\"name\
-    ":\"no_unconditional_delete\",\"kind\":\"forbid\",\"target\":\"permit_delete\",\"assumed_absent\":[\
-    "permit_delete\"]}].
+    Verified profile: set verified_profile=true to build a verified platform — queries then gate facts
+    by the confidence threshold verified_min_confidence (τ) and return a proof certificate (see
+    proof_checked on the query response). Supply invariant_manifest to declare forbid/require safety
+    obligations enforced at build and on every query. If the generated rule set violates the
+    verification gate the build fails — unless override_verification_gate=true, which instead builds a
+    standard (non-verified) platform and records the violations in config.verification_gate_violations.
+    Example invariant_manifest: [{\"name\":\"no_unconditional_delete\",\"kind\":\"forbid\",\"target\":\"
+    permit_delete\",\"assumed_absent\":[\"permit_delete\"]}].
 
     Args:
         body (BuildRequest):
@@ -221,7 +217,7 @@ async def asyncio(
 
     Returns:
         PlatformOut | list[ValidationErrorModel]
-     """
+    """
 
     return (
         await asyncio_detailed(

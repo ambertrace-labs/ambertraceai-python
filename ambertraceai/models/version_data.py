@@ -6,24 +6,20 @@ from typing import Any, TypeVar
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
-T = TypeVar("T", bound="HealthData")
+T = TypeVar("T", bound="VersionData")
 
 
 @_attrs_define
-class HealthData:
+class VersionData:
     """
     Attributes:
         built_at (str):
         git_sha (str):
-        service (str):
-        status (str):
         version (str):
     """
 
     built_at: str
     git_sha: str
-    service: str
-    status: str
     version: str
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
@@ -31,10 +27,6 @@ class HealthData:
         built_at = self.built_at
 
         git_sha = self.git_sha
-
-        service = self.service
-
-        status = self.status
 
         version = self.version
 
@@ -44,8 +36,6 @@ class HealthData:
             {
                 "built_at": built_at,
                 "git_sha": git_sha,
-                "service": service,
-                "status": status,
                 "version": version,
             }
         )
@@ -59,22 +49,16 @@ class HealthData:
 
         git_sha = d.pop("git_sha")
 
-        service = d.pop("service")
-
-        status = d.pop("status")
-
         version = d.pop("version")
 
-        health_data = cls(
+        version_data = cls(
             built_at=built_at,
             git_sha=git_sha,
-            service=service,
-            status=status,
             version=version,
         )
 
-        health_data.additional_properties = d
-        return health_data
+        version_data.additional_properties = d
+        return version_data
 
     @property
     def additional_keys(self) -> list[str]:

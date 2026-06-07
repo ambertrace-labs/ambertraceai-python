@@ -11,7 +11,7 @@ fired — a compact regression test for the symbolic engine.
 
 Creates resources on your account. Run with --help for options.
 
-    python 16_rule_coverage.py
+    python 17_rule_coverage.py
 """
 
 from __future__ import annotations

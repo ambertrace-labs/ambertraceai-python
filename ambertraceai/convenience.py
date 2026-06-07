@@ -345,6 +345,25 @@ class ConnectorResource(_Resource):
 
 class JobResource(_Resource):
     def get(self, job_id: int) -> dict:
+        """Fetch a job by id.
+
+        Two job *types* surface through this one endpoint — be sure you are
+        polling the right one:
+
+        * **Ontology build** (``type: "ontology"``) — created by
+          :meth:`DomainResource.build_ontology`. Its ``result`` is the ontology
+          itself. The per-pass generation self-reports live on the domain's
+          stored ontology at ``ontology.generation.conclusion_repair`` /
+          ``ontology.generation.classifier_repair`` — **not** in the job result,
+          and this job has **no** ``generation_diagnostics``.
+        * **Platform build** (``type: "build"``) — the ``build_job`` returned by
+          :meth:`PlatformResource.create`. Its ``result.generation_diagnostics``
+          carries the full build-generation diagnostics payload (see
+          :meth:`AmbertraceAPI.wait_for_job`).
+
+        A consumer polling the *ontology* job id will never see
+        ``generation_diagnostics``; poll the **platform build job** id instead.
+        """
         return self._request("GET", f"/api/v1/jobs/{job_id}")
 
 
@@ -436,8 +455,59 @@ class AmbertraceAPI:
     def usage(self) -> UsageResource:
         return UsageResource(self._http)
 
+    def version(self) -> dict:
+        """Build identity of the running deployment — ``{version, git_sha,
+        built_at}`` — so you can confirm exactly which deploy you are hitting
+        (``GET /api/v1/version``; the same fields are also on ``GET
+        /api/v1/health``). Sends ``Accept: application/json`` explicitly: without
+        it a JSON API path can fall through to the SPA shell (index.html, 200)
+        instead of returning JSON."""
+        return _Resource(self._http)._request(
+            "GET", "/api/v1/version", headers={"Accept": "application/json"})
+
     def wait_for_job(self, job_id: int, *, timeout: int = 600, poll_interval: int = 5) -> dict:
-        """Poll a job until it reaches a terminal status or times out."""
+        """Poll a job until it reaches a terminal status or times out.
+
+        Pass the **platform build job** id (the ``build_job`` returned by
+        :meth:`PlatformResource.create`) to get the build-generation
+        diagnostics — NOT the ontology build job id (see :meth:`JobResource.get`
+        for the two-job distinction).
+
+        **Build-generation diagnostics.** For a platform build, the returned
+        job's ``result["generation_diagnostics"]`` reports what rule generation
+        produced and how the rule set behaves. It is the fastest way to explain
+        why a built platform reaches (or never reaches) an adverse decision.
+        Fields:
+
+        * ``rule_count``, ``classifier_count``, ``verdict_conclusion_count``,
+          ``connected_restrictive_count`` (ints) — counts of generated rules,
+          classifier rules, deny/block conclusion rules, and restrictive rules
+          actually wired into a conclusion.
+        * ``can_decide_adversely`` (bool) — ``False`` means the rule set
+          classifies inputs but has no deny/block conclusion, so the platform
+          *permits everything* and can never refuse.
+        * ``decision_coverage_warnings`` (list[str]) — human-readable reasons the
+          rule set may under-decide (e.g. a missing deny path).
+        * ``non_discriminating_rules`` (list[str]) — rules that fire on every
+          input (carry no discriminating signal).
+        * ``unbound_references`` (list) — references to atoms/predicates that are
+          never defined.
+        * ``orphan_derived`` (list[str]) — derived atoms that no conclusion
+          consumes.
+        * ``conclusion_repair`` (dict) — the conclusion-layer repair self-report:
+          ``fired``, ``trigger``, ``outcome``, ``added``, ``llm_emitted``,
+          ``candidates_valid``, ``dropped_dangling``, ``dropped_tautological``,
+          ``stated_outcomes`` (and related keys).
+        * ``classifier_repair`` (dict) — the classifier-layer repair self-report:
+          ``fired``, ``trigger``, ``outcome``, ``added`` (and related keys).
+        * ``builder_version`` (int) — the generation builder version.
+
+        Interpreting it: ``verdict_conclusion_count == 0`` (equivalently
+        ``can_decide_adversely is False``) means the platform reached no
+        deny/block decision; ``decision_coverage_warnings`` explains why; the
+        ``conclusion_repair`` / ``classifier_repair`` reports show what
+        generation did (or tried to do) to close the gap.
+        """
         deadline = time.monotonic() + timeout
         while True:
             job = self.jobs.get(job_id)

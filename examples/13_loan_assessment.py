@@ -8,7 +8,7 @@ required by financial regulators.
 
 Creates resources on your account. Run with --help for options.
 
-    python 12_loan_assessment.py
+    python 13_loan_assessment.py
 """
 
 from __future__ import annotations

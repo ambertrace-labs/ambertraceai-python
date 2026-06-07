@@ -77,7 +77,7 @@ print(answer["explanation"])
 |----------|---------|
 | `api.domains` | `list`, `create`, `get`, `update`, `delete`, `build_ontology`, `eval_config`, `set_eval_config`, `delete_eval_config`, `suggest_eval_config`, `list_templates`, `create_template`, `update_template`, `delete_template`, `feedback_stats` |
 | `api.datasets` | `list`, `get`, `upload`, `fetch`, `quality`, `clean`, `preview`, `delete` |
-| `api.platforms` | `list`, `create`, `get`, `delete`, `update`, `status`, `query`, `suggest_rules`, `list_suggestions`, `approve_suggestion`, `reject_suggestion`, `graph`, `list_rules`, `create_rule`, `update_rule`, `delete_rule`, `capture_drift_baseline`, `check_drift` |
+| `api.platforms` | `list`, `create`, `get`, `delete`, `status`, `query`, `suggest_rules`, `list_suggestions`, `approve_suggestion`, `reject_suggestion`, `graph` |
 | `api.predictions` | `predict`, `list_configs`, `create_config`, `delete_config`, `train`, `list_predictions` |
 | `api.connectors` | `list`, `test` |
 | `api.usage` | `get` |
@@ -140,51 +140,6 @@ api.api_keys.revoke(platform_key["id"])
 
 User-scoped keys cannot create other user-scoped keys (no self-replication). Chat, conversations, and billing remain human-only.
 
-## Verified Profile
-
-Platforms can be built with the verified profile for proof-carrying queries:
-
-```python
-result = api.platforms.create(
-    domain_id=domain["id"],
-    dataset_id=dataset["id"],
-    verified_profile=True,
-    verified_min_confidence=0.85,
-    invariant_manifest=[
-        {"name": "no_unconditional_delete", "kind": "forbid",
-         "target": "permit_delete", "assumed_absent": ["permit_delete"]},
-    ],
-)
-
-# Query — response includes proof certificate
-answer = api.platforms.query(platform_id, query="What permissions does alice have?")
-print(answer["proof_checked"])   # True
-print(answer["proof_summary"])   # Human-readable certificate
-
-# Drift monitoring
-api.platforms.capture_drift_baseline(platform_id)
-drift = api.platforms.check_drift(platform_id)
-print(drift["drift_detected"])   # False
-```
-
-## Rules CRUD
-
-Manage symbolic rules on a platform:
-
-```python
-rules = api.platforms.list_rules(platform_id)
-
-rule = api.platforms.create_rule(
-    platform_id,
-    name="viewer_read_only",
-    condition={"field": "role", "operator": "==", "value": "viewer"},
-    action={"type": "derive", "value": "read_only"},
-)
-
-api.platforms.update_rule(platform_id, rule["id"], description="Updated desc")
-api.platforms.delete_rule(platform_id, rule["id"])
-```
-
 ## Job Polling
 
 Long-running operations (platform builds, data cleaning, training) return a `job_id`. Use `wait_for_job` to poll:
@@ -194,6 +149,38 @@ job = api.wait_for_job(job_id, timeout=300, poll_interval=5)
 if job["status"] == "error":
     print(f"Failed: {job.get('error_message')}")
 ```
+
+### Two job types — poll the right one
+
+`GET /api/v1/jobs/{id}` (and `wait_for_job`) returns two different job *types*:
+
+- the **ontology build** job (`type: "ontology"`, created by `domains.build_ontology`) — its `result` is the ontology; the per-pass repair self-reports live on the domain's stored ontology at `ontology.generation.conclusion_repair` / `classifier_repair`, **not** in the job result.
+- the **platform build** job (`type: "build"`, the `build_job` from `platforms.create`) — its `result.generation_diagnostics` carries the build-generation payload below.
+
+A consumer polling the *ontology* job will not see `generation_diagnostics` — poll the **platform build job** id instead.
+
+### Build diagnostics
+
+After a platform build, `job["result"]["generation_diagnostics"]` reports what rule generation produced and how the rule set behaves — the quickest way to explain why a platform reaches (or never reaches) an adverse decision:
+
+```python
+job = api.wait_for_job(build_job_id, timeout=600)
+diag = job["result"].get("generation_diagnostics", {})
+
+# verdict_conclusion_count == 0 (== `can_decide_adversely is False`) means the
+# rule set classifies inputs but has no deny/block conclusion — it permits
+# everything and can never refuse.
+if not diag.get("can_decide_adversely", True):
+    print("Platform reaches no adverse decision:")
+    for w in diag.get("decision_coverage_warnings", []):
+        print("  -", w)
+
+# Repair self-reports show what generation did to close coverage gaps.
+if diag.get("conclusion_repair", {}).get("fired"):
+    print("conclusion repair:", diag["conclusion_repair"]["outcome"])
+```
+
+Fields: `rule_count`, `classifier_count`, `verdict_conclusion_count`, `connected_restrictive_count` (ints); `can_decide_adversely` (bool); `decision_coverage_warnings`, `non_discriminating_rules`, `orphan_derived` (list[str]), `unbound_references` (list); `conclusion_repair` and `classifier_repair` (dicts: `fired`, `trigger`, `outcome`, `added`, …); `builder_version` (int).
 
 ## Error Handling
 

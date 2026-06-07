@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Any, TypeVar, cast
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
 from ..types import UNSET, Unset
+
+if TYPE_CHECKING:
+    from ..models.given_atom import GivenAtom
+
 
 T = TypeVar("T", bound="Invariant")
 
@@ -15,30 +19,68 @@ T = TypeVar("T", bound="Invariant")
 class Invariant:
     """A required-invariant declaration for a verified-profile platform.
 
-    The manifest is the platform's machine-checked safety/liveness contract: the
-    build-time gate and the (non-overridable) query-time proof both enforce it,
-    so a verified answer provably satisfies every declared invariant.
+    The manifest is the platform's safety/liveness contract enforced at
+    build time and on every query, so a verified answer provably satisfies
+    every declared invariant.
+
+    Atom vocabulary. An invariant ``target`` (and every entry in
+    ``assumed_absent``) is a **boolean atom name**: a derived-fact field (a
+    ``derive`` rule head, e.g. ``permit_delete``, ``deny_access``) or an input
+    fact name.
+
+    ``forbid`` reasons over *derivability* and is **value- and
+    comparison-blind** (a deliberate, machine-checked soundness boundary): you
+    cannot write "forbid ``approve`` when ``applicant_age < 18``" — the
+    analyzer treats every non-forbidden atom as a freely externally-suppliable
+    input, so a value-gated outcome is always reported derivable (conservative
+    — never falsely "safe").
+
+    ``require`` witnesses are **concrete**: each ``given`` entry is either a
+    bare atom name (witness value ``True`` — use for boolean classification
+    atoms) or a value-bound ``{"field": ..., "value": ...}`` object, so the
+    obligation can witness real classifiers (conjunctions, set membership,
+    numeric thresholds) and conclusion atoms reached through multiple rule
+    hops. The safety pattern:
+
+        # rules (engine, query time)
+        derive is_trusted_device if device_managed and device_posture_score >= 70
+        derive deny_access       if is_restricted_zone and not is_trusted_device
+        # invariant (manifest gate): the deny conclusion must derive from THIS
+        # concrete witness — catches A2 rule suppression anywhere in the chain.
+        {"name": "untrusted device into restricted zone must deny",
+         "kind": "require", "target": "deny_access",
+         "given": [{"field": "target_zone", "value": "ot_network"},
+                   {"field": "device_managed", "value": false}]}
+
+    See ``docs/aria-design.md`` §2 and ``docs/aria-witness-value-binding.md``.
 
         Attributes:
-            assumed_absent (list[str] | None | Unset): forbid only: atoms treated as absent from the adversary's fact base
-                (normally includes ``target`` itself).
-            given (list[str] | None | Unset): require only: witness-base atoms assumed true when checking that ``target``
-                derives.
-            kind (str | Unset): Invariant kind. 'forbid' (safety): ``target`` must NOT be derivable from any admissible fact
-                base — bars a forbidden grant however rules are authored. 'require' (liveness): from the witness base ``given``
-                (all true), ``target`` MUST derive — catches a needed safety rule being suppressed. Default: 'forbid'.
+            assumed_absent (list[str] | None | Unset): forbid only: boolean atoms treated as absent from every admissible
+                fact base (normally includes ``target`` itself).
+            given (list[GivenAtom | str] | None | Unset): require only: the concrete witness base from which ``target`` must
+                derive. Each entry is a bare atom name (witness value True — use for boolean classification atoms like
+                'is_underage') or a value-bound {'field', 'value'} object (use to witness numeric / enum / set classifiers, e.g.
+                {'field': 'device_posture_score', 'value': 85}). A field may appear at most once.
+            kind (str | Unset): Invariant kind. 'forbid' (safety): the boolean ``target`` atom must never be derivable —
+                prevents a forbidden outcome regardless of how rules are authored; value-/comparison-blind by design. 'require'
+                (liveness): from the concrete witness base ``given`` (bare atom names ⇒ True; {'field','value'} objects bind
+                real scalars), the ``target`` must be derivable — ensures a required safety conclusion, possibly several rule
+                hops deep, is maintained (see schema docstring + docs/aria-design.md §2). Default: 'forbid'.
             name (None | str | Unset): Human-readable invariant name; appears in violation messages.
-            target (None | str | Unset): The atom/derived field this invariant constrains (e.g. 'permit_delete').
+            target (None | str | Unset): The boolean atom / derived field this invariant constrains (e.g. 'permit_delete',
+                'block_approval'). Not a value test — see schema docstring for the value-gated pattern.
     """
 
     assumed_absent: list[str] | None | Unset = UNSET
-    given: list[str] | None | Unset = UNSET
+    given: list[GivenAtom | str] | None | Unset = UNSET
     kind: str | Unset = "forbid"
     name: None | str | Unset = UNSET
     target: None | str | Unset = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        from ..models.given_atom import GivenAtom
+
         assumed_absent: list[str] | None | Unset
         if isinstance(self.assumed_absent, Unset):
             assumed_absent = UNSET
@@ -48,11 +90,18 @@ class Invariant:
         else:
             assumed_absent = self.assumed_absent
 
-        given: list[str] | None | Unset
+        given: list[dict[str, Any] | str] | None | Unset
         if isinstance(self.given, Unset):
             given = UNSET
         elif isinstance(self.given, list):
-            given = self.given
+            given = []
+            for given_type_0_item_data in self.given:
+                given_type_0_item: dict[str, Any] | str
+                if isinstance(given_type_0_item_data, GivenAtom):
+                    given_type_0_item = given_type_0_item_data.to_dict()
+                else:
+                    given_type_0_item = given_type_0_item_data
+                given.append(given_type_0_item)
 
         else:
             given = self.given
@@ -89,6 +138,8 @@ class Invariant:
 
     @classmethod
     def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
+        from ..models.given_atom import GivenAtom
+
         d = dict(src_dict)
 
         def _parse_assumed_absent(data: object) -> list[str] | None | Unset:
@@ -108,7 +159,7 @@ class Invariant:
 
         assumed_absent = _parse_assumed_absent(d.pop("assumed_absent", UNSET))
 
-        def _parse_given(data: object) -> list[str] | None | Unset:
+        def _parse_given(data: object) -> list[GivenAtom | str] | None | Unset:
             if data is None:
                 return data
             if isinstance(data, Unset):
@@ -116,12 +167,29 @@ class Invariant:
             try:
                 if not isinstance(data, list):
                     raise TypeError()
-                given_type_0 = cast(list[str], data)
+                given_type_0 = []
+                _given_type_0 = data
+                for given_type_0_item_data in _given_type_0:
+
+                    def _parse_given_type_0_item(data: object) -> GivenAtom | str:
+                        try:
+                            if not isinstance(data, dict):
+                                raise TypeError()
+                            given_type_0_item_type_1 = GivenAtom.from_dict(data)
+
+                            return given_type_0_item_type_1
+                        except (TypeError, ValueError, AttributeError, KeyError):
+                            pass
+                        return cast(GivenAtom | str, data)
+
+                    given_type_0_item = _parse_given_type_0_item(given_type_0_item_data)
+
+                    given_type_0.append(given_type_0_item)
 
                 return given_type_0
             except (TypeError, ValueError, AttributeError, KeyError):
                 pass
-            return cast(list[str] | None | Unset, data)
+            return cast(list[GivenAtom | str] | None | Unset, data)
 
         given = _parse_given(d.pop("given", UNSET))
 

@@ -26,7 +26,7 @@ class RuleCreateRequest:
         name (str): Human-readable rule name.
         description (None | str | Unset): What the rule does and why.
         is_active (bool | Unset): Whether the rule should fire immediately. On a verified-profile platform an active
-            rule must pass the grammar/stratification/manifest gate or the request is rejected with 409. Default: True.
+            rule must pass the verification gate or the request is rejected with 409. Default: True.
         priority (int | None | Unset): Evaluation priority (higher first). Defaults to 5.
         rule_type (str | Unset): Rule category, e.g. 'constraint', 'manual', 'inference'. Default: 'constraint'.
     """

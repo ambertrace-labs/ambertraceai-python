@@ -79,10 +79,9 @@ def sync_detailed(
 
      Creates a symbolic rule manually on a platform. The rule structure is validated (operators, action
     type/value, logical consistency against the existing active rules); structurally invalid rules are
-    rejected with 422. On a verified-profile platform an active rule must also pass the verified gate
-    (grammar lock + stratification + invariant manifest over the prospective active set) — if it would
-    make the set unsafe the request is rejected with 409 naming the reasons. Returns 201 with the
-    created rule.
+    rejected with 422. On a verified-profile platform an active rule must also pass the verification
+    gate — if it would make the set unsafe the request is rejected with 409 naming the reasons. Returns
+    201 with the created rule.
 
     Args:
         id (int): Resource ID
@@ -118,10 +117,9 @@ def sync(
 
      Creates a symbolic rule manually on a platform. The rule structure is validated (operators, action
     type/value, logical consistency against the existing active rules); structurally invalid rules are
-    rejected with 422. On a verified-profile platform an active rule must also pass the verified gate
-    (grammar lock + stratification + invariant manifest over the prospective active set) — if it would
-    make the set unsafe the request is rejected with 409 naming the reasons. Returns 201 with the
-    created rule.
+    rejected with 422. On a verified-profile platform an active rule must also pass the verification
+    gate — if it would make the set unsafe the request is rejected with 409 naming the reasons. Returns
+    201 with the created rule.
 
     Args:
         id (int): Resource ID
@@ -152,10 +150,9 @@ async def asyncio_detailed(
 
      Creates a symbolic rule manually on a platform. The rule structure is validated (operators, action
     type/value, logical consistency against the existing active rules); structurally invalid rules are
-    rejected with 422. On a verified-profile platform an active rule must also pass the verified gate
-    (grammar lock + stratification + invariant manifest over the prospective active set) — if it would
-    make the set unsafe the request is rejected with 409 naming the reasons. Returns 201 with the
-    created rule.
+    rejected with 422. On a verified-profile platform an active rule must also pass the verification
+    gate — if it would make the set unsafe the request is rejected with 409 naming the reasons. Returns
+    201 with the created rule.
 
     Args:
         id (int): Resource ID
@@ -189,10 +186,9 @@ async def asyncio(
 
      Creates a symbolic rule manually on a platform. The rule structure is validated (operators, action
     type/value, logical consistency against the existing active rules); structurally invalid rules are
-    rejected with 422. On a verified-profile platform an active rule must also pass the verified gate
-    (grammar lock + stratification + invariant manifest over the prospective active set) — if it would
-    make the set unsafe the request is rejected with 409 naming the reasons. Returns 201 with the
-    created rule.
+    rejected with 422. On a verified-profile platform an active rule must also pass the verification
+    gate — if it would make the set unsafe the request is rejected with 409 naming the reasons. Returns
+    201 with the created rule.
 
     Args:
         id (int): Resource ID

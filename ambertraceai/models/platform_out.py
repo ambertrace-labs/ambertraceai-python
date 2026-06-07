@@ -32,9 +32,9 @@ class PlatformOut:
         updated_at (None | str | Unset):
         verified_min_confidence (float | None | Unset): The certified-fact confidence threshold τ, surfaced from
             neural_config.
-        verified_profile (bool | Unset): Whether this platform runs in the verified profile (proof-carrying queries,
-            certified-fact gating, fail-closed engine). If a verified build was downgraded via override_verification_gate,
-            this is False and ``config.verification_gate_violations`` records why. Default: False.
+        verified_profile (bool | Unset): Whether this platform runs in the verified profile (proof certificates and
+            certified-fact gating). If a verified build was downgraded via override_verification_gate, this is False and
+            ``config.verification_gate_violations`` records why. Default: False.
         version (int | Unset):  Default: 1.
     """
 

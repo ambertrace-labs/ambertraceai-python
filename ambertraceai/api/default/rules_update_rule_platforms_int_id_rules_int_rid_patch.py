@@ -82,10 +82,9 @@ def sync_detailed(
 
      Updates a subset of a rule's fields (name, description, condition, action, priority, is_active) —
     only the fields provided are applied. On a verified-profile platform, if the patch activates the
-    rule OR edits its condition/action, the verified gate (grammar lock + stratification + invariant
-    manifest) is re-run over the prospective active set; an unsafe change is rejected with 409 and the
-    rule is left unchanged. Deactivating a rule is always permitted. Returns 200 with the updated rule;
-    404 if the rule does not belong to the platform.
+    rule OR edits its condition/action, the verification gate is re-run over the prospective active set;
+    an unsafe change is rejected with 409 and the rule is left unchanged. Deactivating a rule is always
+    permitted. Returns 200 with the updated rule; 404 if the rule does not belong to the platform.
 
     Args:
         id (int): Platform ID
@@ -125,10 +124,9 @@ def sync(
 
      Updates a subset of a rule's fields (name, description, condition, action, priority, is_active) —
     only the fields provided are applied. On a verified-profile platform, if the patch activates the
-    rule OR edits its condition/action, the verified gate (grammar lock + stratification + invariant
-    manifest) is re-run over the prospective active set; an unsafe change is rejected with 409 and the
-    rule is left unchanged. Deactivating a rule is always permitted. Returns 200 with the updated rule;
-    404 if the rule does not belong to the platform.
+    rule OR edits its condition/action, the verification gate is re-run over the prospective active set;
+    an unsafe change is rejected with 409 and the rule is left unchanged. Deactivating a rule is always
+    permitted. Returns 200 with the updated rule; 404 if the rule does not belong to the platform.
 
     Args:
         id (int): Platform ID
@@ -163,10 +161,9 @@ async def asyncio_detailed(
 
      Updates a subset of a rule's fields (name, description, condition, action, priority, is_active) —
     only the fields provided are applied. On a verified-profile platform, if the patch activates the
-    rule OR edits its condition/action, the verified gate (grammar lock + stratification + invariant
-    manifest) is re-run over the prospective active set; an unsafe change is rejected with 409 and the
-    rule is left unchanged. Deactivating a rule is always permitted. Returns 200 with the updated rule;
-    404 if the rule does not belong to the platform.
+    rule OR edits its condition/action, the verification gate is re-run over the prospective active set;
+    an unsafe change is rejected with 409 and the rule is left unchanged. Deactivating a rule is always
+    permitted. Returns 200 with the updated rule; 404 if the rule does not belong to the platform.
 
     Args:
         id (int): Platform ID
@@ -204,10 +201,9 @@ async def asyncio(
 
      Updates a subset of a rule's fields (name, description, condition, action, priority, is_active) —
     only the fields provided are applied. On a verified-profile platform, if the patch activates the
-    rule OR edits its condition/action, the verified gate (grammar lock + stratification + invariant
-    manifest) is re-run over the prospective active set; an unsafe change is rejected with 409 and the
-    rule is left unchanged. Deactivating a rule is always permitted. Returns 200 with the updated rule;
-    404 if the rule does not belong to the platform.
+    rule OR edits its condition/action, the verification gate is re-run over the prospective active set;
+    an unsafe change is rejected with 409 and the rule is left unchanged. Deactivating a rule is always
+    permitted. Returns 200 with the updated rule; 404 if the rule does not belong to the platform.
 
     Args:
         id (int): Platform ID

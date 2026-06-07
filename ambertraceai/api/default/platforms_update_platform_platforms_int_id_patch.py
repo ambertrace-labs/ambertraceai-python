@@ -80,10 +80,12 @@ def sync_detailed(
      Updates a platform's verified-profile settings: enable/disable the verified profile, set the
     certified-fact confidence threshold (τ, verified_min_confidence), and set the required-invariant
     manifest. Only the fields provided are applied. Enabling the verified profile re-validates the
-    platform's existing active rules: if any are not verified-profile-safe (class-E numeric mutations,
-    non-allowlisted operators, or a derive without an explicit value) the flip is rejected with a list
-    of the offending rules. Lifecycle operation: session users and user-scoped keys only; platform-
-    scoped keys are query-only.
+    platform's existing active rules: if any are not verified-profile-safe the flip is rejected with a
+    list of the offending rules. Setting an invariant_manifest on a verified platform (or flipping
+    verified on with a stored manifest) runs the same invariant gate as a build: if any forbid/require
+    obligation is not satisfied by the active rules, the update is rejected (409) with the violations —
+    it is never stored unvalidated. Lifecycle operation: session users and user-scoped keys only;
+    platform-scoped keys are query-only.
 
     Args:
         id (int): Resource ID
@@ -125,10 +127,12 @@ def sync(
      Updates a platform's verified-profile settings: enable/disable the verified profile, set the
     certified-fact confidence threshold (τ, verified_min_confidence), and set the required-invariant
     manifest. Only the fields provided are applied. Enabling the verified profile re-validates the
-    platform's existing active rules: if any are not verified-profile-safe (class-E numeric mutations,
-    non-allowlisted operators, or a derive without an explicit value) the flip is rejected with a list
-    of the offending rules. Lifecycle operation: session users and user-scoped keys only; platform-
-    scoped keys are query-only.
+    platform's existing active rules: if any are not verified-profile-safe the flip is rejected with a
+    list of the offending rules. Setting an invariant_manifest on a verified platform (or flipping
+    verified on with a stored manifest) runs the same invariant gate as a build: if any forbid/require
+    obligation is not satisfied by the active rules, the update is rejected (409) with the violations —
+    it is never stored unvalidated. Lifecycle operation: session users and user-scoped keys only;
+    platform-scoped keys are query-only.
 
     Args:
         id (int): Resource ID
@@ -165,10 +169,12 @@ async def asyncio_detailed(
      Updates a platform's verified-profile settings: enable/disable the verified profile, set the
     certified-fact confidence threshold (τ, verified_min_confidence), and set the required-invariant
     manifest. Only the fields provided are applied. Enabling the verified profile re-validates the
-    platform's existing active rules: if any are not verified-profile-safe (class-E numeric mutations,
-    non-allowlisted operators, or a derive without an explicit value) the flip is rejected with a list
-    of the offending rules. Lifecycle operation: session users and user-scoped keys only; platform-
-    scoped keys are query-only.
+    platform's existing active rules: if any are not verified-profile-safe the flip is rejected with a
+    list of the offending rules. Setting an invariant_manifest on a verified platform (or flipping
+    verified on with a stored manifest) runs the same invariant gate as a build: if any forbid/require
+    obligation is not satisfied by the active rules, the update is rejected (409) with the violations —
+    it is never stored unvalidated. Lifecycle operation: session users and user-scoped keys only;
+    platform-scoped keys are query-only.
 
     Args:
         id (int): Resource ID
@@ -208,10 +214,12 @@ async def asyncio(
      Updates a platform's verified-profile settings: enable/disable the verified profile, set the
     certified-fact confidence threshold (τ, verified_min_confidence), and set the required-invariant
     manifest. Only the fields provided are applied. Enabling the verified profile re-validates the
-    platform's existing active rules: if any are not verified-profile-safe (class-E numeric mutations,
-    non-allowlisted operators, or a derive without an explicit value) the flip is rejected with a list
-    of the offending rules. Lifecycle operation: session users and user-scoped keys only; platform-
-    scoped keys are query-only.
+    platform's existing active rules: if any are not verified-profile-safe the flip is rejected with a
+    list of the offending rules. Setting an invariant_manifest on a verified platform (or flipping
+    verified on with a stored manifest) runs the same invariant gate as a build: if any forbid/require
+    obligation is not satisfied by the active rules, the update is rejected (409) with the violations —
+    it is never stored unvalidated. Lifecycle operation: session users and user-scoped keys only;
+    platform-scoped keys are query-only.
 
     Args:
         id (int): Resource ID

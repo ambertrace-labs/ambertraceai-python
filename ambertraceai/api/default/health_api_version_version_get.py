@@ -5,8 +5,8 @@ import httpx
 
 from ... import errors
 from ...client import AuthenticatedClient, Client
-from ...models.health_response import HealthResponse
 from ...models.validation_error_model import ValidationErrorModel
+from ...models.version_response import VersionResponse
 from ...types import Response
 
 
@@ -14,7 +14,7 @@ def _get_kwargs() -> dict[str, Any]:
 
     _kwargs: dict[str, Any] = {
         "method": "get",
-        "url": "/api/v1/health",
+        "url": "/api/v1/version",
     }
 
     return _kwargs
@@ -22,9 +22,9 @@ def _get_kwargs() -> dict[str, Any]:
 
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> HealthResponse | list[ValidationErrorModel] | None:
+) -> VersionResponse | list[ValidationErrorModel] | None:
     if response.status_code == 200:
-        response_200 = HealthResponse.from_dict(response.json())
+        response_200 = VersionResponse.from_dict(response.json())
 
         return response_200
 
@@ -46,7 +46,7 @@ def _parse_response(
 
 def _build_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> Response[HealthResponse | list[ValidationErrorModel]]:
+) -> Response[VersionResponse | list[ValidationErrorModel]]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -58,18 +58,18 @@ def _build_response(
 def sync_detailed(
     *,
     client: AuthenticatedClient | Client,
-) -> Response[HealthResponse | list[ValidationErrorModel]]:
-    """Health check
+) -> Response[VersionResponse | list[ValidationErrorModel]]:
+    """App version
 
-     Returns service health status plus build identity (version, git_sha, built_at) so you can confirm
-    which deploy you are hitting. No authentication required. See also GET /api/v1/version.
+     Returns the running app version, git commit SHA, and build time. No authentication required. Use
+    this to confirm exactly which deploy you are hitting.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[HealthResponse | list[ValidationErrorModel]]
+        Response[VersionResponse | list[ValidationErrorModel]]
     """
 
     kwargs = _get_kwargs()
@@ -84,18 +84,18 @@ def sync_detailed(
 def sync(
     *,
     client: AuthenticatedClient | Client,
-) -> HealthResponse | list[ValidationErrorModel] | None:
-    """Health check
+) -> VersionResponse | list[ValidationErrorModel] | None:
+    """App version
 
-     Returns service health status plus build identity (version, git_sha, built_at) so you can confirm
-    which deploy you are hitting. No authentication required. See also GET /api/v1/version.
+     Returns the running app version, git commit SHA, and build time. No authentication required. Use
+    this to confirm exactly which deploy you are hitting.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        HealthResponse | list[ValidationErrorModel]
+        VersionResponse | list[ValidationErrorModel]
     """
 
     return sync_detailed(
@@ -106,18 +106,18 @@ def sync(
 async def asyncio_detailed(
     *,
     client: AuthenticatedClient | Client,
-) -> Response[HealthResponse | list[ValidationErrorModel]]:
-    """Health check
+) -> Response[VersionResponse | list[ValidationErrorModel]]:
+    """App version
 
-     Returns service health status plus build identity (version, git_sha, built_at) so you can confirm
-    which deploy you are hitting. No authentication required. See also GET /api/v1/version.
+     Returns the running app version, git commit SHA, and build time. No authentication required. Use
+    this to confirm exactly which deploy you are hitting.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[HealthResponse | list[ValidationErrorModel]]
+        Response[VersionResponse | list[ValidationErrorModel]]
     """
 
     kwargs = _get_kwargs()
@@ -130,18 +130,18 @@ async def asyncio_detailed(
 async def asyncio(
     *,
     client: AuthenticatedClient | Client,
-) -> HealthResponse | list[ValidationErrorModel] | None:
-    """Health check
+) -> VersionResponse | list[ValidationErrorModel] | None:
+    """App version
 
-     Returns service health status plus build identity (version, git_sha, built_at) so you can confirm
-    which deploy you are hitting. No authentication required. See also GET /api/v1/version.
+     Returns the running app version, git commit SHA, and build time. No authentication required. Use
+    this to confirm exactly which deploy you are hitting.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        HealthResponse | list[ValidationErrorModel]
+        VersionResponse | list[ValidationErrorModel]
     """
 
     return (
