@@ -7,6 +7,7 @@ from .connector_out import ConnectorOut
 from .connector_test_request import ConnectorTestRequest
 from .connector_test_request_config import ConnectorTestRequestConfig
 from .create_key_request import CreateKeyRequest
+from .credential_body import CredentialBody
 from .data_context_out import DataContextOut
 from .data_context_out_datasets_item import DataContextOutDatasetsItem
 from .data_context_out_domain_type_0 import DataContextOutDomainType0
@@ -50,6 +51,7 @@ from .feedback_stats_out_by_template import FeedbackStatsOutByTemplate
 from .forecast_out import ForecastOut
 from .forecast_out_features_used_type_0 import ForecastOutFeaturesUsedType0
 from .forecast_out_rule_adjustments_type_0 import ForecastOutRuleAdjustmentsType0
+from .given_atom import GivenAtom
 from .graph_node_detail import GraphNodeDetail
 from .graph_node_detail_neighbours_item import GraphNodeDetailNeighboursItem
 from .graph_node_detail_properties_type_0 import GraphNodeDetailPropertiesType0
@@ -61,6 +63,8 @@ from .job_out import JobOut
 from .job_out_result_type_0 import JobOutResultType0
 from .node_out import NodeOut
 from .node_out_properties_type_0 import NodeOutPropertiesType0
+from .obligation_suggestion import ObligationSuggestion
+from .obligation_suggestions_out import ObligationSuggestionsOut
 from .platform_out import PlatformOut
 from .platform_out_config_type_0 import PlatformOutConfigType0
 from .platform_out_neural_config_type_0 import PlatformOutNeuralConfigType0
@@ -98,6 +102,7 @@ from .quality_report_out_completeness import QualityReportOutCompleteness
 from .quality_report_out_consistency import QualityReportOutConsistency
 from .quality_report_out_uniqueness import QualityReportOutUniqueness
 from .query_request import QueryRequest
+from .query_request_facts_type_0 import QueryRequestFactsType0
 from .query_response import QueryResponse
 from .query_response_explanation_type_0 import QueryResponseExplanationType0
 from .reject_request import RejectRequest
@@ -133,6 +138,8 @@ from .token_budget_out import TokenBudgetOut
 from .usage_stats_out import UsageStatsOut
 from .validation_error_model import ValidationErrorModel
 from .validation_error_model_ctx_type_0 import ValidationErrorModelCtxType0
+from .version_data import VersionData
+from .version_response import VersionResponse
 
 __all__ = (
     "ApproveRequest",
@@ -142,6 +149,7 @@ __all__ = (
     "ConnectorTestRequest",
     "ConnectorTestRequestConfig",
     "CreateKeyRequest",
+    "CredentialBody",
     "DataContextOut",
     "DataContextOutDatasetsItem",
     "DataContextOutDomainType0",
@@ -183,6 +191,7 @@ __all__ = (
     "ForecastOut",
     "ForecastOutFeaturesUsedType0",
     "ForecastOutRuleAdjustmentsType0",
+    "GivenAtom",
     "GraphNodeDetail",
     "GraphNodeDetailNeighboursItem",
     "GraphNodeDetailPropertiesType0",
@@ -194,6 +203,8 @@ __all__ = (
     "JobOutResultType0",
     "NodeOut",
     "NodeOutPropertiesType0",
+    "ObligationSuggestion",
+    "ObligationSuggestionsOut",
     "PlatformOut",
     "PlatformOutConfigType0",
     "PlatformOutNeuralConfigType0",
@@ -217,6 +228,7 @@ __all__ = (
     "QualityReportOutConsistency",
     "QualityReportOutUniqueness",
     "QueryRequest",
+    "QueryRequestFactsType0",
     "QueryResponse",
     "QueryResponseExplanationType0",
     "RejectRequest",
@@ -252,4 +264,6 @@ __all__ = (
     "UsageStatsOut",
     "ValidationErrorModel",
     "ValidationErrorModelCtxType0",
+    "VersionData",
+    "VersionResponse",
 )

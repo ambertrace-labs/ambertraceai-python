@@ -1,33 +1,41 @@
 from http import HTTPStatus
 from typing import Any
+from urllib.parse import quote
 
 import httpx
 
 from ... import errors
 from ...client import AuthenticatedClient, Client
-from ...models.health_response import HealthResponse
+from ...models.credential_body import CredentialBody
 from ...models.validation_error_model import ValidationErrorModel
 from ...types import Response
 
 
-def _get_kwargs() -> dict[str, Any]:
+def _get_kwargs(
+    provider: str,
+    *,
+    body: CredentialBody,
+) -> dict[str, Any]:
+    headers: dict[str, Any] = {}
 
     _kwargs: dict[str, Any] = {
-        "method": "get",
-        "url": "/api/v1/health",
+        "method": "put",
+        "url": "/api/v1/connector-credentials/{provider}".format(
+            provider=quote(str(provider), safe=""),
+        ),
     }
 
+    _kwargs["json"] = body.to_dict()
+
+    headers["Content-Type"] = "application/json"
+
+    _kwargs["headers"] = headers
     return _kwargs
 
 
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> HealthResponse | list[ValidationErrorModel] | None:
-    if response.status_code == 200:
-        response_200 = HealthResponse.from_dict(response.json())
-
-        return response_200
-
+) -> list[ValidationErrorModel] | None:
     if response.status_code == 422:
         response_422 = []
         _response_422 = response.json()
@@ -46,7 +54,7 @@ def _parse_response(
 
 def _build_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> Response[HealthResponse | list[ValidationErrorModel]]:
+) -> Response[list[ValidationErrorModel]]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -56,23 +64,33 @@ def _build_response(
 
 
 def sync_detailed(
+    provider: str,
     *,
     client: AuthenticatedClient | Client,
-) -> Response[HealthResponse | list[ValidationErrorModel]]:
-    """Health check
+    body: CredentialBody,
+) -> Response[list[ValidationErrorModel]]:
+    """Save a connector credential
 
-     Returns service health status plus build identity (version, git_sha, built_at) so you can confirm
-    which deploy you are hitting. No authentication required. See also GET /api/v1/version.
+     Stores (or replaces) the current user's API key for a connector provider (e.g. 'fred'), encrypted at
+    rest. The key is then auto-injected when a connector config for that provider omits api_key. Returns
+    masked metadata.
+
+    Args:
+        provider (str): Connector credential provider, e.g. 'fred'.
+        body (CredentialBody):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[HealthResponse | list[ValidationErrorModel]]
+        Response[list[ValidationErrorModel]]
     """
 
-    kwargs = _get_kwargs()
+    kwargs = _get_kwargs(
+        provider=provider,
+        body=body,
+    )
 
     response = client.get_httpx_client().request(
         **kwargs,
@@ -82,45 +100,64 @@ def sync_detailed(
 
 
 def sync(
+    provider: str,
     *,
     client: AuthenticatedClient | Client,
-) -> HealthResponse | list[ValidationErrorModel] | None:
-    """Health check
+    body: CredentialBody,
+) -> list[ValidationErrorModel] | None:
+    """Save a connector credential
 
-     Returns service health status plus build identity (version, git_sha, built_at) so you can confirm
-    which deploy you are hitting. No authentication required. See also GET /api/v1/version.
+     Stores (or replaces) the current user's API key for a connector provider (e.g. 'fred'), encrypted at
+    rest. The key is then auto-injected when a connector config for that provider omits api_key. Returns
+    masked metadata.
+
+    Args:
+        provider (str): Connector credential provider, e.g. 'fred'.
+        body (CredentialBody):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        HealthResponse | list[ValidationErrorModel]
+        list[ValidationErrorModel]
     """
 
     return sync_detailed(
+        provider=provider,
         client=client,
+        body=body,
     ).parsed
 
 
 async def asyncio_detailed(
+    provider: str,
     *,
     client: AuthenticatedClient | Client,
-) -> Response[HealthResponse | list[ValidationErrorModel]]:
-    """Health check
+    body: CredentialBody,
+) -> Response[list[ValidationErrorModel]]:
+    """Save a connector credential
 
-     Returns service health status plus build identity (version, git_sha, built_at) so you can confirm
-    which deploy you are hitting. No authentication required. See also GET /api/v1/version.
+     Stores (or replaces) the current user's API key for a connector provider (e.g. 'fred'), encrypted at
+    rest. The key is then auto-injected when a connector config for that provider omits api_key. Returns
+    masked metadata.
+
+    Args:
+        provider (str): Connector credential provider, e.g. 'fred'.
+        body (CredentialBody):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[HealthResponse | list[ValidationErrorModel]]
+        Response[list[ValidationErrorModel]]
     """
 
-    kwargs = _get_kwargs()
+    kwargs = _get_kwargs(
+        provider=provider,
+        body=body,
+    )
 
     response = await client.get_async_httpx_client().request(**kwargs)
 
@@ -128,24 +165,33 @@ async def asyncio_detailed(
 
 
 async def asyncio(
+    provider: str,
     *,
     client: AuthenticatedClient | Client,
-) -> HealthResponse | list[ValidationErrorModel] | None:
-    """Health check
+    body: CredentialBody,
+) -> list[ValidationErrorModel] | None:
+    """Save a connector credential
 
-     Returns service health status plus build identity (version, git_sha, built_at) so you can confirm
-    which deploy you are hitting. No authentication required. See also GET /api/v1/version.
+     Stores (or replaces) the current user's API key for a connector provider (e.g. 'fred'), encrypted at
+    rest. The key is then auto-injected when a connector config for that provider omits api_key. Returns
+    masked metadata.
+
+    Args:
+        provider (str): Connector credential provider, e.g. 'fred'.
+        body (CredentialBody):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        HealthResponse | list[ValidationErrorModel]
+        list[ValidationErrorModel]
     """
 
     return (
         await asyncio_detailed(
+            provider=provider,
             client=client,
+            body=body,
         )
     ).parsed

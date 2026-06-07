@@ -10,7 +10,7 @@ Exercises AmbertraceAI as a forecasting back-end via the prediction API:
 Dataset: environmental_monitoring.csv (60 readings, 16 facilities).
 Creates resources on your account. Run with --help for options.
 
-    python 15_timeseries_forecast.py
+    python 16_timeseries_forecast.py
 """
 
 from __future__ import annotations

@@ -7,8 +7,8 @@ collusion). Every answer comes back as an Amber Report.
 
 Creates resources on your account. Run with --help for options.
 
-    python 10_fraud_detection.py
-    python 10_fraud_detection.py --standard   # skip verified profile
+    python 11_fraud_detection.py
+    python 11_fraud_detection.py --standard   # skip verified profile
 """
 
 from __future__ import annotations

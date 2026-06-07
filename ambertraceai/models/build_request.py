@@ -24,19 +24,17 @@ class BuildRequest:
         config (BuildRequestConfig | Unset):
         invariant_manifest (list[Invariant] | None | Unset): Verified profile only. The required-invariant manifest — a
             list of forbid/require obligations enforced at build and on every query. See the Invariant schema.
-        override_verification_gate (bool | Unset): Human-in-the-loop override. If the build-time soundness gate
-            (stratification + manifest) is violated and this is True, the build does NOT fail — instead the platform is
-            built as a STANDARD (non-verified) platform and the violations are recorded in
-            ``config.verification_gate_violations``. The verified label is reserved for rule sets that pass the gate. The
-            query-time proof backstop is never overridable, so this can never produce an unsound ``proof_checked``
-            certificate. Default: False.
+        override_verification_gate (bool | Unset): Human-in-the-loop override. If the build-time verification gate is
+            violated and this is True, the build does NOT fail — instead the platform is built as a STANDARD (non-verified)
+            platform and the violations are recorded in ``config.verification_gate_violations``. The verified label is
+            reserved for rule sets that pass the gate. The query-time proof is never overridable, so this can never produce
+            an unsound ``proof_checked`` certificate. Default: False.
         verified_min_confidence (float | None | Unset): Verified profile only. τ — the certified-fact confidence
             threshold in [0,1]. Facts (from retrieval or extracted from the query text) below τ are rejected at the
             neural→symbolic boundary and surfaced in ``explanation.rejected_facts`` rather than silently used.
-        verified_profile (bool | Unset): Build in the formally-verifiable profile. Verified platforms gate facts by a
-            confidence threshold (τ), evaluate rules with a fail-closed Prolog engine, and return a machine-checked proof
-            certificate on every query (see ``proof_checked``). The generated rule set must be stratifiable and satisfy
-            ``invariant_manifest`` or the build fails (see ``override_verification_gate``). Default: False.
+        verified_profile (bool | Unset): Build in the verified profile. Verified platforms gate facts by a confidence
+            threshold (τ) and return a proof certificate on every query (see ``proof_checked``). The rule set must be valid
+            and satisfy ``invariant_manifest`` or the build fails (see ``override_verification_gate``). Default: False.
     """
 
     domain_id: int

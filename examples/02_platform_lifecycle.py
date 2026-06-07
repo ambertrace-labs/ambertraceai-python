@@ -74,6 +74,27 @@ def main() -> None:
         if job.get("status") in ("error", "failed"):
             step(f"Build error: {job.get('error_message')}")
 
+        # The platform build job's result carries `generation_diagnostics`:
+        # what rule generation produced and how the rule set behaves. It is the
+        # fastest way to see whether the platform can ever reach an adverse
+        # (deny/block) decision. NB: this lives on the *platform build* job —
+        # the ontology build job does not carry it.
+        diag = (job.get("result") or {}).get("generation_diagnostics") or {}
+        if diag:
+            step(f"Generated {diag.get('rule_count')} rules "
+                 f"({diag.get('classifier_count')} classifiers, "
+                 f"{diag.get('verdict_conclusion_count')} deny/block conclusions)")
+            if not diag.get("can_decide_adversely", True):
+                # No deny/block conclusion → the platform permits everything.
+                step("This platform reaches NO adverse decision (permits everything).")
+                for w in diag.get("decision_coverage_warnings", []):
+                    step(f"  coverage warning: {w}")
+            ***REMOVED***
+***REMOVED***
+                rep = diag.get(layer) or {}
+                if rep.get("fired"):
+                    step(f"  {layer}: outcome={rep.get('outcome')} added={rep.get('added')}")
+
         platform = api.platforms.get(platform_id)
         if platform.get("status") in ("active", "ready"):
             step("Querying the platform…")

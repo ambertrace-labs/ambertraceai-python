@@ -42,12 +42,11 @@ def main() -> None:
     for s in suggestions[:5]:
         print(f"      #{s.get('id')}: {s.get('description') or s.get('rule')}")
 
-    # CONVENIENCE GAP: the API exposes
-    #   POST /platforms/{id}/suggestions/{rid}/approve
-    #   POST /platforms/{id}/suggestions/{rid}/reject
-    # but the convenience layer has no approve_suggestion/reject_suggestion yet.
-    # Until then, approving a suggestion requires the generated client.
-    print("\n  (Approving/rejecting suggestions is not yet in the convenience layer.)")
+    if suggestions:
+        sid = suggestions[0]["id"]
+        step(f"Rejecting suggestion #{sid} (demo cleanup)...")
+        api.platforms.reject_suggestion(platform_id, sid)
+        step("Rejected.")
 
     print("\n✓ Rule suggestion walkthrough complete.")
 

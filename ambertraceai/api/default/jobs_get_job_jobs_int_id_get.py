@@ -70,10 +70,11 @@ def sync_detailed(
      Polls the status of an async job (cleaning, platform build, ontology build, prediction training, or
     rule suggestion). Returns the job type, status (pending/running/completed/failed), progress
     percentage, current step, error message if failed, and a job-type-specific result payload when
-    completed (rule-suggestion jobs carry stats, rejected_rules, and the stored suggestions). Use this
-    to track async operations started by POST /datasets/{id}/clean, POST /platforms, POST
-    /domains/{id}/build-ontology, POST /platforms/{id}/prediction-configs/{cid}/train, or POST
-    /platforms/{id}/suggest-rules.
+    completed (rule-suggestion jobs carry stats, rejected_rules, and the stored suggestions; platform-
+    build jobs carry generation_diagnostics — the decision-coverage, connectivity, and conclusion-repair
+    self-report explaining whether the build produced a usable decision layer). Use this to track async
+    operations started by POST /datasets/{id}/clean, POST /platforms, POST /domains/{id}/build-ontology,
+    POST /platforms/{id}/prediction-configs/{cid}/train, or POST /platforms/{id}/suggest-rules.
 
     Args:
         id (int): Resource ID
@@ -107,10 +108,11 @@ def sync(
      Polls the status of an async job (cleaning, platform build, ontology build, prediction training, or
     rule suggestion). Returns the job type, status (pending/running/completed/failed), progress
     percentage, current step, error message if failed, and a job-type-specific result payload when
-    completed (rule-suggestion jobs carry stats, rejected_rules, and the stored suggestions). Use this
-    to track async operations started by POST /datasets/{id}/clean, POST /platforms, POST
-    /domains/{id}/build-ontology, POST /platforms/{id}/prediction-configs/{cid}/train, or POST
-    /platforms/{id}/suggest-rules.
+    completed (rule-suggestion jobs carry stats, rejected_rules, and the stored suggestions; platform-
+    build jobs carry generation_diagnostics — the decision-coverage, connectivity, and conclusion-repair
+    self-report explaining whether the build produced a usable decision layer). Use this to track async
+    operations started by POST /datasets/{id}/clean, POST /platforms, POST /domains/{id}/build-ontology,
+    POST /platforms/{id}/prediction-configs/{cid}/train, or POST /platforms/{id}/suggest-rules.
 
     Args:
         id (int): Resource ID
@@ -139,10 +141,11 @@ async def asyncio_detailed(
      Polls the status of an async job (cleaning, platform build, ontology build, prediction training, or
     rule suggestion). Returns the job type, status (pending/running/completed/failed), progress
     percentage, current step, error message if failed, and a job-type-specific result payload when
-    completed (rule-suggestion jobs carry stats, rejected_rules, and the stored suggestions). Use this
-    to track async operations started by POST /datasets/{id}/clean, POST /platforms, POST
-    /domains/{id}/build-ontology, POST /platforms/{id}/prediction-configs/{cid}/train, or POST
-    /platforms/{id}/suggest-rules.
+    completed (rule-suggestion jobs carry stats, rejected_rules, and the stored suggestions; platform-
+    build jobs carry generation_diagnostics — the decision-coverage, connectivity, and conclusion-repair
+    self-report explaining whether the build produced a usable decision layer). Use this to track async
+    operations started by POST /datasets/{id}/clean, POST /platforms, POST /domains/{id}/build-ontology,
+    POST /platforms/{id}/prediction-configs/{cid}/train, or POST /platforms/{id}/suggest-rules.
 
     Args:
         id (int): Resource ID
@@ -174,10 +177,11 @@ async def asyncio(
      Polls the status of an async job (cleaning, platform build, ontology build, prediction training, or
     rule suggestion). Returns the job type, status (pending/running/completed/failed), progress
     percentage, current step, error message if failed, and a job-type-specific result payload when
-    completed (rule-suggestion jobs carry stats, rejected_rules, and the stored suggestions). Use this
-    to track async operations started by POST /datasets/{id}/clean, POST /platforms, POST
-    /domains/{id}/build-ontology, POST /platforms/{id}/prediction-configs/{cid}/train, or POST
-    /platforms/{id}/suggest-rules.
+    completed (rule-suggestion jobs carry stats, rejected_rules, and the stored suggestions; platform-
+    build jobs carry generation_diagnostics — the decision-coverage, connectivity, and conclusion-repair
+    self-report explaining whether the build produced a usable decision layer). Use this to track async
+    operations started by POST /datasets/{id}/clean, POST /platforms, POST /domains/{id}/build-ontology,
+    POST /platforms/{id}/prediction-configs/{cid}/train, or POST /platforms/{id}/suggest-rules.
 
     Args:
         id (int): Resource ID

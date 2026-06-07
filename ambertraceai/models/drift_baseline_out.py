@@ -19,7 +19,7 @@ T = TypeVar("T", bound="DriftBaselineOut")
 
 @_attrs_define
 class DriftBaselineOut:
-    """Approval-time drift baseline captured for a platform (ARIA S2-C2).
+    """Approval-time drift baseline captured for a platform.
 
     Attributes:
         certified_rejection_rate (float):

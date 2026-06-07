@@ -27,7 +27,7 @@ class RuleUpdateRequest:
         condition (None | RuleUpdateRequestConditionType0 | Unset): Replacement IF clause.
         description (None | str | Unset): New description.
         is_active (bool | None | Unset): Activate (true) or deactivate (false) the rule. Activating — or editing
-            condition/action while active — on a verified-profile platform re-runs the verified gate and may reject with
+            condition/action while active — on a verified-profile platform re-runs the verification gate and may reject with
             409. Deactivating is always permitted.
         name (None | str | Unset): New name.
         priority (int | None | Unset): New evaluation priority.

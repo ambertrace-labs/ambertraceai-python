@@ -8,7 +8,7 @@ as an Amber Report.
 
 Creates resources on your account. Run with --help for options.
 
-    python 11_clinical_safety.py
+    python 12_clinical_safety.py
 """
 
 from __future__ import annotations

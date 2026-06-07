@@ -63,9 +63,10 @@ def sync_detailed(
 
      Uses LLM to generate entities, relationships, and constraints from the domain description. Returns
     202 with a job id -- poll GET /jobs/{job_id} until status is 'completed' (success) or 'failed'. The
-    domain status also moves from 'building' to 'active' (success) or 'draft' (failure). The generated
-    constraints become executable symbolic rules automatically when a platform is built from this
-    domain. If datasets are linked, their rows validate generated rules.
+    domain status also moves from 'building' to 'active' (success) or the terminal 'error' (failure); on
+    failure the job's error_message carries an actionable reason. The generated constraints become
+    executable symbolic rules automatically when a platform is built from this domain. If datasets are
+    linked, their rows validate generated rules.
 
     Args:
         id (int): Resource ID
@@ -98,9 +99,10 @@ def sync(
 
      Uses LLM to generate entities, relationships, and constraints from the domain description. Returns
     202 with a job id -- poll GET /jobs/{job_id} until status is 'completed' (success) or 'failed'. The
-    domain status also moves from 'building' to 'active' (success) or 'draft' (failure). The generated
-    constraints become executable symbolic rules automatically when a platform is built from this
-    domain. If datasets are linked, their rows validate generated rules.
+    domain status also moves from 'building' to 'active' (success) or the terminal 'error' (failure); on
+    failure the job's error_message carries an actionable reason. The generated constraints become
+    executable symbolic rules automatically when a platform is built from this domain. If datasets are
+    linked, their rows validate generated rules.
 
     Args:
         id (int): Resource ID
@@ -128,9 +130,10 @@ async def asyncio_detailed(
 
      Uses LLM to generate entities, relationships, and constraints from the domain description. Returns
     202 with a job id -- poll GET /jobs/{job_id} until status is 'completed' (success) or 'failed'. The
-    domain status also moves from 'building' to 'active' (success) or 'draft' (failure). The generated
-    constraints become executable symbolic rules automatically when a platform is built from this
-    domain. If datasets are linked, their rows validate generated rules.
+    domain status also moves from 'building' to 'active' (success) or the terminal 'error' (failure); on
+    failure the job's error_message carries an actionable reason. The generated constraints become
+    executable symbolic rules automatically when a platform is built from this domain. If datasets are
+    linked, their rows validate generated rules.
 
     Args:
         id (int): Resource ID
@@ -161,9 +164,10 @@ async def asyncio(
 
      Uses LLM to generate entities, relationships, and constraints from the domain description. Returns
     202 with a job id -- poll GET /jobs/{job_id} until status is 'completed' (success) or 'failed'. The
-    domain status also moves from 'building' to 'active' (success) or 'draft' (failure). The generated
-    constraints become executable symbolic rules automatically when a platform is built from this
-    domain. If datasets are linked, their rows validate generated rules.
+    domain status also moves from 'building' to 'active' (success) or the terminal 'error' (failure); on
+    failure the job's error_message carries an actionable reason. The generated constraints become
+    executable symbolic rules automatically when a platform is built from this domain. If datasets are
+    linked, their rows validate generated rules.
 
     Args:
         id (int): Resource ID

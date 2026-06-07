@@ -15,13 +15,19 @@ T = TypeVar("T", bound="DriftAlert")
 class DriftAlert:
     """A single drift signal. Shape varies by ``signal`` (see drift_service).
 
-    Attributes:
-        signal (str):
-        baseline (float | None | Unset):
-        current (float | None | Unset):
-        delta (float | None | Unset):
-        message (None | str | Unset):
-        rule (None | str | Unset):
+    ``signal == "rule_suppression"`` (ARIA WP5, threat-model A2) additionally
+    carries ``severity`` ('silenced' = stopped firing entirely, 'degraded' =
+    fire rate collapsed) and the affected ``rule`` name — a previously-active
+    safety rule going quiet, surfaced distinctly from generic metric drift.
+
+        Attributes:
+            signal (str):
+            baseline (float | None | Unset):
+            current (float | None | Unset):
+            delta (float | None | Unset):
+            message (None | str | Unset):
+            rule (None | str | Unset):
+            severity (None | str | Unset):
     """
 
     signal: str
@@ -30,6 +36,7 @@ class DriftAlert:
     delta: float | None | Unset = UNSET
     message: None | str | Unset = UNSET
     rule: None | str | Unset = UNSET
+    severity: None | str | Unset = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -65,6 +72,12 @@ class DriftAlert:
         else:
             rule = self.rule
 
+        severity: None | str | Unset
+        if isinstance(self.severity, Unset):
+            severity = UNSET
+        else:
+            severity = self.severity
+
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
@@ -82,6 +95,8 @@ class DriftAlert:
             field_dict["message"] = message
         if rule is not UNSET:
             field_dict["rule"] = rule
+        if severity is not UNSET:
+            field_dict["severity"] = severity
 
         return field_dict
 
@@ -135,6 +150,15 @@ class DriftAlert:
 
         rule = _parse_rule(d.pop("rule", UNSET))
 
+        def _parse_severity(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        severity = _parse_severity(d.pop("severity", UNSET))
+
         drift_alert = cls(
             signal=signal,
             baseline=baseline,
@@ -142,6 +166,7 @@ class DriftAlert:
             delta=delta,
             message=message,
             rule=rule,
+            severity=severity,
         )
 
         drift_alert.additional_properties = d
