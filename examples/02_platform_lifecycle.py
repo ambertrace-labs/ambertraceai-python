@@ -74,11 +74,27 @@ def main() -> None:
         if job.get("status") in ("error", "failed"):
             step(f"Build error: {job.get('error_message')}")
 
-        # The platform build job's result carries `generation_diagnostics`:
-        # what rule generation produced and how the rule set behaves. It is the
-        # fastest way to see whether the platform can ever reach an adverse
-        # (deny/block) decision. NB: this lives on the *platform build* job —
-        # the ontology build job does not carry it.
+        # BUILD QUALITY — the customer-facing structural-health summary. This is
+        # the honest, label-free substitute for an accuracy number (which can't
+        # transfer to your domain): status is needs_review whenever a *blocking*
+        # check fails (no certification / a declared decision class is
+        # unreachable / no restrictive decision so it permits everything).
+        # It lives on the *platform build* job result and is also persisted on
+        # the platform (api.platforms.build_quality / .blocking_checks).
+        bq = (job.get("result") or {}).get("build_quality") or {}
+        if bq:
+            step(f"Build quality: {bq.get('status')}")
+            for chk in bq.get("checks", []):
+                if not chk.get("ok"):
+                    step(f"  [{chk.get('severity')}] {chk.get('id')}: {chk.get('detail')}")
+            blocking = api.platforms.blocking_checks(platform_id)
+            if blocking:
+                step(f"This build needs review — {len(blocking)} blocking issue(s).")
+
+        # The same build job result also carries `generation_diagnostics` — the
+        # underlying detail behind build_quality: what rule generation produced
+        # and how the rule set behaves. NB: this lives on the *platform build*
+        # job — the ontology build job does not carry it.
         diag = (job.get("result") or {}).get("generation_diagnostics") or {}
         if diag:
             step(f"Generated {diag.get('rule_count')} rules "
