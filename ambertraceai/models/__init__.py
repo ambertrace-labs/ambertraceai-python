@@ -66,6 +66,7 @@ from .node_out_properties_type_0 import NodeOutPropertiesType0
 from .obligation_suggestion import ObligationSuggestion
 from .obligation_suggestions_out import ObligationSuggestionsOut
 from .platform_out import PlatformOut
+from .platform_out_build_quality_type_0 import PlatformOutBuildQualityType0
 from .platform_out_config_type_0 import PlatformOutConfigType0
 from .platform_out_neural_config_type_0 import PlatformOutNeuralConfigType0
 from .platform_status_out import PlatformStatusOut
@@ -206,6 +207,7 @@ __all__ = (
     "ObligationSuggestion",
     "ObligationSuggestionsOut",
     "PlatformOut",
+    "PlatformOutBuildQualityType0",
     "PlatformOutConfigType0",
     "PlatformOutNeuralConfigType0",
     "PlatformStatusOut",

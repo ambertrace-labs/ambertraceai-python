@@ -208,6 +208,41 @@ class PlatformResource(_Resource):
     def get(self, platform_id: int) -> dict:
         return self._request("GET", f"/api/v1/platforms/{platform_id}")
 
+    def build_quality(self, platform_id: int) -> dict | None:
+        """The platform's persisted build-quality block, or ``None`` if it has
+        not been built yet.
+
+        The block is the customer-facing summary of the build's STRUCTURAL
+        health — the honest, label-free substitute for an accuracy number,
+        which can't transfer to your domain. Shape::
+
+            {"status": "ok" | "warnings" | "needs_review",
+             "checks": [{"id": str,
+                         "severity": "blocking" | "warning" | "info",
+                         "ok": bool, "detail": str, "items": [str, ...]}, ...]}
+
+        ``status`` is ``needs_review`` whenever any *blocking* check fails — the
+        platform cannot reach a declared decision class, or
+        it has no restrictive (deny / block) decision and so permits everything.
+        Use :meth:`blocking_checks` to get just the failing blocking checks, or
+        read ``build_quality`` straight off the build job result (see
+        :meth:`AmbertraceAPI.wait_for_job`)."""
+        platform = self.get(platform_id)
+        return platform.get("build_quality")
+
+    def blocking_checks(self, platform_id: int) -> list[dict]:
+        """The FAILING blocking checks for a built platform — empty when the
+        build has no blocking problems (or has not been built). Each item is a
+        check dict from :meth:`build_quality`."""
+        bq = self.build_quality(platform_id)
+        if not isinstance(bq, dict):
+            return []
+        return [
+            c for c in (bq.get("checks") or [])
+            if isinstance(c, dict)
+            and c.get("severity") == "blocking" and not c.get("ok")
+        ]
+
     def delete(self, platform_id: int) -> dict:
         return self._request("DELETE", f"/api/v1/platforms/{platform_id}")
 
@@ -473,11 +508,27 @@ class AmbertraceAPI:
         diagnostics — NOT the ontology build job id (see :meth:`JobResource.get`
         for the two-job distinction).
 
+        **Build quality.** For a platform build, the returned job's
+        ``result["build_quality"]`` is the customer-facing structural-health
+        summary — the honest, label-free substitute for an accuracy number
+        (which can't transfer to your domain)::
+
+            {"status": "ok" | "warnings" | "needs_review",
+             "checks": [{"id": str,
+                         "severity": "blocking" | "warning" | "info",
+                         "ok": bool, "detail": str, "items": [str, ...]}, ...]}
+
+        ``status`` is ``needs_review`` whenever any *blocking* check fails — the
+        platform cannot reach a declared decision class, or
+        it has no restrictive (deny / block) decision and so permits everything.
+        The same block is persisted on the platform and readable later via
+        :meth:`PlatformResource.build_quality` / :meth:`PlatformResource.blocking_checks`.
+
         **Build-generation diagnostics.** For a platform build, the returned
-        job's ``result["generation_diagnostics"]`` reports what rule generation
-        produced and how the rule set behaves. It is the fastest way to explain
-        why a built platform reaches (or never reaches) an adverse decision.
-        Fields:
+        job's ``result["generation_diagnostics"]`` is the underlying detail
+        behind ``build_quality`` — it reports what rule generation produced and
+        how the rule set behaves. It is the fastest way to explain why a built
+        platform reaches (or never reaches) an adverse decision. Fields:
 
         * ``rule_count``, ``classifier_count``, ``verdict_conclusion_count``,
           ``connected_restrictive_count`` (ints) — counts of generated rules,

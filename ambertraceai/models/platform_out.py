@@ -9,6 +9,7 @@ from attrs import field as _attrs_field
 from ..types import UNSET, Unset
 
 if TYPE_CHECKING:
+    from ..models.platform_out_build_quality_type_0 import PlatformOutBuildQualityType0
     from ..models.platform_out_config_type_0 import PlatformOutConfigType0
     from ..models.platform_out_neural_config_type_0 import PlatformOutNeuralConfigType0
 
@@ -25,6 +26,11 @@ class PlatformOut:
         name (str):
         organisation_id (str):
         status (str):
+        build_quality (None | PlatformOutBuildQualityType0 | Unset): Canonical customer-safe build-quality block,
+            populated at build completion: {status: ok|warnings|needs_review, checks: [{id, severity
+            (blocking|warning|info), ok, detail, items}]}. status is needs_review when any blocking check fails (the
+            platform cannot reach a declared decision class, or it has no restrictive decision and so permits everything).
+            Null until the first successful build.
         config (None | PlatformOutConfigType0 | Unset):
         created_at (None | str | Unset):
         description (None | str | Unset):
@@ -43,6 +49,7 @@ class PlatformOut:
     name: str
     organisation_id: str
     status: str
+    build_quality: None | PlatformOutBuildQualityType0 | Unset = UNSET
     config: None | PlatformOutConfigType0 | Unset = UNSET
     created_at: None | str | Unset = UNSET
     description: None | str | Unset = UNSET
@@ -54,6 +61,9 @@ class PlatformOut:
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        from ..models.platform_out_build_quality_type_0 import (
+            PlatformOutBuildQualityType0,
+        )
         from ..models.platform_out_config_type_0 import PlatformOutConfigType0
         from ..models.platform_out_neural_config_type_0 import (
             PlatformOutNeuralConfigType0,
@@ -68,6 +78,14 @@ class PlatformOut:
         organisation_id = self.organisation_id
 
         status = self.status
+
+        build_quality: dict[str, Any] | None | Unset
+        if isinstance(self.build_quality, Unset):
+            build_quality = UNSET
+        elif isinstance(self.build_quality, PlatformOutBuildQualityType0):
+            build_quality = self.build_quality.to_dict()
+        else:
+            build_quality = self.build_quality
 
         config: dict[str, Any] | None | Unset
         if isinstance(self.config, Unset):
@@ -124,6 +142,8 @@ class PlatformOut:
                 "status": status,
             }
         )
+        if build_quality is not UNSET:
+            field_dict["build_quality"] = build_quality
         if config is not UNSET:
             field_dict["config"] = config
         if created_at is not UNSET:
@@ -145,6 +165,9 @@ class PlatformOut:
 
     @classmethod
     def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
+        from ..models.platform_out_build_quality_type_0 import (
+            PlatformOutBuildQualityType0,
+        )
         from ..models.platform_out_config_type_0 import PlatformOutConfigType0
         from ..models.platform_out_neural_config_type_0 import (
             PlatformOutNeuralConfigType0,
@@ -160,6 +183,25 @@ class PlatformOut:
         organisation_id = d.pop("organisation_id")
 
         status = d.pop("status")
+
+        def _parse_build_quality(
+            data: object,
+        ) -> None | PlatformOutBuildQualityType0 | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            try:
+                if not isinstance(data, dict):
+                    raise TypeError()
+                build_quality_type_0 = PlatformOutBuildQualityType0.from_dict(data)
+
+                return build_quality_type_0
+            except (TypeError, ValueError, AttributeError, KeyError):
+                pass
+            return cast(None | PlatformOutBuildQualityType0 | Unset, data)
+
+        build_quality = _parse_build_quality(d.pop("build_quality", UNSET))
 
         def _parse_config(data: object) -> None | PlatformOutConfigType0 | Unset:
             if data is None:
@@ -245,6 +287,7 @@ class PlatformOut:
             name=name,
             organisation_id=organisation_id,
             status=status,
+            build_quality=build_quality,
             config=config,
             created_at=created_at,
             description=description,
