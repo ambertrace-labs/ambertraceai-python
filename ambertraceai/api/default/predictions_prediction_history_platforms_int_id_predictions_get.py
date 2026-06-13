@@ -14,14 +14,19 @@ from ...types import UNSET, Response, Unset
 def _get_kwargs(
     id: int,
     *,
-    prediction_config_id: int,
+    prediction_config_id: int | None | Unset = UNSET,
     limit: int | Unset = 100,
     offset: int | Unset = 0,
 ) -> dict[str, Any]:
 
     params: dict[str, Any] = {}
 
-    params["prediction_config_id"] = prediction_config_id
+    json_prediction_config_id: int | None | Unset
+    if isinstance(prediction_config_id, Unset):
+        json_prediction_config_id = UNSET
+    else:
+        json_prediction_config_id = prediction_config_id
+    params["prediction_config_id"] = json_prediction_config_id
 
     params["limit"] = limit
 
@@ -79,7 +84,7 @@ def sync_detailed(
     id: int,
     *,
     client: AuthenticatedClient | Client,
-    prediction_config_id: int,
+    prediction_config_id: int | None | Unset = UNSET,
     limit: int | Unset = 100,
     offset: int | Unset = 0,
 ) -> Response[ForecastOut | list[ValidationErrorModel]]:
@@ -93,7 +98,8 @@ def sync_detailed(
 
     Args:
         id (int): Resource ID
-        prediction_config_id (int): Filter history to this prediction config.
+        prediction_config_id (int | None | Unset): Filter history to this prediction config. When
+            omitted, returns predictions across ALL of the platform's prediction configs.
         limit (int | Unset): Maximum number of records to return. Default: 100.
         offset (int | Unset): Number of records to skip for pagination. Default: 0.
 
@@ -123,7 +129,7 @@ def sync(
     id: int,
     *,
     client: AuthenticatedClient | Client,
-    prediction_config_id: int,
+    prediction_config_id: int | None | Unset = UNSET,
     limit: int | Unset = 100,
     offset: int | Unset = 0,
 ) -> ForecastOut | list[ValidationErrorModel] | None:
@@ -137,7 +143,8 @@ def sync(
 
     Args:
         id (int): Resource ID
-        prediction_config_id (int): Filter history to this prediction config.
+        prediction_config_id (int | None | Unset): Filter history to this prediction config. When
+            omitted, returns predictions across ALL of the platform's prediction configs.
         limit (int | Unset): Maximum number of records to return. Default: 100.
         offset (int | Unset): Number of records to skip for pagination. Default: 0.
 
@@ -162,7 +169,7 @@ async def asyncio_detailed(
     id: int,
     *,
     client: AuthenticatedClient | Client,
-    prediction_config_id: int,
+    prediction_config_id: int | None | Unset = UNSET,
     limit: int | Unset = 100,
     offset: int | Unset = 0,
 ) -> Response[ForecastOut | list[ValidationErrorModel]]:
@@ -176,7 +183,8 @@ async def asyncio_detailed(
 
     Args:
         id (int): Resource ID
-        prediction_config_id (int): Filter history to this prediction config.
+        prediction_config_id (int | None | Unset): Filter history to this prediction config. When
+            omitted, returns predictions across ALL of the platform's prediction configs.
         limit (int | Unset): Maximum number of records to return. Default: 100.
         offset (int | Unset): Number of records to skip for pagination. Default: 0.
 
@@ -204,7 +212,7 @@ async def asyncio(
     id: int,
     *,
     client: AuthenticatedClient | Client,
-    prediction_config_id: int,
+    prediction_config_id: int | None | Unset = UNSET,
     limit: int | Unset = 100,
     offset: int | Unset = 0,
 ) -> ForecastOut | list[ValidationErrorModel] | None:
@@ -218,7 +226,8 @@ async def asyncio(
 
     Args:
         id (int): Resource ID
-        prediction_config_id (int): Filter history to this prediction config.
+        prediction_config_id (int | None | Unset): Filter history to this prediction config. When
+            omitted, returns predictions across ALL of the platform's prediction configs.
         limit (int | Unset): Maximum number of records to return. Default: 100.
         offset (int | Unset): Number of records to skip for pagination. Default: 0.
 

@@ -338,6 +338,70 @@ class PredictionResource(_Resource):
     def list_predictions(self, platform_id: int) -> list[dict]:
         return self._request("GET", f"/api/v1/platforms/{platform_id}/predictions")
 
+    # -- Prediction "why" layer (preview) --
+    #
+    # The symbolic forecaster is a STANDALONE, fully-transparent forecasting mode
+    # whose structure IS the explanation: forecast = baseline + Σ fired
+    # driver-rules over your data's real features, each with a fitted
+    # contribution + reliability. With verified=True the active-driver set is
+    # proof-carrying. These endpoints are preview-only (server feature flag
+    # AMBERTRACE_SYMBOLIC_FORECAST); they raise AmbertraceError(404) when the
+    # platform has the feature disabled.
+
+    def symbolic_forecast(self, platform_id: int, *, prediction_config_id: int,
+                          feature_overrides: dict | None = None,
+                          verified: bool = False) -> dict:
+        """Run the symbolic forecaster and return the forecast WITH its WHY.
+
+        Returns ``{"forecast": {"value", "lower", "upper"}, "baseline",
+        "skill_vs_persistence", "why": [{"driver", "direction", "contribution",
+        "reliability", "proof_checked", ...}, ...]}``. Pass ``verified=True`` to
+        run the active-driver set through the verified kernel — each WHY entry is
+        then stamped ``proof_checked`` and a ``why_certification`` block (the
+        certified facts, any rejected facts, the proof + summary) is attached.
+        ``feature_overrides`` applies what-if values to the most recent row
+        before composing (e.g. ``{"inflation": 5.0}``). The config need not be
+        trained — the symbolic forecaster is independent of the neural model.
+        """
+        body: dict[str, Any] = {
+            "prediction_config_id": prediction_config_id,
+            "verified": verified,
+        }
+        if feature_overrides is not None:
+            body["feature_overrides"] = feature_overrides
+        return self._request(
+            "POST", f"/api/v1/platforms/{platform_id}/symbolic-forecast", json=body)
+
+    def residual_diagnosis(self, platform_id: int, *, prediction_config_id: int,
+                           forecast_id: int | None = None,
+                           value: float | None = None,
+                           actual: float | None = None,
+                           k: float | None = None) -> dict:
+        """Diagnose a forecast residual — drift vs correction.
+
+        Computes ``residual = actual - value``, standardises it, and when the
+        breach gate ``|z| > k`` (default k=2.0) trips, attributes the miss to the
+        driver-rules that lost sensitivity: a decayed driver that pointed away
+        from the realised move => **drift** (residual likely to keep widening);
+        the still-reliable drivers point counter to the move => **correction**
+        (target dislocated; residual likely to tighten). Supply EITHER a stored
+        ``forecast_id`` (value + backfilled actual read off the record) OR an
+        explicit ``value`` + ``actual`` pair. Returns ``{"residual", "z",
+        "breached", "diagnosis", "decayed_drivers", "stable_drivers",
+        "evidence", ...}`` — a hypothesis surfaced with its evidence.
+        """
+        body: dict[str, Any] = {"prediction_config_id": prediction_config_id}
+        if forecast_id is not None:
+            body["forecast_id"] = forecast_id
+        if value is not None:
+            body["value"] = value
+        if actual is not None:
+            body["actual"] = actual
+        if k is not None:
+            body["k"] = k
+        return self._request(
+            "POST", f"/api/v1/platforms/{platform_id}/residual-diagnosis", json=body)
+
 
 class ApiKeyResource(_Resource):
     def list(self) -> list[dict]:
