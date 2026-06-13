@@ -9,11 +9,61 @@ from typing import Any
 import httpx
 
 
+def _coerce_details(details: Any) -> list[dict]:
+    """Normalise an API ``error.details`` value to ``list[dict]``.
+
+    The API returns a list of ``{"field", "message"}`` objects, but be robust:
+    a missing/None/non-list value (or a list with non-dict entries) yields ``[]``
+    so the SDK never raises while constructing an error.
+    """
+    if not isinstance(details, list):
+        return []
+    return [d for d in details if isinstance(d, dict)]
+
+
+def _format_details(details: list[dict]) -> str:
+    """Render details as ``field: message`` lines for inclusion in ``str(e)``."""
+    parts = []
+    for d in details:
+        field = d.get("field")
+        msg = d.get("message")
+        if field and msg:
+            parts.append(f"{field}: {msg}")
+        elif msg:
+            parts.append(str(msg))
+        elif field:
+            parts.append(str(field))
+    return "; ".join(parts)
+
+
 class AmbertraceError(Exception):
-    def __init__(self, status_code: int, code: str, message: str):
+    """Error raised on a non-2xx API response.
+
+    Backward-compatible attributes ``status_code`` and ``code`` are preserved.
+    When the API returns a structured ``error.details`` list (e.g. the verified
+    fail-closed 503 naming the rejected fact), it is exposed as ``details`` and
+    folded into ``str(e)`` so a bare ``print(e)`` shows *which fact* was rejected.
+    """
+
+    def __init__(
+        self,
+        status_code: int,
+        code: str,
+        message: str,
+        details: Any = None,
+    ):
         self.status_code = status_code
         self.code = code
-        super().__init__(message)
+        self.message = message
+        self.details: list[dict] = _coerce_details(details)
+        detail_str = _format_details(self.details)
+        full = f"{message} ({detail_str})" if detail_str else message
+        super().__init__(full)
+
+    @property
+    def rejected_facts(self) -> list[str]:
+        """Convenience: the ``field`` names carried in ``details`` (may be empty)."""
+        return [d["field"] for d in self.details if d.get("field")]
 
 
 # --- Cold-start resilience -------------------------------------------------
@@ -90,10 +140,13 @@ class _Resource:
 
             if resp.status_code >= 400:
                 err = body.get("error", {}) if isinstance(body, dict) else {}
+                if not isinstance(err, dict):
+                    err = {}
                 raise AmbertraceError(
                     resp.status_code,
                     err.get("code", "unknown"),
                     err.get("message", resp.text),
+                    err.get("details"),
                 )
             return body.get("data", body) if isinstance(body, dict) else body
 
