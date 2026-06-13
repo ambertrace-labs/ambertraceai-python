@@ -2,6 +2,7 @@
 
 from .client import AuthenticatedClient, Client
 from .convenience import (
+    AgentPolicyResource,
     AmbertraceAPI,
     AmbertraceError,
     ApiKeyResource,
@@ -15,6 +16,7 @@ from .convenience import (
 )
 
 __all__ = (
+    "AgentPolicyResource",
     "AmbertraceAPI",
     "AmbertraceError",
     "ApiKeyResource",

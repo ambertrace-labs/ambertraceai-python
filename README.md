@@ -83,6 +83,75 @@ print(answer["explanation"])
 | `api.usage` | `get` |
 | `api.jobs` | `get` |
 | `api.api_keys` | `list`, `create`, `revoke` |
+| `api.agent_policy` (preview) | `author`, `status`, `examples`, `authorize_action`, `create_session`, `step`, `get_session` |
+
+## Agent Policy Gate (preview)
+
+Write the rules an AI agent must obey in **plain English**; Ambertrace compiles
+them to a verified policy and **proves every proposed tool-call permit/deny** —
+fail-closed, with a machine-checked proof. You author *English* and read back the
+admitted rules (also in English) plus a permit/deny verdict with its proof; the
+compiled form stays internal.
+
+```python
+# 1. Author the policy in English
+result = api.agent_policy.author(
+    "An autonomous procurement agent may place purchase orders. Each order is "
+    "recorded as a row in a purchase_orders ledger with a quantity column and a "
+    "unit_price column. The cumulative spend — the sum of quantity times "
+    "unit_price across every row — must stay at or below 100000. Permit a "
+    "purchase order only when the resulting cumulative spend stays within budget."
+)
+platform_id = result["platform"]["id"]
+result["admitted"]   # the admitted rules, described in plain English — review these
+result["rejected"]   # anything outside the verified fragment, with a reason (never silently dropped)
+
+# 2. See exactly which facts an action must supply
+api.agent_policy.status()["input_fields"]   # e.g. quantity (int), unit_price (float)
+
+# 3. Gate one action — permit/deny WITH PROOF
+v = api.agent_policy.authorize_action(platform_id, tool="place_order",
+                                      args={"quantity": 100, "unit_price": 400})
+v["decision"]       # "permit" | "deny" | a policy's own verb
+v["proof_checked"]  # True — the kernel certified the firing set
+
+# For a CUMULATIVE control, mediate a session so the obligation is proven over the
+# accumulated executed-action ledger (the harness is the sole executor):
+s = api.agent_policy.create_session(platform_id=platform_id, goal="place orders")
+step = api.agent_policy.step(s["id"], tool="place_order",
+                             args={"quantity": 100, "unit_price": 400})
+step["step"]["verdict"]["decision"], step["step"]["executed"]
+```
+
+A runnable end-to-end demo is in [`examples/25_agent_spend_budget.py`](examples/25_agent_spend_budget.py).
+
+### Obligation classes — the English-in authoring contract
+
+Every policy is a set of requirements an action must satisfy. Each requirement is
+one of the classes below; author it in English and the compiler admits it as a
+verified obligation (anything outside these classes is **rejected-and-surfaced**
+in `result["rejected"]`, never silently approximated). Always confirm a
+requirement landed as you intended by reading `result["admitted"]` and by testing
+a within-limit action (expect permit) and a breaching action (expect deny).
+
+| Class | What it expresses | Example English that compiles to it |
+|-------|-------------------|-------------------------------------|
+| **Per-action condition** | A check on the proposed action's own fields | "Only allow actions of type triage, schedule, or refer." / "Block any actuator command with pressure outside 2 to 8 bar." / "Require mfa_passed for privileged requests." |
+| **Cumulative count / sum limit** | A cap on a running `count` or `sum` over a declared ledger of prior actions (only count/sum — never average/min/max) | "Each order writes a row to an order_log with a quantity column. The total quantity summed across all rows must stay at or below 1000." / "No more than 3 actions of this kind may be executed." |
+| **Cumulative exposure** | A cap on the running value `Σ qty × price` over a declared ledger; the limit is a numeric constant | "Each order writes a row to an open_positions ledger with a quantity column and a price column. The cumulative exposure — the sum of quantity times price across every row — must stay at or below 100000." |
+| **Interval / band binding** | An exposure cap proven for **every** value of one as-yet-unknown factor confined to a closed interval `[lo, hi]` (e.g. a fill price known only to lie in a band) | "For a proposed order whose fill price is not yet known but is guaranteed to be between 100 and 500, the cumulative exposure must stay at or below 100000 for every possible fill price in that range." |
+
+The cumulative / exposure / band classes operate over a **ledger** (a named
+relation of prior actions): name the ledger and its numeric column(s) in your
+policy, then mediate a session (`create_session` + `step`) so the gate proves the
+obligation over the resulting history. Browse `api.agent_policy.examples()` for
+more ready-to-author policies across domains (healthcare triage, grid dispatch,
+automation safety, access control, supply-chain).
+
+**Availability.** The Agent Policy Gate is a preview capability; its endpoints
+raise `AmbertraceError` (404) when not enabled on your deployment. The cumulative
+/ exposure / band classes additionally require the platform's numeric obligation
+checker to be enabled.
 
 ## Connectors
 

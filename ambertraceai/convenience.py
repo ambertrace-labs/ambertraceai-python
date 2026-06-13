@@ -495,6 +495,213 @@ class ConnectorResource(_Resource):
         )
 
 
+class AgentPolicyResource(_Resource):
+    """Author a governance policy in plain English, then PROVE every agent
+    action permit/deny against it.
+
+    This is the **Agent Policy Gate**: you write the rules an AI agent must obey
+    in natural language; Ambertrace compiles them to a verified policy and proves
+    each proposed tool-call permit/deny — fail-closed, with a machine-checked
+    proof. The compiled form is internal; you only ever author *English* and read
+    back the admitted rules (also rendered in English) plus a permit/deny verdict
+    with its proof.
+
+    Typical flow::
+
+        # 1. Author the policy (English in)
+        result = api.agent_policy.author(
+            "The agent may place orders against an open_positions ledger that "
+            "has a quantity column and a price column. The cumulative exposure - "
+            "the sum of quantity times price across every row - must stay at or "
+            "below 100000. Permit an order only when that cumulative exposure "
+            "stays within the limit."
+        )
+        platform_id = result["platform"]["id"]
+        # result["admitted"]  -> the rules that were admitted (plain English)
+        # result["rejected"]  -> any proposals that fell outside the verified
+        #                        fragment, each with a reason (nothing is silently
+        #                        dropped)
+
+        # 2. See exactly which facts an action must supply
+        status = api.agent_policy.status()
+        status["input_fields"]   # the declared inputs (name/type/range)
+
+        # 3. Gate a single proposed action - permit/deny WITH PROOF
+        verdict = api.agent_policy.authorize_action(
+            platform_id,
+            tool="place_order",
+            args={"qty": 100, "price": 400},
+        )
+        verdict["decision"]       # "permit" | "deny" | a policy's own verb
+        verdict["proof_checked"]  # True - the kernel certified the firing set
+        verdict["denied_reason"]  # on a deny, the specific requirement that failed
+
+    For a CUMULATIVE control (a running count / sum / exposure over a history of
+    prior actions), open a *session* instead of gating one action: the harness is
+    the sole executor and accumulates the executed-action ledger, so the gate can
+    prove the obligation over the *resulting* history (see :meth:`create_session`
+    / :meth:`step`).
+
+    -- Supported obligation classes (what you can express in English) ----------
+
+    Every policy is a set of requirements an action must satisfy. Each requirement
+    is one of these classes; you express it in plain English and the compiler
+    admits it as a verified obligation. (Anything outside these classes is
+    rejected-and-surfaced in ``result["rejected"]`` - never silently approximated.)
+
+    1. **Per-action condition** - a check on the proposed action's own fields.
+       *English:* "Only allow actions of type triage, schedule, or refer."
+       "Block any actuator command with pressure outside 2 to 8 bar." "Require
+       mfa_passed for privileged requests."
+
+    2. **Cumulative count / sum limit** - a cap on a running ``count`` or ``sum``
+       over a declared ledger of prior actions. Name the ledger and the column;
+       only ``count`` and ``sum`` are supported (never average/min/max).
+       *English (sum):* "Each order writes a row to an order_log with a quantity
+       column. The total quantity summed across all rows must stay at or below
+       1000." *English (count):* "No more than 3 actions of this kind may be
+       executed."
+
+    3. **Cumulative exposure** ``sum of qty x price <= limit`` - a cap on the
+       running *value* (the sum of a quantity column times a price column) over a
+       declared ledger. The limit must be a numeric constant.
+       *English:* "Each order writes a row to an open_positions ledger with a
+       quantity column and a price column. The cumulative exposure - the sum of
+       quantity times price across every row - must stay at or below 100000."
+
+    4. **Interval / band binding** - an exposure cap that must hold for *every*
+       value of ONE as-yet-unknown factor confined to a closed interval
+       ``[lo, hi]`` (e.g. a fill price not yet known but guaranteed to fall in a
+       band). The bound is proven for ALL values in the band, not just a sample.
+       *English:* "For a proposed order whose fill price is not yet known but is
+       guaranteed to be between 100 and 500, the cumulative exposure must stay at
+       or below 100000 for every possible fill price in that range."
+
+    Author the requirement in English, then ALWAYS confirm it admitted as you
+    intended by reading ``result["admitted"]`` (the rules in plain English) and
+    ``result["rejected"]`` (anything that fell outside the verified fragment) -
+    and by running a within-limit action (expect permit) and a breaching action
+    (expect deny) through the gate before relying on the policy. The intent
+    safeguard is review + test, not a fixed vocabulary.
+
+    -- Availability ------------------------------------------------------------
+
+    The Agent Policy Gate is a preview capability. Its endpoints are flagged and
+    return :class:`AmbertraceError` (404) when the gate is not enabled on the
+    deployment you are hitting. The cumulative / exposure / band classes
+    additionally require the platform's numeric obligation checker to be enabled.
+    """
+
+    def author(self, policy_text: str) -> dict:
+        """Compile an English governance policy into a verified policy and
+        build/replace the org's agent-policy gate.
+
+        ``policy_text`` is the rules an agent must obey, in natural language (see
+        the class docstring for the supported obligation classes + example
+        phrasings). Returns ``{"platform": {...}, "admitted": [{"name",
+        "description", "kind"}, ...], "rejected": [{"name", "reason"}, ...],
+        "policy_text": ..., "decision_vocabulary"?: {...}}``.
+
+        * ``admitted`` - the rules that were admitted, each described in plain
+          English. This is the authoritative read-back of what your policy
+          *means*; review it.
+        * ``rejected`` - every proposal that fell outside the verified fragment,
+          with a reason. Nothing is silently dropped: a requirement you expected
+          and do not see in ``admitted`` will appear here with why it was rejected.
+
+        An empty or vacuous policy fails closed: the call raises
+        :class:`AmbertraceError` (422) and the existing policy (if any) is left
+        unchanged.
+        """
+        return self._request(
+            "POST", "/api/v1/agent-policy-gate/policy",
+            json={"policy_text": policy_text})
+
+    def status(self) -> dict:
+        """The org's live agent-policy gate: the active policy text, the admitted
+        controls (plain English), and the DECLARED INPUT fields an action must
+        supply.
+
+        Returns ``{"enabled": True, "platform": {...}|None, "policy_text": ...,
+        "admitted_controls": [{"name", "description"}, ...], "input_fields":
+        [{"name", "type", "enum_values"?, "min_value"?, "max_value"?,
+        "description"?}, ...], "decision_vocabulary"?: {...}}``.
+
+        ``input_fields`` is the contract for :meth:`authorize_action` / :meth:`step`
+        - supply a value for each (under ``args`` or ``context``) so the gate
+        returns a real permit/deny rather than rejecting an unknown/missing fact.
+        """
+        return self._request("GET", "/api/v1/agent-policy-gate")
+
+    def examples(self) -> list[dict]:
+        """The built-in example-policy library: ``[{"id", "domain_label",
+        "title", "policy_text", "try_hint"}, ...]``. Each ``policy_text`` is a
+        ready-to-author English policy you can pass straight to :meth:`author`."""
+        return self._request("GET", "/api/v1/example-policies")
+
+    def authorize_action(self, platform_id: int, *, tool: str,
+                         args: dict | None = None,
+                         context: dict | None = None) -> dict:
+        """Gate ONE proposed tool-call against the verified policy - permit/deny
+        WITH PROOF.
+
+        ``args`` are the action's intrinsic fields; ``context`` carries ambient
+        facts the policy reasons over (``args`` wins on a key collision). Supply a
+        value for each of :meth:`status`'s ``input_fields``.
+
+        Returns ``{"decision", "proof_checked", "proof_summary", "denied_reason",
+        "deciding_rule"?, "certified_facts", "rejected_facts"}``. ``decision`` is
+        the policy's verdict verb (``permit``/``deny``, or a custom verb the policy
+        declares). Fail-closed: a rejected/missing fact, a proof-check failure, or
+        an unavailable engine yields no permit - never a default-allow.
+
+        For a CUMULATIVE obligation (class 2-4) this gates the action against an
+        EMPTY history - use a :meth:`create_session` + :meth:`step` loop so the
+        obligation is proven over the accumulated executed-action ledger.
+        """
+        action: dict = {"tool": tool, "args": args or {}}
+        body: dict = {"action": action}
+        if context is not None:
+            body["context"] = context
+        return self._request(
+            "POST", f"/api/v1/platforms/{platform_id}/authorize-action", json=body)
+
+    def create_session(self, *, platform_id: int,
+                       goal: str | None = None) -> dict:
+        """Open a mediated agent session bound to a verified agent-policy gate.
+
+        Every action proposed via :meth:`step` is gated; the harness is the SOLE
+        executor (no bypass) and accumulates the executed-action ledger, so a
+        CUMULATIVE obligation (count / sum / exposure / band) is proven over the
+        *resulting* history. Returns the session (``{"id", "platform_id", "goal",
+        "trace": [...]}``)."""
+        body: dict = {"platform_id": platform_id}
+        if goal is not None:
+            body["goal"] = goal
+        return self._request("POST", "/api/v1/agent-sessions", json=body)
+
+    def step(self, session_id: str, *, tool: str, args: dict | None = None,
+             context: dict | None = None) -> dict:
+        """Mediate ONE proposed action in a session: gate -> execute-on-permit /
+        block-on-deny.
+
+        The mediation invariant: an effect occurs IFF the gate returned permit
+        with a checked proof. On a cumulative policy, the executed action's row
+        joins the ledger so the next step's obligation folds over the resulting
+        history. Returns ``{"session": {...}, "step": {"verdict": {...},
+        "executed": bool, "effect": ...}}``."""
+        action: dict = {"tool": tool, "args": args or {}}
+        body: dict = {"action": action}
+        if context is not None:
+            body["context"] = context
+        return self._request(
+            "POST", f"/api/v1/agent-sessions/{session_id}/step", json=body)
+
+    def get_session(self, session_id: str) -> dict:
+        """Fetch a session and its full mediated step trace."""
+        return self._request("GET", f"/api/v1/agent-sessions/{session_id}")
+
+
 class JobResource(_Resource):
     def get(self, job_id: int) -> dict:
         """Fetch a job by id.
@@ -602,6 +809,13 @@ class AmbertraceAPI:
     @property
     def jobs(self) -> JobResource:
         return JobResource(self._http)
+
+    @property
+    def agent_policy(self) -> AgentPolicyResource:
+        """Author a governance policy in plain English and prove every agent
+        action permit/deny against it (the Agent Policy Gate — preview; see
+        :class:`AgentPolicyResource`)."""
+        return AgentPolicyResource(self._http)
 
     @property
     def usage(self) -> UsageResource:
