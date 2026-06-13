@@ -53,7 +53,12 @@ class PredictionConfigCreate:
             feature_config (None | PredictionConfigCreateFeatureConfigType0 | Unset): Advanced feature engineering
                 configuration (timeseries mode only). Controls which derived features are generated. Keys: 'lags' (list[int]),
                 'rolling_mean' (list[int]), 'rolling_std' (list[int]), 'roc' (list[int] — rate of change), 'seasonal_dummies'
-                (bool), 'differencing' (bool). Defaults are frequency-dependent. Ignored in cross_sectional mode.
+                (bool), 'differencing' (bool), 'target_transform' (str: 'auto'|'none'|'difference'). target_transform controls
+                how the forecast target is framed: 'auto' (default) differences a trending target automatically so a tree model
+                is not asked to extrapolate a non-stationary level (which yields negative R²); 'none' forecasts the raw level;
+                'difference' forecasts the change and reconstructs the level. The resolved transform (and why) is echoed in the
+                model metadata of the predict response. UNKNOWN keys are rejected (422), not ignored. Defaults are frequency-
+                dependent. Ignored in cross_sectional mode.
             feature_fields (list[str] | None | Unset): Explicit list of column names to use as input features. If null, all
                 numeric columns (excluding the target and time index) are used automatically. In cross_sectional mode, these are
                 the raw columns fed directly to the model. In timeseries mode, these are the base columns from which lag/rolling
