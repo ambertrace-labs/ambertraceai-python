@@ -224,7 +224,7 @@ if job["status"] == "error":
 `GET /api/v1/jobs/{id}` (and `wait_for_job`) returns two different job *types*:
 
 - the **ontology build** job (`type: "ontology"`, created by `domains.build_ontology`) — its `result` is the ontology.
-- the **platform build** job (`type: "build"`, the `build_job` from `platforms.create`) — its `result.generation_diagnostics` carries the build-generation payload below.
+- the **platform build** job (`type: "build"`, the `build_job` from `platforms.create`) — its `result.build_quality` carries the customer-facing build-quality summary and its `result.generation_diagnostics` the decision-coverage detail below.
 
 A consumer polling the *ontology* job will not see `generation_diagnostics` — poll the **platform build job** id instead.
 
@@ -243,10 +243,6 @@ if not diag.get("can_decide_adversely", True):
     print("Platform reaches no adverse decision:")
     for w in diag.get("decision_coverage_warnings", []):
         print("  -", w)
-
-***REMOVED***
-***REMOVED***
-***REMOVED***
 ```
 
 Fields: `rule_count`, `classifier_count`, `verdict_conclusion_count`, `connected_restrictive_count` (ints); `can_decide_adversely` (bool); `decision_coverage_warnings`, `non_discriminating_rules`, `orphan_derived` (list[str]), `unbound_references` (list).

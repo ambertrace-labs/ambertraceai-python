@@ -92,9 +92,10 @@ def main() -> None:
                 step(f"This build needs review — {len(blocking)} blocking issue(s).")
 
         # The same build job result also carries `generation_diagnostics` — the
-        # underlying detail behind build_quality: what rule generation produced
-        # and how the rule set behaves. NB: this lives on the *platform build*
-        # job — the ontology build job does not carry it.
+        # decision-coverage detail behind build_quality: how many rules were
+        # generated and whether the rule set can reach an adverse decision. NB:
+        # this lives on the *platform build* job — the ontology build job does
+        # not carry it.
         diag = (job.get("result") or {}).get("generation_diagnostics") or {}
         if diag:
             step(f"Generated {diag.get('rule_count')} rules "
@@ -105,11 +106,6 @@ def main() -> None:
                 step("This platform reaches NO adverse decision (permits everything).")
                 for w in diag.get("decision_coverage_warnings", []):
                     step(f"  coverage warning: {w}")
-            ***REMOVED***
-***REMOVED***
-                rep = diag.get(layer) or {}
-                if rep.get("fired"):
-                    step(f"  {layer}: outcome={rep.get('outcome')} added={rep.get('added')}")
 
         platform = api.platforms.get(platform_id)
         if platform.get("status") in ("active", "ready"):
