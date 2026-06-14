@@ -61,8 +61,8 @@ def sync_detailed(
 ) -> Response[list[ValidationErrorModel]]:
     """Revoke API key
 
-     Deactivates an API key. Session users can revoke any org key. User-scoped keys can only revoke
-    platform keys they created.
+     Deactivates an API key. A session/user caller may revoke only THEIR OWN keys; an org-admin may
+    revoke any org key; a user-scoped key may revoke only the platform keys it created.
 
     Args:
         id (int): Resource ID
@@ -93,8 +93,8 @@ def sync(
 ) -> list[ValidationErrorModel] | None:
     """Revoke API key
 
-     Deactivates an API key. Session users can revoke any org key. User-scoped keys can only revoke
-    platform keys they created.
+     Deactivates an API key. A session/user caller may revoke only THEIR OWN keys; an org-admin may
+    revoke any org key; a user-scoped key may revoke only the platform keys it created.
 
     Args:
         id (int): Resource ID
@@ -120,8 +120,8 @@ async def asyncio_detailed(
 ) -> Response[list[ValidationErrorModel]]:
     """Revoke API key
 
-     Deactivates an API key. Session users can revoke any org key. User-scoped keys can only revoke
-    platform keys they created.
+     Deactivates an API key. A session/user caller may revoke only THEIR OWN keys; an org-admin may
+    revoke any org key; a user-scoped key may revoke only the platform keys it created.
 
     Args:
         id (int): Resource ID
@@ -150,8 +150,8 @@ async def asyncio(
 ) -> list[ValidationErrorModel] | None:
     """Revoke API key
 
-     Deactivates an API key. Session users can revoke any org key. User-scoped keys can only revoke
-    platform keys they created.
+     Deactivates an API key. A session/user caller may revoke only THEIR OWN keys; an org-admin may
+    revoke any org key; a user-scoped key may revoke only the platform keys it created.
 
     Args:
         id (int): Resource ID

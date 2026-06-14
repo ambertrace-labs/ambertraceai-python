@@ -29,20 +29,24 @@ class BuildRequest:
             platform and the violations are recorded in ``config.verification_gate_violations``. The verified label is
             reserved for rule sets that pass the gate. The query-time proof is never overridable, so this can never produce
             an unsound ``proof_checked`` certificate. Default: False.
+        team_id (int | None | Unset): Required when visibility='team'; the caller must be a member.
         verified_min_confidence (float | None | Unset): Verified profile only. τ — the certified-fact confidence
             threshold in [0,1]. Facts (from retrieval or extracted from the query text) below τ are rejected at the
             neural→symbolic boundary and surfaced in ``explanation.rejected_facts`` rather than silently used.
         verified_profile (bool | Unset): Build in the verified profile. Verified platforms gate facts by a confidence
             threshold (τ) and return a proof certificate on every query (see ``proof_checked``). The rule set must be valid
             and satisfy ``invariant_manifest`` or the build fails (see ``override_verification_gate``). Default: False.
+        visibility (None | str | Unset): Sharing audience: 'user' (private, default) | 'team' | 'org'.
     """
 
     domain_id: int
     config: BuildRequestConfig | Unset = UNSET
     invariant_manifest: list[Invariant] | None | Unset = UNSET
     override_verification_gate: bool | Unset = False
+    team_id: int | None | Unset = UNSET
     verified_min_confidence: float | None | Unset = UNSET
     verified_profile: bool | Unset = False
+    visibility: None | str | Unset = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -68,6 +72,12 @@ class BuildRequest:
 
         override_verification_gate = self.override_verification_gate
 
+        team_id: int | None | Unset
+        if isinstance(self.team_id, Unset):
+            team_id = UNSET
+        else:
+            team_id = self.team_id
+
         verified_min_confidence: float | None | Unset
         if isinstance(self.verified_min_confidence, Unset):
             verified_min_confidence = UNSET
@@ -75,6 +85,12 @@ class BuildRequest:
             verified_min_confidence = self.verified_min_confidence
 
         verified_profile = self.verified_profile
+
+        visibility: None | str | Unset
+        if isinstance(self.visibility, Unset):
+            visibility = UNSET
+        else:
+            visibility = self.visibility
 
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
@@ -89,10 +105,14 @@ class BuildRequest:
             field_dict["invariant_manifest"] = invariant_manifest
         if override_verification_gate is not UNSET:
             field_dict["override_verification_gate"] = override_verification_gate
+        if team_id is not UNSET:
+            field_dict["team_id"] = team_id
         if verified_min_confidence is not UNSET:
             field_dict["verified_min_confidence"] = verified_min_confidence
         if verified_profile is not UNSET:
             field_dict["verified_profile"] = verified_profile
+        if visibility is not UNSET:
+            field_dict["visibility"] = visibility
 
         return field_dict
 
@@ -139,6 +159,15 @@ class BuildRequest:
 
         override_verification_gate = d.pop("override_verification_gate", UNSET)
 
+        def _parse_team_id(data: object) -> int | None | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(int | None | Unset, data)
+
+        team_id = _parse_team_id(d.pop("team_id", UNSET))
+
         def _parse_verified_min_confidence(data: object) -> float | None | Unset:
             if data is None:
                 return data
@@ -152,13 +181,24 @@ class BuildRequest:
 
         verified_profile = d.pop("verified_profile", UNSET)
 
+        def _parse_visibility(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        visibility = _parse_visibility(d.pop("visibility", UNSET))
+
         build_request = cls(
             domain_id=domain_id,
             config=config,
             invariant_manifest=invariant_manifest,
             override_verification_gate=override_verification_gate,
+            team_id=team_id,
             verified_min_confidence=verified_min_confidence,
             verified_profile=verified_profile,
+            visibility=visibility,
         )
 
         build_request.additional_properties = d

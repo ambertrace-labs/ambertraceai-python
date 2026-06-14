@@ -21,7 +21,10 @@ class DomainOut:
         status (str):
         created_at (None | str | Unset):
         description (None | str | Unset):
+        owner_user_id (int | None | Unset):
+        team_id (int | None | Unset):
         updated_at (None | str | Unset):
+        visibility (str | Unset):  Default: 'user'.
     """
 
     id: int
@@ -30,7 +33,10 @@ class DomainOut:
     status: str
     created_at: None | str | Unset = UNSET
     description: None | str | Unset = UNSET
+    owner_user_id: int | None | Unset = UNSET
+    team_id: int | None | Unset = UNSET
     updated_at: None | str | Unset = UNSET
+    visibility: str | Unset = "user"
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -54,11 +60,25 @@ class DomainOut:
         else:
             description = self.description
 
+        owner_user_id: int | None | Unset
+        if isinstance(self.owner_user_id, Unset):
+            owner_user_id = UNSET
+        else:
+            owner_user_id = self.owner_user_id
+
+        team_id: int | None | Unset
+        if isinstance(self.team_id, Unset):
+            team_id = UNSET
+        else:
+            team_id = self.team_id
+
         updated_at: None | str | Unset
         if isinstance(self.updated_at, Unset):
             updated_at = UNSET
         else:
             updated_at = self.updated_at
+
+        visibility = self.visibility
 
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
@@ -74,8 +94,14 @@ class DomainOut:
             field_dict["created_at"] = created_at
         if description is not UNSET:
             field_dict["description"] = description
+        if owner_user_id is not UNSET:
+            field_dict["owner_user_id"] = owner_user_id
+        if team_id is not UNSET:
+            field_dict["team_id"] = team_id
         if updated_at is not UNSET:
             field_dict["updated_at"] = updated_at
+        if visibility is not UNSET:
+            field_dict["visibility"] = visibility
 
         return field_dict
 
@@ -108,6 +134,24 @@ class DomainOut:
 
         description = _parse_description(d.pop("description", UNSET))
 
+        def _parse_owner_user_id(data: object) -> int | None | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(int | None | Unset, data)
+
+        owner_user_id = _parse_owner_user_id(d.pop("owner_user_id", UNSET))
+
+        def _parse_team_id(data: object) -> int | None | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(int | None | Unset, data)
+
+        team_id = _parse_team_id(d.pop("team_id", UNSET))
+
         def _parse_updated_at(data: object) -> None | str | Unset:
             if data is None:
                 return data
@@ -117,6 +161,8 @@ class DomainOut:
 
         updated_at = _parse_updated_at(d.pop("updated_at", UNSET))
 
+        visibility = d.pop("visibility", UNSET)
+
         domain_out = cls(
             id=id,
             name=name,
@@ -124,7 +170,10 @@ class DomainOut:
             status=status,
             created_at=created_at,
             description=description,
+            owner_user_id=owner_user_id,
+            team_id=team_id,
             updated_at=updated_at,
+            visibility=visibility,
         )
 
         domain_out.additional_properties = d
