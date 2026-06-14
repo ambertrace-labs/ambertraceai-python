@@ -31,9 +31,12 @@ class DomainDetail:
         entities (list[EntityOut] | Unset):
         eval_config (DomainDetailEvalConfigType0 | None | Unset):
         ontology (DomainDetailOntologyType0 | None | Unset):
+        owner_user_id (int | None | Unset):
         relationships (list[RelationshipOut] | Unset):
         schema_version (int | Unset):  Default: 1.
+        team_id (int | None | Unset):
         updated_at (None | str | Unset):
+        visibility (str | Unset):  Default: 'user'.
     """
 
     id: int
@@ -45,9 +48,12 @@ class DomainDetail:
     entities: list[EntityOut] | Unset = UNSET
     eval_config: DomainDetailEvalConfigType0 | None | Unset = UNSET
     ontology: DomainDetailOntologyType0 | None | Unset = UNSET
+    owner_user_id: int | None | Unset = UNSET
     relationships: list[RelationshipOut] | Unset = UNSET
     schema_version: int | Unset = 1
+    team_id: int | None | Unset = UNSET
     updated_at: None | str | Unset = UNSET
+    visibility: str | Unset = "user"
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -99,6 +105,12 @@ class DomainDetail:
         else:
             ontology = self.ontology
 
+        owner_user_id: int | None | Unset
+        if isinstance(self.owner_user_id, Unset):
+            owner_user_id = UNSET
+        else:
+            owner_user_id = self.owner_user_id
+
         relationships: list[dict[str, Any]] | Unset = UNSET
         if not isinstance(self.relationships, Unset):
             relationships = []
@@ -108,11 +120,19 @@ class DomainDetail:
 
         schema_version = self.schema_version
 
+        team_id: int | None | Unset
+        if isinstance(self.team_id, Unset):
+            team_id = UNSET
+        else:
+            team_id = self.team_id
+
         updated_at: None | str | Unset
         if isinstance(self.updated_at, Unset):
             updated_at = UNSET
         else:
             updated_at = self.updated_at
+
+        visibility = self.visibility
 
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
@@ -134,12 +154,18 @@ class DomainDetail:
             field_dict["eval_config"] = eval_config
         if ontology is not UNSET:
             field_dict["ontology"] = ontology
+        if owner_user_id is not UNSET:
+            field_dict["owner_user_id"] = owner_user_id
         if relationships is not UNSET:
             field_dict["relationships"] = relationships
         if schema_version is not UNSET:
             field_dict["schema_version"] = schema_version
+        if team_id is not UNSET:
+            field_dict["team_id"] = team_id
         if updated_at is not UNSET:
             field_dict["updated_at"] = updated_at
+        if visibility is not UNSET:
+            field_dict["visibility"] = visibility
 
         return field_dict
 
@@ -224,6 +250,15 @@ class DomainDetail:
 
         ontology = _parse_ontology(d.pop("ontology", UNSET))
 
+        def _parse_owner_user_id(data: object) -> int | None | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(int | None | Unset, data)
+
+        owner_user_id = _parse_owner_user_id(d.pop("owner_user_id", UNSET))
+
         _relationships = d.pop("relationships", UNSET)
         relationships: list[RelationshipOut] | Unset = UNSET
         if _relationships is not UNSET:
@@ -235,6 +270,15 @@ class DomainDetail:
 
         schema_version = d.pop("schema_version", UNSET)
 
+        def _parse_team_id(data: object) -> int | None | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(int | None | Unset, data)
+
+        team_id = _parse_team_id(d.pop("team_id", UNSET))
+
         def _parse_updated_at(data: object) -> None | str | Unset:
             if data is None:
                 return data
@@ -243,6 +287,8 @@ class DomainDetail:
             return cast(None | str | Unset, data)
 
         updated_at = _parse_updated_at(d.pop("updated_at", UNSET))
+
+        visibility = d.pop("visibility", UNSET)
 
         domain_detail = cls(
             id=id,
@@ -254,9 +300,12 @@ class DomainDetail:
             entities=entities,
             eval_config=eval_config,
             ontology=ontology,
+            owner_user_id=owner_user_id,
             relationships=relationships,
             schema_version=schema_version,
+            team_id=team_id,
             updated_at=updated_at,
+            visibility=visibility,
         )
 
         domain_detail.additional_properties = d

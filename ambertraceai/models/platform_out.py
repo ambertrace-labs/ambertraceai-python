@@ -35,6 +35,8 @@ class PlatformOut:
         created_at (None | str | Unset):
         description (None | str | Unset):
         neural_config (None | PlatformOutNeuralConfigType0 | Unset):
+        owner_user_id (int | None | Unset):
+        team_id (int | None | Unset):
         updated_at (None | str | Unset):
         verified_min_confidence (float | None | Unset): The certified-fact confidence threshold τ, surfaced from
             neural_config.
@@ -42,6 +44,7 @@ class PlatformOut:
             certified-fact gating). If a verified build was downgraded via override_verification_gate, this is False and
             ``config.verification_gate_violations`` records why. Default: False.
         version (int | Unset):  Default: 1.
+        visibility (str | Unset):  Default: 'user'.
     """
 
     domain_id: int
@@ -54,10 +57,13 @@ class PlatformOut:
     created_at: None | str | Unset = UNSET
     description: None | str | Unset = UNSET
     neural_config: None | PlatformOutNeuralConfigType0 | Unset = UNSET
+    owner_user_id: int | None | Unset = UNSET
+    team_id: int | None | Unset = UNSET
     updated_at: None | str | Unset = UNSET
     verified_min_confidence: float | None | Unset = UNSET
     verified_profile: bool | Unset = False
     version: int | Unset = 1
+    visibility: str | Unset = "user"
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -115,6 +121,18 @@ class PlatformOut:
         else:
             neural_config = self.neural_config
 
+        owner_user_id: int | None | Unset
+        if isinstance(self.owner_user_id, Unset):
+            owner_user_id = UNSET
+        else:
+            owner_user_id = self.owner_user_id
+
+        team_id: int | None | Unset
+        if isinstance(self.team_id, Unset):
+            team_id = UNSET
+        else:
+            team_id = self.team_id
+
         updated_at: None | str | Unset
         if isinstance(self.updated_at, Unset):
             updated_at = UNSET
@@ -130,6 +148,8 @@ class PlatformOut:
         verified_profile = self.verified_profile
 
         version = self.version
+
+        visibility = self.visibility
 
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
@@ -152,6 +172,10 @@ class PlatformOut:
             field_dict["description"] = description
         if neural_config is not UNSET:
             field_dict["neural_config"] = neural_config
+        if owner_user_id is not UNSET:
+            field_dict["owner_user_id"] = owner_user_id
+        if team_id is not UNSET:
+            field_dict["team_id"] = team_id
         if updated_at is not UNSET:
             field_dict["updated_at"] = updated_at
         if verified_min_confidence is not UNSET:
@@ -160,6 +184,8 @@ class PlatformOut:
             field_dict["verified_profile"] = verified_profile
         if version is not UNSET:
             field_dict["version"] = version
+        if visibility is not UNSET:
+            field_dict["visibility"] = visibility
 
         return field_dict
 
@@ -257,6 +283,24 @@ class PlatformOut:
 
         neural_config = _parse_neural_config(d.pop("neural_config", UNSET))
 
+        def _parse_owner_user_id(data: object) -> int | None | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(int | None | Unset, data)
+
+        owner_user_id = _parse_owner_user_id(d.pop("owner_user_id", UNSET))
+
+        def _parse_team_id(data: object) -> int | None | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(int | None | Unset, data)
+
+        team_id = _parse_team_id(d.pop("team_id", UNSET))
+
         def _parse_updated_at(data: object) -> None | str | Unset:
             if data is None:
                 return data
@@ -281,6 +325,8 @@ class PlatformOut:
 
         version = d.pop("version", UNSET)
 
+        visibility = d.pop("visibility", UNSET)
+
         platform_out = cls(
             domain_id=domain_id,
             id=id,
@@ -292,10 +338,13 @@ class PlatformOut:
             created_at=created_at,
             description=description,
             neural_config=neural_config,
+            owner_user_id=owner_user_id,
+            team_id=team_id,
             updated_at=updated_at,
             verified_min_confidence=verified_min_confidence,
             verified_profile=verified_profile,
             version=version,
+            visibility=visibility,
         )
 
         platform_out.additional_properties = d
