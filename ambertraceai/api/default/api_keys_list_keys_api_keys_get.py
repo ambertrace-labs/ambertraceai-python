@@ -55,8 +55,9 @@ def sync_detailed(
 ) -> Response[list[ValidationErrorModel]]:
     """List API keys
 
-     Returns API keys visible to the caller. Session users see all org keys. User-scoped keys see only
-    platform keys they created. Key secrets are not returned.
+     Returns API keys visible to the caller. A session/user caller sees only THEIR OWN keys; an org-admin
+    sees all org keys; a user-scoped key sees the platform keys it created. Key secrets are not
+    returned.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -81,8 +82,9 @@ def sync(
 ) -> list[ValidationErrorModel] | None:
     """List API keys
 
-     Returns API keys visible to the caller. Session users see all org keys. User-scoped keys see only
-    platform keys they created. Key secrets are not returned.
+     Returns API keys visible to the caller. A session/user caller sees only THEIR OWN keys; an org-admin
+    sees all org keys; a user-scoped key sees the platform keys it created. Key secrets are not
+    returned.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -103,8 +105,9 @@ async def asyncio_detailed(
 ) -> Response[list[ValidationErrorModel]]:
     """List API keys
 
-     Returns API keys visible to the caller. Session users see all org keys. User-scoped keys see only
-    platform keys they created. Key secrets are not returned.
+     Returns API keys visible to the caller. A session/user caller sees only THEIR OWN keys; an org-admin
+    sees all org keys; a user-scoped key sees the platform keys it created. Key secrets are not
+    returned.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -127,8 +130,9 @@ async def asyncio(
 ) -> list[ValidationErrorModel] | None:
     """List API keys
 
-     Returns API keys visible to the caller. Session users see all org keys. User-scoped keys see only
-    platform keys they created. Key secrets are not returned.
+     Returns API keys visible to the caller. A session/user caller sees only THEIR OWN keys; an org-admin
+    sees all org keys; a user-scoped key sees the platform keys it created. Key secrets are not
+    returned.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.

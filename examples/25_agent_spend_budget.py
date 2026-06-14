@@ -100,15 +100,14 @@ def _print_admitted(result: dict) -> None:
 def _print_inputs(status: dict) -> None:
     inputs = status.get("input_fields") or []
     if not inputs:
-        # A pure cumulative-exposure policy reads its quantity/price from the
-        # LEDGER ROW each action contributes, not from scalar facts — so there are
-        # no scalar input_fields. The action supplies the row (here: quantity +
-        # unit_price, the purchase_orders ledger's columns).
-        print("  No scalar input fields: this is a cumulative (ledger) policy — "
-              "each action supplies a row to the purchase_orders ledger "
-              "(quantity + unit_price), and the gate proves the obligation over "
-              "the resulting ledger.")
+        # No declared inputs at all (e.g. a policy with no per-action operands).
+        print("  No declared input fields: the gate still constrains whatever the "
+              "action proposes.")
         return
+    # A cumulative-exposure policy reads its operands (quantity / unit_price) from
+    # the LEDGER ROW each action contributes; those operand columns are surfaced as
+    # input_fields, so an action supplies them as args and the gate proves the
+    # obligation over the resulting ledger.
     print(f"  Declared input fields an action must supply ({len(inputs)}):")
     for spec in inputs:
         rng = ""
