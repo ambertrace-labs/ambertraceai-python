@@ -409,7 +409,7 @@ class PredictionResource(_Resource):
         Returns ``{"forecast": {"value", "lower", "upper"}, "baseline",
         "skill_vs_persistence", "why": [{"driver", "direction", "contribution",
         "reliability", "proof_checked", ...}, ...]}``. Pass ``verified=True`` to
-        run the active-driver set through the verified kernel — each WHY entry is
+        run the active-driver set through the verified engine — each WHY entry is
         then stamped ``proof_checked`` and a ``why_certification`` block (the
         certified facts, any rejected facts, the proof + summary) is attached.
         ``feature_overrides`` applies what-if values to the most recent row
@@ -533,7 +533,7 @@ class AgentPolicyResource(_Resource):
             args={"qty": 100, "price": 400},
         )
         verdict["decision"]       # "permit" | "deny" | a policy's own verb
-        verdict["proof_checked"]  # True - the kernel certified the firing set
+        verdict["proof_checked"]  # True - the verified engine certified the firing set
         verdict["denied_reason"]  # on a deny, the specific requirement that failed
 
     For a CUMULATIVE control (a running count / sum / exposure over a history of
@@ -711,14 +711,12 @@ class JobResource(_Resource):
 
         * **Ontology build** (``type: "ontology"``) — created by
           :meth:`DomainResource.build_ontology`. Its ``result`` is the ontology
-          itself. ***REMOVED***
-          ***REMOVED***
-          ***REMOVED***
-          and this job has **no** ``generation_diagnostics``.
+          itself, and this job has **no** ``generation_diagnostics``.
         * **Platform build** (``type: "build"``) — the ``build_job`` returned by
-          :meth:`PlatformResource.create`. Its ``result.generation_diagnostics``
-          ***REMOVED***
-          :meth:`AmbertraceAPI.wait_for_job`).
+          :meth:`PlatformResource.create`. Its ``result.build_quality`` carries
+          the customer-facing build-quality summary and its
+          ``result.generation_diagnostics`` the underlying decision-coverage
+          detail (see :meth:`AmbertraceAPI.wait_for_job`).
 
         A consumer polling the *ontology* job id will never see
         ``generation_diagnostics``; poll the **platform build job** id instead.
@@ -876,19 +874,10 @@ class AmbertraceAPI:
           never defined.
         * ``orphan_derived`` (list[str]) — derived atoms that no conclusion
           consumes.
-        ***REMOVED***
-          ***REMOVED***
-          ***REMOVED***
-          ***REMOVED***
-        ***REMOVED***
-          ``fired``, ``trigger``, ``outcome``, ``added`` (and related keys).
-        ***REMOVED***
 
         Interpreting it: ``verdict_conclusion_count == 0`` (equivalently
         ``can_decide_adversely is False``) means the platform reached no
-        deny/block decision; ``decision_coverage_warnings`` explains why; the
-        ***REMOVED***
-        ***REMOVED***
+        deny/block decision; ``decision_coverage_warnings`` explains why.
         """
         deadline = time.monotonic() + timeout
         while True:
