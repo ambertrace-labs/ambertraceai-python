@@ -26,15 +26,20 @@ class PlatformUpdateRequest:
         Attributes:
             invariant_manifest (list[Invariant] | None | Unset): Replace the platform's required-invariant manifest (see the
                 Invariant schema).
+            team_id (int | None | Unset): Required when visibility='team'; the caller must be a member.
             verified_min_confidence (float | None | Unset): Update the certified-fact confidence threshold τ in [0,1].
             verified_profile (bool | None | Unset): Enable/disable the verified profile on an existing platform. Enabling
                 re-validates every active rule; if any are not verified-profile-safe the flip is rejected with HTTP 409 listing
                 the offending rules.
+            visibility (None | str | Unset): Re-share audience: 'user' (private) | 'team' | 'org'. Only the owner/org-admin
+                may change it.
     """
 
     invariant_manifest: list[Invariant] | None | Unset = UNSET
+    team_id: int | None | Unset = UNSET
     verified_min_confidence: float | None | Unset = UNSET
     verified_profile: bool | None | Unset = UNSET
+    visibility: None | str | Unset = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -52,6 +57,12 @@ class PlatformUpdateRequest:
         else:
             invariant_manifest = self.invariant_manifest
 
+        team_id: int | None | Unset
+        if isinstance(self.team_id, Unset):
+            team_id = UNSET
+        else:
+            team_id = self.team_id
+
         verified_min_confidence: float | None | Unset
         if isinstance(self.verified_min_confidence, Unset):
             verified_min_confidence = UNSET
@@ -64,15 +75,25 @@ class PlatformUpdateRequest:
         else:
             verified_profile = self.verified_profile
 
+        visibility: None | str | Unset
+        if isinstance(self.visibility, Unset):
+            visibility = UNSET
+        else:
+            visibility = self.visibility
+
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update({})
         if invariant_manifest is not UNSET:
             field_dict["invariant_manifest"] = invariant_manifest
+        if team_id is not UNSET:
+            field_dict["team_id"] = team_id
         if verified_min_confidence is not UNSET:
             field_dict["verified_min_confidence"] = verified_min_confidence
         if verified_profile is not UNSET:
             field_dict["verified_profile"] = verified_profile
+        if visibility is not UNSET:
+            field_dict["visibility"] = visibility
 
         return field_dict
 
@@ -108,6 +129,15 @@ class PlatformUpdateRequest:
             d.pop("invariant_manifest", UNSET)
         )
 
+        def _parse_team_id(data: object) -> int | None | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(int | None | Unset, data)
+
+        team_id = _parse_team_id(d.pop("team_id", UNSET))
+
         def _parse_verified_min_confidence(data: object) -> float | None | Unset:
             if data is None:
                 return data
@@ -128,10 +158,21 @@ class PlatformUpdateRequest:
 
         verified_profile = _parse_verified_profile(d.pop("verified_profile", UNSET))
 
+        def _parse_visibility(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        visibility = _parse_visibility(d.pop("visibility", UNSET))
+
         platform_update_request = cls(
             invariant_manifest=invariant_manifest,
+            team_id=team_id,
             verified_min_confidence=verified_min_confidence,
             verified_profile=verified_profile,
+            visibility=visibility,
         )
 
         platform_update_request.additional_properties = d
