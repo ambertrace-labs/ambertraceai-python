@@ -7,18 +7,21 @@ import httpx
 from ... import errors
 from ...client import AuthenticatedClient, Client
 from ...models.validation_error_model import ValidationErrorModel
-from ...types import UNSET, Response
+from ...types import UNSET, Response, Unset
 
 
 def _get_kwargs(
     id: int,
     *,
     prediction_config_id: int,
+    include_pending: bool | Unset = False,
 ) -> dict[str, Any]:
 
     params: dict[str, Any] = {}
 
     params["prediction_config_id"] = prediction_config_id
+
+    params["include_pending"] = include_pending
 
     params = {k: v for k, v in params.items() if v is not UNSET and v is not None}
 
@@ -68,20 +71,28 @@ def sync_detailed(
     *,
     client: AuthenticatedClient | Client,
     prediction_config_id: int,
+    include_pending: bool | Unset = False,
 ) -> Response[list[ValidationErrorModel]]:
-    """Neural-vs-neurosymbolic backtest comparison
+    r"""Neural-vs-neurosymbolic backtest comparison
 
      Starts an async comparison that scores the trained model TWO ways over the same expanding-window
     holdout: neural (model alone) and neurosymbolic (after the platform's active adjustment+constraint
     rules are applied exactly as the live predict path applies them). Returns 202 with a job_id — poll
     GET /api/v1/jobs/{job_id}; the completed job result carries {neural, neurosymbolic, delta,
-    n_adjustment_rules, n_constraint_rules, fire_rate}. Timeseries configs only.
+    n_adjustment_rules, n_constraint_rules, n_pending_rules, fire_rate, mode}. Set include_pending=true
+    to ALSO apply the accepted-but-pending discovered rules read-only (a \"what-if\" preview before the
+    approval gate; mode=preview_pending). Timeseries configs only.
 
     Args:
         id (int): Resource ID
         prediction_config_id (int): The timeseries prediction config to compare. Neural metrics
             are computed from the model alone; neurosymbolic metrics apply the platform's active
             adjustment+constraint rules over the same holdout.
+        include_pending (bool | Unset): When true, the neurosymbolic branch ALSO applies the
+            accepted-but-pending discovered rules for this config (a read-only 'what-if' preview of
+            the discovered set BEFORE the human approval gate). is_active is never mutated. The result
+            carries mode='preview_pending' and n_pending_rules. Default false: active rules only (the
+            shipped delta). Default: False.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -94,6 +105,7 @@ def sync_detailed(
     kwargs = _get_kwargs(
         id=id,
         prediction_config_id=prediction_config_id,
+        include_pending=include_pending,
     )
 
     response = client.get_httpx_client().request(
@@ -108,20 +120,28 @@ def sync(
     *,
     client: AuthenticatedClient | Client,
     prediction_config_id: int,
+    include_pending: bool | Unset = False,
 ) -> list[ValidationErrorModel] | None:
-    """Neural-vs-neurosymbolic backtest comparison
+    r"""Neural-vs-neurosymbolic backtest comparison
 
      Starts an async comparison that scores the trained model TWO ways over the same expanding-window
     holdout: neural (model alone) and neurosymbolic (after the platform's active adjustment+constraint
     rules are applied exactly as the live predict path applies them). Returns 202 with a job_id — poll
     GET /api/v1/jobs/{job_id}; the completed job result carries {neural, neurosymbolic, delta,
-    n_adjustment_rules, n_constraint_rules, fire_rate}. Timeseries configs only.
+    n_adjustment_rules, n_constraint_rules, n_pending_rules, fire_rate, mode}. Set include_pending=true
+    to ALSO apply the accepted-but-pending discovered rules read-only (a \"what-if\" preview before the
+    approval gate; mode=preview_pending). Timeseries configs only.
 
     Args:
         id (int): Resource ID
         prediction_config_id (int): The timeseries prediction config to compare. Neural metrics
             are computed from the model alone; neurosymbolic metrics apply the platform's active
             adjustment+constraint rules over the same holdout.
+        include_pending (bool | Unset): When true, the neurosymbolic branch ALSO applies the
+            accepted-but-pending discovered rules for this config (a read-only 'what-if' preview of
+            the discovered set BEFORE the human approval gate). is_active is never mutated. The result
+            carries mode='preview_pending' and n_pending_rules. Default false: active rules only (the
+            shipped delta). Default: False.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -135,6 +155,7 @@ def sync(
         id=id,
         client=client,
         prediction_config_id=prediction_config_id,
+        include_pending=include_pending,
     ).parsed
 
 
@@ -143,20 +164,28 @@ async def asyncio_detailed(
     *,
     client: AuthenticatedClient | Client,
     prediction_config_id: int,
+    include_pending: bool | Unset = False,
 ) -> Response[list[ValidationErrorModel]]:
-    """Neural-vs-neurosymbolic backtest comparison
+    r"""Neural-vs-neurosymbolic backtest comparison
 
      Starts an async comparison that scores the trained model TWO ways over the same expanding-window
     holdout: neural (model alone) and neurosymbolic (after the platform's active adjustment+constraint
     rules are applied exactly as the live predict path applies them). Returns 202 with a job_id — poll
     GET /api/v1/jobs/{job_id}; the completed job result carries {neural, neurosymbolic, delta,
-    n_adjustment_rules, n_constraint_rules, fire_rate}. Timeseries configs only.
+    n_adjustment_rules, n_constraint_rules, n_pending_rules, fire_rate, mode}. Set include_pending=true
+    to ALSO apply the accepted-but-pending discovered rules read-only (a \"what-if\" preview before the
+    approval gate; mode=preview_pending). Timeseries configs only.
 
     Args:
         id (int): Resource ID
         prediction_config_id (int): The timeseries prediction config to compare. Neural metrics
             are computed from the model alone; neurosymbolic metrics apply the platform's active
             adjustment+constraint rules over the same holdout.
+        include_pending (bool | Unset): When true, the neurosymbolic branch ALSO applies the
+            accepted-but-pending discovered rules for this config (a read-only 'what-if' preview of
+            the discovered set BEFORE the human approval gate). is_active is never mutated. The result
+            carries mode='preview_pending' and n_pending_rules. Default false: active rules only (the
+            shipped delta). Default: False.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -169,6 +198,7 @@ async def asyncio_detailed(
     kwargs = _get_kwargs(
         id=id,
         prediction_config_id=prediction_config_id,
+        include_pending=include_pending,
     )
 
     response = await client.get_async_httpx_client().request(**kwargs)
@@ -181,20 +211,28 @@ async def asyncio(
     *,
     client: AuthenticatedClient | Client,
     prediction_config_id: int,
+    include_pending: bool | Unset = False,
 ) -> list[ValidationErrorModel] | None:
-    """Neural-vs-neurosymbolic backtest comparison
+    r"""Neural-vs-neurosymbolic backtest comparison
 
      Starts an async comparison that scores the trained model TWO ways over the same expanding-window
     holdout: neural (model alone) and neurosymbolic (after the platform's active adjustment+constraint
     rules are applied exactly as the live predict path applies them). Returns 202 with a job_id — poll
     GET /api/v1/jobs/{job_id}; the completed job result carries {neural, neurosymbolic, delta,
-    n_adjustment_rules, n_constraint_rules, fire_rate}. Timeseries configs only.
+    n_adjustment_rules, n_constraint_rules, n_pending_rules, fire_rate, mode}. Set include_pending=true
+    to ALSO apply the accepted-but-pending discovered rules read-only (a \"what-if\" preview before the
+    approval gate; mode=preview_pending). Timeseries configs only.
 
     Args:
         id (int): Resource ID
         prediction_config_id (int): The timeseries prediction config to compare. Neural metrics
             are computed from the model alone; neurosymbolic metrics apply the platform's active
             adjustment+constraint rules over the same holdout.
+        include_pending (bool | Unset): When true, the neurosymbolic branch ALSO applies the
+            accepted-but-pending discovered rules for this config (a read-only 'what-if' preview of
+            the discovered set BEFORE the human approval gate). is_active is never mutated. The result
+            carries mode='preview_pending' and n_pending_rules. Default false: active rules only (the
+            shipped delta). Default: False.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -209,5 +247,6 @@ async def asyncio(
             id=id,
             client=client,
             prediction_config_id=prediction_config_id,
+            include_pending=include_pending,
         )
     ).parsed

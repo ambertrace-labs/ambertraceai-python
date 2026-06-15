@@ -311,6 +311,18 @@ Full API reference: [app.ambertrace.ai/openapi/redoc](https://app.ambertrace.ai/
 
 ## Changelog
 
+### 0.11.1
+
+- **Sound neurosymbolic loop + `include_pending` preview.** `neurosymbolic_comparison`
+  now accepts `include_pending=True` — a read-only "what-if" that applies the
+  accepted-but-pending discovered rules before the human approval gate (`mode`
+  switches to `preview_pending`, with `n_pending_rules`); default scores active
+  rules only. Server-side, rule discovery is corrected to score candidates in the
+  same space they're applied (greedy forward selection through the live evaluator),
+  so an accepted rule set never degrades the backtest, and discovery now runs on
+  `ingested`-status datasets (previously it silently returned no rules). Cleaner
+  generated module names throughout (explicit `operationId`s on every route).
+
 ### 0.11.0
 
 - **Neurosymbolic rule discovery + neural-vs-neurosymbolic comparison.** New

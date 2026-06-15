@@ -494,6 +494,7 @@ class PredictionResource(_Resource):
 
     def neurosymbolic_comparison(self, platform_id: int, *,
                                  prediction_config_id: int,
+                                 include_pending: bool = False,
                                  wait: bool = True,
                                  timeout: float = 600.0,
                                  poll_interval: float = 5.0) -> dict:
@@ -505,16 +506,24 @@ class PredictionResource(_Resource):
         reports the head-to-head accuracy. Returns ``{"platform_id",
         "prediction_config_id", "target", "neural": {"r2", "rmse", "mae", "n"},
         "neurosymbolic": {"r2", "rmse", "mae", "n"}, "delta": {"r2", "rmse"},
-        "n_adjustment_rules", "n_constraint_rules", "fire_rate"}`` when ``wait`` is
-        True (the default). ``delta`` is neurosymbolic − neural (a positive
-        ``delta.r2`` / negative ``delta.rmse`` means the symbolic layer helped).
+        "n_adjustment_rules", "n_constraint_rules", "n_pending_rules", "fire_rate",
+        "mode"}`` when ``wait`` is True (the default). ``delta`` is neurosymbolic −
+        neural (a positive ``delta.r2`` / negative ``delta.rmse`` means the symbolic
+        layer helped).
+
+        Pass ``include_pending=True`` to ALSO apply the accepted-but-pending
+        discovered rules read-only — a "what-if" preview of the discovered set
+        BEFORE the human approval gate (``is_active`` is never mutated). The result
+        then carries ``mode="preview_pending"`` and ``n_pending_rules``; the default
+        (``include_pending=False``) scores active rules only (``mode="active"``).
 
         Pass ``wait=False`` for the raw 202 envelope (``{"job_id", "poll", ...}``)
         to poll the job yourself.
         """
         resp = self._request(
             "GET", f"/api/v1/platforms/{platform_id}/neurosymbolic-comparison",
-            params={"prediction_config_id": prediction_config_id})
+            params={"prediction_config_id": prediction_config_id,
+                    "include_pending": include_pending})
         if not wait:
             return resp
         job_id = resp.get("job_id")
