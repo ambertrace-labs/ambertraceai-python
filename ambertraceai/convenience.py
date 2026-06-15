@@ -407,14 +407,50 @@ class PredictionResource(_Resource):
         """Run the symbolic forecaster and return the forecast WITH its WHY.
 
         Returns ``{"forecast": {"value", "lower", "upper"}, "baseline",
-        "skill_vs_persistence", "why": [{"driver", "direction", "contribution",
-        "reliability", "proof_checked", ...}, ...]}``. Pass ``verified=True`` to
-        run the active-driver set through the verified engine — each WHY entry is
-        then stamped ``proof_checked`` and a ``why_certification`` block (the
-        certified facts, any rejected facts, the proof + summary) is attached.
-        ``feature_overrides`` applies what-if values to the most recent row
-        before composing (e.g. ``{"inflation": 5.0}``). The config need not be
-        trained — the symbolic forecaster is independent of the neural model.
+        "skill_vs_persistence", "why": [...], "accepted_drivers": [...]}``.
+
+        ``why`` IS the substantive explanation — the full set of materially-
+        contributing driver-rules the model induced + accepted on the holdout (NOT
+        only the ones firing on the most-recent row). So ``why`` is non-empty and
+        informative even when nothing fires on the latest row (e.g. a mid-range
+        macro reading) — the case where it used to come back ``[]``. It is empty
+        ONLY when the data admitted no data-fitting driver at all. Each ``why``
+        entry carries:
+
+        * ``driver`` — the plain-English rule (``WHEN … THEN <target> moves …``);
+        * ``direction`` (``up``/``down``), ``contribution`` / ``effect`` and
+          ``band`` — the fitted magnitude;
+        * ``fired_on_latest_row`` — whether this driver is ACTIVE NOW (i.e. its
+          antecedent holds on the most-recent row). The point forecast moves off
+          persistence by the sum of the contributions of the drivers that are
+          active now AND in the composed set (``excluded_from_composed_point`` is
+          False);
+        * ``base_features`` — the HUMAN-NAMED source feature(s) behind the
+          antecedent. When a driver reads an engineered form (e.g.
+          ``inflation_rolldev_6``), ``base_features`` maps it back to the ontology
+          concept (``["inflation"]``) while ``leaf_features`` / ``is_engineered``
+          keep the exact engineered column it reads;
+        * ``standalone_holdout_skill`` / ``fire_rate`` / ``reliability`` — the
+          data-fit evidence;
+        * ``excluded_from_composed_point`` — a driver sound on its OWN
+          standalone-skill but kept out of the additive point so the composed sum
+          stays coherent (it is still reported here as part of the explanation).
+
+        ``accepted_drivers`` is an ALIAS of ``why`` (the same content, one source
+        of truth) retained for backward compatibility. A top-level
+        ``max_standalone_holdout_skill`` reports the best standalone-holdout skill
+        across the materially-contributing set (the strongest single driver's
+        evidence), so you can gauge the explanation's overall strength at a glance.
+
+        Pass ``verified=True`` to run the active-driver set through the verified
+        engine — each ``why`` entry that is active now is then stamped
+        ``proof_checked`` with its kernel-certified antecedent (drivers not active /
+        excluded are honestly left unstamped, fail-closed), and a
+        ``why_certification`` block (the certified facts, any rejected facts, the
+        proof + summary) is attached. ``feature_overrides`` applies what-if values
+        to the most recent row before composing (e.g. ``{"inflation": 5.0}``). The
+        config need not be trained — the symbolic forecaster is independent of the
+        neural model.
         """
         body: dict[str, Any] = {
             "prediction_config_id": prediction_config_id,
