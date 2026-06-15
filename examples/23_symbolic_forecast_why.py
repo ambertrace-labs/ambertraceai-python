@@ -62,13 +62,23 @@ def main() -> None:
             f"[{fc['lower']}, {fc['upper']}] (baseline={result['baseline']}, "
             f"skill_vs_persistence={result['skill_vs_persistence']})"
         )
-        step(f"WHY — {len(result['why'])} driver(s) fired:")
+        # ``why`` is the full set of materially-contributing drivers the model
+        # learned (not only the ones active on the latest row): each entry flags
+        # whether it is active now and maps any engineered feature back to its
+        # human-named source via ``base_features``.
+        n_active = sum(1 for w in result["why"] if w.get("fired_on_latest_row"))
+        step(
+            f"WHY — {len(result['why'])} driver(s) "
+            f"({n_active} active on the latest row):"
+        )
         for w in result["why"]:
             mark = "proof-carrying" if w.get("proof_checked") else "fitted-only"
+            active = "active-now" if w.get("fired_on_latest_row") else "latent"
+            named = ", ".join(w.get("base_features") or []) or "—"
             print(
                 f"    - {w['driver']}  "
                 f"(direction={w['direction']}, contribution={w['contribution']}, "
-                f"{mark})"
+                f"drivers={named}, {active}, {mark})"
             )
         cert = result.get("why_certification")
         if cert:

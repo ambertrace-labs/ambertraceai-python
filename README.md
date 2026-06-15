@@ -112,7 +112,9 @@ api.agent_policy.status()["input_fields"]   # e.g. quantity (int), unit_price (f
 # 3. Gate one action — permit/deny WITH PROOF
 v = api.agent_policy.authorize_action(platform_id, tool="place_order",
                                       args={"quantity": 100, "unit_price": 400})
-v["decision"]       # "permit" | "deny" | a policy's own verb
+v["decision"]       # "permit" | "deny" | a policy's own verb (e.g. "escalate"/"clear")
+v["permitted"]      # True iff the verdict is WITHIN policy (non-restrictive) — the
+                    #   binary execute/block reading when the decision is a domain verb
 v["proof_checked"]  # True — the kernel certified the firing set
 
 # For a CUMULATIVE control, mediate a session so the obligation is proven over the
@@ -263,3 +265,26 @@ except AmbertraceError as e:
 ## API Documentation
 
 Full API reference: [app.ambertrace.ai/openapi/redoc](https://app.ambertrace.ai/openapi/redoc)
+
+## Changelog
+
+### 0.10.2
+
+- **`symbolic_forecast` `why` contract — enriched (non-breaking superset).** `why`
+  now surfaces the **full set of materially-contributing accepted drivers** the
+  model induced and accepted on the holdout — not only the drivers firing on the
+  most-recent row. So `why` is informative even when nothing fires on the latest
+  row (the case where it used to come back `[]`). Each entry carries
+  `fired_on_latest_row` (is this driver active now?), `base_features` (the
+  human-named source feature(s) behind an engineered antecedent), and
+  `standalone_holdout_skill` (per-driver data-fit evidence); a new top-level
+  `max_standalone_holdout_skill` reports the strongest single driver's skill.
+  `accepted_drivers` is now an **alias of `why`** (same content, one source of
+  truth). This is a **non-breaking superset**: the `forecast` value/interval,
+  `baseline`, and `skill_vs_persistence` are unchanged — consumers reading `why`
+  simply get the full driver set instead of the fired-only subset. Read the
+  enriched `why` to explain a forecast even off the latest row.
+
+### 0.10.1
+
+- Trim-forward release: IP-redacted docstrings for the public SDK.
