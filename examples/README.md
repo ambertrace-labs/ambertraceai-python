@@ -79,6 +79,15 @@ what-if scenarios.
 | `20_bond_yield_forecast.py` | US 10y Treasury yield (macro) | `data/fred_economic_data.csv` or FRED connector (`FRED_API_KEY`) |
 | `21_bitcoin_forecast.py` | BTC-USD daily price | Coinbase connector (no key needed) |
 | `22_equity_forecast.py` | SPY daily price | Yahoo Finance connector (no key needed) |
+| `26_neurosymbolic_bond_yield.py` | US 10y Treasury yield — **full neurosymbolic flow** (train → discover correction rules → symbolic WHY → neural-vs-neurosymbolic comparison) | `data/fred_economic_data.csv` or FRED connector (`FRED_API_KEY`) |
+
+`26_neurosymbolic_bond_yield.py` is the headline forecasting walkthrough: it
+trains a model, **discovers explainable correction rules** from its residuals
+(each printed with its fire-rate and backtest delta), reads a transparent
+**symbolic forecast with its WHY**, and ends with the honest **neural vs
+neurosymbolic** R²/RMSE comparison — so you can see whether the symbolic layer
+earns its place. Needs a user-scoped key (`at_...`): discovery is a write
+operation.
 
 Domain demos support `--standard` (skip verified profile) and `--tau` (confidence
 threshold) flags. They create resources on your account but do not self-clean —

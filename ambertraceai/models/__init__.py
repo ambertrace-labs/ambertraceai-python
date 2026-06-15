@@ -20,6 +20,7 @@ from .dataset_out_schema_info_type_0 import DatasetOutSchemaInfoType0
 from .dataset_preview import DatasetPreview
 from .dataset_preview_columns_item import DatasetPreviewColumnsItem
 from .dataset_preview_rows_item import DatasetPreviewRowsItem
+from .discover_prediction_rules_request import DiscoverPredictionRulesRequest
 from .domain_create import DomainCreate
 from .domain_detail import DomainDetail
 from .domain_detail_eval_config_type_0 import DomainDetailEvalConfigType0
@@ -163,6 +164,7 @@ __all__ = (
     "DatasetPreview",
     "DatasetPreviewColumnsItem",
     "DatasetPreviewRowsItem",
+    "DiscoverPredictionRulesRequest",
     "DomainCreate",
     "DomainDetail",
     "DomainDetailEvalConfigType0",

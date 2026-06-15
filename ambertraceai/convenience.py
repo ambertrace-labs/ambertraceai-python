@@ -391,6 +391,139 @@ class PredictionResource(_Resource):
     def list_predictions(self, platform_id: int) -> list[dict]:
         return self._request("GET", f"/api/v1/platforms/{platform_id}/predictions")
 
+    # -- Neurosymbolic rule discovery + neural-vs-neurosymbolic comparison --
+    #
+    # These two are ASYNC (HTTP 202): the call kicks off a background job and
+    # returns ``{..., "job_id": ..., "poll": ...}``. By default the SDK polls that
+    # job to completion and returns its result — pass ``wait=False`` to get the raw
+    # 202 envelope back and poll the job yourself via :meth:`AmbertraceAPI.jobs` /
+    # :meth:`AmbertraceAPI.wait_for_job` (the SAME job-poll machinery used here).
+
+    # Terminal job statuses — the same set :meth:`AmbertraceAPI.wait_for_job`
+    # treats as done, so the SDK has ONE notion of job completion.
+    _JOB_TERMINAL = ("ready", "active", "error", "failed", "completed")
+    _JOB_FAILED = ("error", "failed")
+
+    def _await_job(self, job_id: int, *, what: str, timeout: float,
+                   poll_interval: float) -> dict:
+        """Poll a job to a terminal status and return its ``result`` payload.
+
+        Mirrors :meth:`AmbertraceAPI.wait_for_job` (same terminal-status set,
+        same :class:`JobResource` getter) — kept here so a resource method can
+        poll without a back-reference to the parent client. Raises
+        :class:`AmbertraceError` on a failed job and :class:`TimeoutError` if the
+        job does not finish within ``timeout``.
+        """
+        jobs = JobResource(self._http)
+        deadline = time.monotonic() + timeout
+        while True:
+            job = jobs.get(int(job_id))
+            status = job.get("status", "")
+            if status in self._JOB_TERMINAL:
+                if status in self._JOB_FAILED:
+                    raise AmbertraceError(
+                        500, "job_failed",
+                        f"{what} failed (job {job_id}: "
+                        f"{job.get('error_message') or status})",
+                    )
+                result = job.get("result")
+                return result if isinstance(result, dict) else job
+            if time.monotonic() >= deadline:
+                raise TimeoutError(
+                    f"{what} did not complete within {timeout:.0f}s "
+                    f"(job {job_id}, last status: {status})"
+                )
+            time.sleep(poll_interval)
+
+    def discover_prediction_rules(self, platform_id: int, *,
+                                  prediction_config_id: int,
+                                  max_rounds: int | None = None,
+                                  wait: bool = True,
+                                  timeout: float = 600.0,
+                                  poll_interval: float = 5.0) -> dict:
+        """Discover neurosymbolic CORRECTION rules for a trained config (async).
+
+        Analyses the trained model's residuals, proposes corrective
+        adjustment/constraint rule candidates (template + LLM), and A/B-tests each
+        against the expanding-window backtest. Accepted rules are stored PENDING
+        EXPERT APPROVAL (``is_active=False``) — review and activate them via
+        :meth:`PlatformResource.update_rule` once you are satisfied. The config
+        must already be trained.
+
+        Returns the discovery SUMMARY ``{"prediction_config_id", "total_accepted",
+        "total_rejected", "rounds", "converged", "convergence_reason"}`` when
+        ``wait`` is True (the default). Then call
+        :meth:`discovered_prediction_rules` to read the accepted rules WITH their
+        per-rule fire-rate and backtest delta.
+
+        Pass ``wait=False`` to get the raw 202 envelope (``{"job_id", "poll",
+        ...}``) and poll the job yourself. Write-scoped: a user-scoped ``at_`` key
+        (owner/admin) is required.
+        """
+        body: dict[str, Any] = {"prediction_config_id": prediction_config_id}
+        if max_rounds is not None:
+            body["max_rounds"] = max_rounds
+        resp = self._request(
+            "POST", f"/api/v1/platforms/{platform_id}/discover-prediction-rules",
+            json=body)
+        if not wait:
+            return resp
+        job_id = resp.get("job_id")
+        if job_id is None:
+            return resp
+        return self._await_job(
+            job_id, what=f"Prediction-rule discovery for config {prediction_config_id}",
+            timeout=timeout, poll_interval=poll_interval)
+
+    def discovered_prediction_rules(self, platform_id: int, *,
+                                    prediction_config_id: int) -> dict:
+        """The rules discovered for a prediction config — each accepted rule WITH
+        its per-rule ``fire_rate`` and backtest ``delta`` (why it earns its
+        place), plus how many candidates were rejected.
+
+        Returns ``{"platform_id", "prediction_config_id", "accepted_rules":
+        [{"id", "name", "description", "rule_type", "condition", "action",
+        "priority", "is_active", "fire_rate", "delta", "eval_metric",
+        "discovery_round"}, ...], "total_accepted"}``. Call after
+        :meth:`discover_prediction_rules` has completed. Accepted rules are pending
+        expert approval (``is_active`` reflects that).
+        """
+        return self._request(
+            "GET", f"/api/v1/platforms/{platform_id}/discovered-prediction-rules",
+            params={"prediction_config_id": prediction_config_id})
+
+    def neurosymbolic_comparison(self, platform_id: int, *,
+                                 prediction_config_id: int,
+                                 wait: bool = True,
+                                 timeout: float = 600.0,
+                                 poll_interval: float = 5.0) -> dict:
+        """Compare the neural-only model against the neurosymbolic model — the
+        honest "does the symbolic layer earn its place?" backtest (async).
+
+        Runs the SAME expanding-window backtest twice — once with the neural model
+        alone, once with the discovered correction rules layered on top — and
+        reports the head-to-head accuracy. Returns ``{"platform_id",
+        "prediction_config_id", "target", "neural": {"r2", "rmse", "mae", "n"},
+        "neurosymbolic": {"r2", "rmse", "mae", "n"}, "delta": {"r2", "rmse"},
+        "n_adjustment_rules", "n_constraint_rules", "fire_rate"}`` when ``wait`` is
+        True (the default). ``delta`` is neurosymbolic − neural (a positive
+        ``delta.r2`` / negative ``delta.rmse`` means the symbolic layer helped).
+
+        Pass ``wait=False`` for the raw 202 envelope (``{"job_id", "poll", ...}``)
+        to poll the job yourself.
+        """
+        resp = self._request(
+            "GET", f"/api/v1/platforms/{platform_id}/neurosymbolic-comparison",
+            params={"prediction_config_id": prediction_config_id})
+        if not wait:
+            return resp
+        job_id = resp.get("job_id")
+        if job_id is None:
+            return resp
+        return self._await_job(
+            job_id, what=f"Neurosymbolic comparison for config {prediction_config_id}",
+            timeout=timeout, poll_interval=poll_interval)
+
     # -- Prediction "why" layer (preview) --
     #
     # The symbolic forecaster is a STANDALONE, fully-transparent forecasting mode
@@ -403,11 +536,37 @@ class PredictionResource(_Resource):
 
     def symbolic_forecast(self, platform_id: int, *, prediction_config_id: int,
                           feature_overrides: dict | None = None,
-                          verified: bool = False) -> dict:
+                          verified: bool = False,
+                          include_fitted_series: bool = False) -> dict:
         """Run the symbolic forecaster and return the forecast WITH its WHY.
 
         Returns ``{"forecast": {"value", "lower", "upper"}, "baseline",
         "skill_vs_persistence", "why": [...], "accepted_drivers": [...]}``.
+
+        Pass ``include_fitted_series=True`` to ALSO get the backtest's per-period
+        fitted-vs-actual TIMESERIES under ``fitted_series`` so you can chart actual
+        vs the symbolic-rules-fitted forecast over history. Shape::
+
+            {
+              "basis": "walk_forward_out_of_sample_one_step",
+              "target_field": "...", "horizon": 1, "n_points": N,
+              "series": [
+                {"index": <date-or-position>, "actual": <observed>,
+                 "predicted": <baseline + Σ fired drivers>,
+                 "persistence": <predict-last-level baseline>},
+                ...
+              ]
+            }
+
+        This is the SAME walk ``skill_vs_persistence`` is computed from — no extra
+        fit. HONEST LABEL: ``basis`` is ``walk_forward_out_of_sample_one_step`` —
+        the driver-rules were induced + accepted on the FIT window only and held
+        FROZEN across the holdout, so each period's ``predicted`` never saw that
+        period's outcome (the rigorous OUT-OF-SAMPLE one-step fit, NOT an in-sample
+        fit). ``series`` is empty when there were too few rows to backtest (the
+        honest answer, not an error). It is the model's HISTORICAL fit only —
+        belief-agnostic, no market priors. Omitted entirely unless you opt in (the
+        default response is not bloated).
 
         ``why`` IS the substantive explanation — the full set of materially-
         contributing driver-rules the model induced + accepted on the holdout (NOT
@@ -455,6 +614,7 @@ class PredictionResource(_Resource):
         body: dict[str, Any] = {
             "prediction_config_id": prediction_config_id,
             "verified": verified,
+            "include_fitted_series": include_fitted_series,
         }
         if feature_overrides is not None:
             body["feature_overrides"] = feature_overrides

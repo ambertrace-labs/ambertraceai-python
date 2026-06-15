@@ -1,5 +1,7 @@
 """Tests for SDK resource methods — mocked HTTP."""
 
+from unittest.mock import patch
+
 import httpx
 import pytest
 import respx
@@ -136,3 +138,118 @@ class TestPredictionResource:
         result = api.predictions.predict(1, prediction_config_id=1, feature_overrides={"x": 1})
         assert result["predicted_value"] == 42.0
         assert result["confidence"] == 0.9
+
+    @respx.mock
+    def test_discover_no_wait_returns_envelope(self, api):
+        route = respx.post(
+            "https://test.ambertrace.ai/api/v1/platforms/1/discover-prediction-rules"
+        ).mock(
+            return_value=httpx.Response(
+                202,
+                json=_envelope({"job_id": 7, "status": "discovering", "poll": "/api/v1/jobs/7"}),
+            )
+        )
+        result = api.predictions.discover_prediction_rules(
+            1, prediction_config_id=5, max_rounds=2, wait=False,
+        )
+        assert route.called
+        # max_rounds is forwarded in the POST body.
+        sent = route.calls.last.request
+        assert b'"max_rounds":2' in sent.content
+        assert b'"prediction_config_id":5' in sent.content
+        assert result["job_id"] == 7
+
+    @respx.mock
+    def test_discover_wait_polls_job_to_result(self, api):
+        respx.post(
+            "https://test.ambertrace.ai/api/v1/platforms/1/discover-prediction-rules"
+        ).mock(
+            return_value=httpx.Response(202, json=_envelope({"job_id": 9, "status": "discovering"}))
+        )
+        respx.get("https://test.ambertrace.ai/api/v1/jobs/9").mock(
+            side_effect=[
+                httpx.Response(200, json=_envelope({"id": 9, "status": "processing"})),
+                httpx.Response(
+                    200,
+                    json=_envelope({
+                        "id": 9, "status": "completed",
+                        "result": {"prediction_config_id": 5, "total_accepted": 2,
+                                   "total_rejected": 3, "rounds": 1, "converged": True,
+                                   "convergence_reason": "no_accept"},
+                    }),
+                ),
+            ]
+        )
+        with patch("time.sleep"):
+            result = api.predictions.discover_prediction_rules(1, prediction_config_id=5)
+        assert result["total_accepted"] == 2
+        assert result["converged"] is True
+
+    @respx.mock
+    def test_discover_wait_raises_on_failed_job(self, api):
+        respx.post(
+            "https://test.ambertrace.ai/api/v1/platforms/1/discover-prediction-rules"
+        ).mock(
+            return_value=httpx.Response(202, json=_envelope({"job_id": 11, "status": "discovering"}))
+        )
+        respx.get("https://test.ambertrace.ai/api/v1/jobs/11").mock(
+            return_value=httpx.Response(
+                200, json=_envelope({"id": 11, "status": "failed", "error_message": "boom"})
+            )
+        )
+        with pytest.raises(AmbertraceError) as exc_info:
+            api.predictions.discover_prediction_rules(1, prediction_config_id=5)
+        assert exc_info.value.code == "job_failed"
+
+    @respx.mock
+    def test_discovered_prediction_rules(self, api):
+        route = respx.get(
+            "https://test.ambertrace.ai/api/v1/platforms/1/discovered-prediction-rules"
+        ).mock(
+            return_value=httpx.Response(
+                200,
+                json=_envelope({
+                    "platform_id": 1, "prediction_config_id": 5, "total_accepted": 1,
+                    "accepted_rules": [{"id": 3, "name": "r", "fire_rate": 0.4, "delta": -0.02}],
+                }),
+            )
+        )
+        result = api.predictions.discovered_prediction_rules(1, prediction_config_id=5)
+        assert route.called
+        assert "prediction_config_id=5" in str(route.calls.last.request.url)
+        assert result["accepted_rules"][0]["fire_rate"] == 0.4
+
+    @respx.mock
+    def test_neurosymbolic_comparison_wait_polls(self, api):
+        respx.get(
+            "https://test.ambertrace.ai/api/v1/platforms/1/neurosymbolic-comparison"
+        ).mock(
+            return_value=httpx.Response(202, json=_envelope({"job_id": 21, "status": "comparing"}))
+        )
+        respx.get("https://test.ambertrace.ai/api/v1/jobs/21").mock(
+            return_value=httpx.Response(
+                200,
+                json=_envelope({
+                    "id": 21, "status": "completed",
+                    "result": {"platform_id": 1, "prediction_config_id": 5, "target": "GS10",
+                               "neural": {"r2": 0.8, "rmse": 0.3, "mae": 0.2, "n": 24},
+                               "neurosymbolic": {"r2": 0.85, "rmse": 0.27, "mae": 0.18, "n": 24},
+                               "delta": {"r2": 0.05, "rmse": -0.03},
+                               "n_adjustment_rules": 1, "n_constraint_rules": 0, "fire_rate": 0.4},
+                }),
+            )
+        )
+        with patch("time.sleep"):
+            result = api.predictions.neurosymbolic_comparison(1, prediction_config_id=5)
+        assert result["delta"]["r2"] == 0.05
+        assert result["neural"]["r2"] == 0.8
+
+    @respx.mock
+    def test_neurosymbolic_comparison_no_wait_returns_envelope(self, api):
+        respx.get(
+            "https://test.ambertrace.ai/api/v1/platforms/1/neurosymbolic-comparison"
+        ).mock(
+            return_value=httpx.Response(202, json=_envelope({"job_id": 21, "status": "comparing"}))
+        )
+        result = api.predictions.neurosymbolic_comparison(1, prediction_config_id=5, wait=False)
+        assert result["job_id"] == 21

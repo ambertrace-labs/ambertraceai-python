@@ -78,7 +78,7 @@ print(answer["explanation"])
 | `api.domains` | `list`, `create`, `get`, `update`, `delete`, `build_ontology`, `eval_config`, `set_eval_config`, `delete_eval_config`, `suggest_eval_config`, `list_templates`, `create_template`, `update_template`, `delete_template`, `feedback_stats` |
 | `api.datasets` | `list`, `get`, `upload`, `fetch`, `quality`, `clean`, `preview`, `delete` |
 | `api.platforms` | `list`, `create`, `get`, `delete`, `status`, `query`, `suggest_rules`, `list_suggestions`, `approve_suggestion`, `reject_suggestion`, `graph` |
-| `api.predictions` | `predict`, `list_configs`, `create_config`, `delete_config`, `train`, `list_predictions`, `symbolic_forecast`, `residual_diagnosis` (preview) |
+| `api.predictions` | `predict`, `list_configs`, `create_config`, `delete_config`, `train`, `list_predictions`, `discover_prediction_rules`, `discovered_prediction_rules`, `neurosymbolic_comparison`, `symbolic_forecast`, `residual_diagnosis` (preview) |
 | `api.connectors` | `list`, `test` |
 | `api.usage` | `get` |
 | `api.jobs` | `get` |
@@ -154,6 +154,49 @@ automation safety, access control, supply-chain).
 raise `AmbertraceError` (404) when not enabled on your deployment. The cumulative
 / exposure / band classes additionally require the platform's numeric obligation
 checker to be enabled.
+
+## Neurosymbolic forecasting
+
+Train a forecasting model, then **discover explainable correction rules** from its
+residuals and check — honestly — whether they earn their place against the neural
+model alone.
+
+```python
+# Train a Time-Series config (target = GS10, the 10y Treasury yield)
+config = api.predictions.create_config(platform_id, target_field="GS10",
+                                       time_index_field="date", horizon=1,
+                                       frequency="monthly", model_type="gbt")
+api.predictions.train(platform_id, config["id"])
+
+# 1) Discover correction rules — async; the SDK polls the job and returns the summary
+summary = api.predictions.discover_prediction_rules(
+    platform_id, prediction_config_id=config["id"])
+summary["total_accepted"], summary["total_rejected"], summary["converged"]
+
+# 2) Read the accepted rules WITH their fire-rate and backtest delta (why each earns its place)
+rules = api.predictions.discovered_prediction_rules(
+    platform_id, prediction_config_id=config["id"])["accepted_rules"]
+for r in rules:
+    print(r["name"], r["rule_type"], r["fire_rate"], r["delta"])
+# Discovered rules are stored PENDING expert approval (is_active=False) — review,
+# then activate with api.platforms.update_rule(...).
+
+# 3) Symbolic forecast — a transparent number with its WHY (the driver-rules behind it)
+fc = api.predictions.symbolic_forecast(platform_id, prediction_config_id=config["id"],
+                                       include_fitted_series=True)
+fc["forecast"], fc["why"]   # each why-entry: driver, direction, contribution, base_features
+
+# 4) Neural vs neurosymbolic — does the symbolic layer earn its place? (async; polled)
+cmp = api.predictions.neurosymbolic_comparison(platform_id, prediction_config_id=config["id"])
+cmp["neural"]["r2"], cmp["neurosymbolic"]["r2"], cmp["delta"]   # delta = neurosymbolic − neural
+```
+
+`discover_prediction_rules` and `neurosymbolic_comparison` are async (HTTP 202):
+by default the SDK polls the background job to completion and returns its result
+— pass `wait=False` to get the raw `{job_id, poll, ...}` envelope and poll it
+yourself via `api.wait_for_job(job_id)`. Discovery is a **write** operation, so it
+needs a user-scoped (`at_...`) key. A runnable end-to-end demo is in
+[`examples/26_neurosymbolic_bond_yield.py`](examples/26_neurosymbolic_bond_yield.py).
 
 ## Connectors
 
@@ -267,6 +310,20 @@ except AmbertraceError as e:
 Full API reference: [app.ambertrace.ai/openapi/redoc](https://app.ambertrace.ai/openapi/redoc)
 
 ## Changelog
+
+### 0.11.0
+
+- **Neurosymbolic rule discovery + neural-vs-neurosymbolic comparison.** New
+  `api.predictions` methods: `discover_prediction_rules` (async — analyse a
+  trained model's residuals, propose corrective adjustment/constraint rules, and
+  A/B-test each against the expanding-window backtest; accepted rules are stored
+  pending expert approval), `discovered_prediction_rules` (read the accepted rules
+  with each rule's `fire_rate` and backtest `delta`), and
+  `neurosymbolic_comparison` (async — head-to-head neural vs neurosymbolic R²/RMSE
+  so you can see whether the symbolic layer earns its place). The two async
+  methods poll the background job by default; pass `wait=False` for the raw 202
+  envelope. New headline example `examples/26_neurosymbolic_bond_yield.py` walks
+  the full 10y-Treasury-yield flow end to end.
 
 ### 0.10.2
 
