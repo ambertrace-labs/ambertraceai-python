@@ -1,0 +1,81 @@
+case_id,eccn,item_category,destination_country,country_group,end_user_type,end_use,denied_party_hit,controlled_item,license_exception_eligible,decision,deny_reason
+EXP-000001,1C350,aircraft_parts,China,D,government,civil,1,1,1,deny,denied_party
+EXP-000002,1C350,optics,Cambodia,D,government,dual,0,1,0,license_required,controlled_to_group_d
+EXP-000003,6A003,telecom,Cambodia,D,military,dual,0,1,1,permit,
+EXP-000004,3A001,software,Russia,D,commercial,military,0,1,1,license_required,military_end_use
+EXP-000005,2B350,sensors,Russia,D,military,civil,0,1,0,license_required,controlled_to_group_d
+EXP-000006,1C350,software,Japan,A,government,military,0,1,0,license_required,military_end_use
+EXP-000007,1C350,chemicals,India,B,military,military,0,1,0,license_required,military_end_use
+EXP-000008,6A003,telecom,India,B,commercial,dual,0,0,1,permit,
+EXP-000009,9A610,aircraft_parts,Turkey,B,commercial,military,0,1,0,license_required,military_end_use
+EXP-000010,7A994,materials,Iran,E,government,dual,0,0,0,deny,embargoed_destination
+EXP-000011,5A002,electronics,China,D,government,civil,0,1,0,license_required,controlled_to_group_d
+EXP-000012,2B350,aircraft_parts,Germany,A,commercial,civil,0,0,1,permit,
+EXP-000013,2B350,sensors,Netherlands,A,military,military,0,1,0,license_required,military_end_use
+EXP-000014,7A994,aircraft_parts,Poland,B,military,military,1,0,0,deny,denied_party
+EXP-000015,EAR99,materials,Canada,A,commercial,dual,0,0,1,permit,
+EXP-000016,5A992,optics,Germany,A,commercial,dual,0,0,1,permit,
+EXP-000017,2B350,software,Russia,D,military,civil,0,1,1,permit,
+EXP-000018,7A994,electronics,Germany,A,commercial,civil,0,1,1,permit,
+EXP-000019,3A991,sensors,Russia,D,government,dual,0,1,0,license_required,controlled_to_group_d
+EXP-000020,3A991,electronics,Mexico,B,government,dual,1,1,1,deny,denied_party
+EXP-000021,3A001,software,Russia,D,military,military,0,1,0,license_required,military_end_use
+EXP-000022,3A991,aircraft_parts,Cambodia,D,government,dual,0,1,0,license_required,controlled_to_group_d
+EXP-000023,EAR99,optics,Germany,A,commercial,civil,0,0,1,permit,
+EXP-000024,9A610,electronics,Russia,D,government,civil,0,1,1,permit,
+EXP-000025,5A992,materials,North Korea,E,military,civil,0,1,1,deny,embargoed_destination
+EXP-000026,EAR99,aircraft_parts,Iran,E,government,civil,1,1,0,deny,denied_party
+EXP-000027,1C350,aircraft_parts,Syria,E,military,civil,0,0,1,deny,embargoed_destination
+EXP-000028,5A002,materials,Syria,E,government,civil,0,0,0,deny,embargoed_destination
+EXP-000029,2B350,chemicals,Syria,E,military,civil,0,1,1,deny,embargoed_destination
+EXP-000030,5A002,electronics,North Korea,E,commercial,dual,0,0,1,deny,embargoed_destination
+EXP-000031,3A991,software,North Korea,E,government,civil,0,1,0,deny,embargoed_destination
+EXP-000032,7A994,telecom,Cambodia,D,military,dual,0,1,1,permit,
+EXP-000033,3A001,optics,Canada,A,government,military,0,1,1,license_required,military_end_use
+EXP-000034,7A994,software,Syria,E,government,military,0,1,0,deny,embargoed_destination
+EXP-000035,EAR99,sensors,India,B,government,civil,1,1,1,deny,denied_party
+EXP-000036,EAR99,sensors,China,D,military,dual,0,1,0,license_required,controlled_to_group_d
+EXP-000037,3A001,chemicals,Cuba,E,government,dual,0,0,0,deny,embargoed_destination
+EXP-000038,9A610,software,Germany,A,commercial,dual,1,1,1,deny,denied_party
+EXP-000039,6A003,optics,Venezuela,D,commercial,civil,0,1,0,license_required,controlled_to_group_d
+EXP-000040,7A994,aircraft_parts,Cuba,E,military,dual,1,0,1,deny,denied_party
+EXP-000041,3A001,telecom,Syria,E,commercial,military,1,0,0,deny,denied_party
+EXP-000042,7A994,sensors,North Korea,E,government,dual,0,0,1,deny,embargoed_destination
+EXP-000043,5A992,optics,China,D,military,civil,0,1,1,permit,
+EXP-000044,3A991,software,Venezuela,D,military,dual,0,1,1,permit,
+EXP-000045,EAR99,optics,France,A,military,military,0,1,1,license_required,military_end_use
+EXP-000046,6A003,software,Canada,A,commercial,civil,0,0,1,permit,
+EXP-000047,3A991,chemicals,North Korea,E,government,civil,0,0,1,deny,embargoed_destination
+EXP-000048,2B350,optics,China,D,commercial,dual,1,0,1,deny,denied_party
+EXP-000049,1C350,materials,North Korea,E,commercial,military,0,0,1,deny,embargoed_destination
+EXP-000050,5A002,optics,India,B,commercial,dual,0,0,1,permit,
+EXP-000051,2B350,materials,France,A,military,military,0,1,1,license_required,military_end_use
+EXP-000052,3A001,optics,Japan,A,military,military,0,1,1,license_required,military_end_use
+EXP-000053,EAR99,sensors,India,B,commercial,dual,1,0,0,deny,denied_party
+EXP-000054,3A001,optics,Turkey,B,commercial,civil,0,0,1,permit,
+EXP-000055,1C350,optics,Germany,A,commercial,civil,0,0,1,permit,
+EXP-000056,7A994,telecom,China,D,government,dual,0,1,0,license_required,controlled_to_group_d
+EXP-000057,7A994,optics,Turkey,B,government,civil,1,0,0,deny,denied_party
+EXP-000058,3A991,electronics,Japan,A,commercial,dual,0,1,1,permit,
+EXP-000059,EAR99,materials,Cambodia,D,government,civil,0,1,0,license_required,controlled_to_group_d
+EXP-000060,1C350,electronics,Venezuela,D,commercial,dual,0,1,0,license_required,controlled_to_group_d
+EXP-000061,3A991,telecom,Canada,A,commercial,military,1,0,0,deny,denied_party
+EXP-000062,1C350,optics,Mexico,B,commercial,dual,0,1,1,permit,
+EXP-000063,7A994,telecom,North Korea,E,military,military,0,1,1,deny,embargoed_destination
+EXP-000064,6A003,chemicals,Cambodia,D,military,dual,0,1,0,license_required,controlled_to_group_d
+EXP-000065,9A610,optics,Russia,D,government,military,0,1,1,license_required,military_end_use
+EXP-000066,5A992,software,Canada,A,commercial,military,0,1,0,license_required,military_end_use
+EXP-000067,9A610,chemicals,India,B,commercial,dual,0,0,1,permit,
+EXP-000068,7A994,electronics,Turkey,B,government,military,1,0,1,deny,denied_party
+EXP-000069,3A001,sensors,Turkey,B,government,military,0,1,0,license_required,military_end_use
+EXP-000070,5A992,sensors,Canada,A,commercial,civil,0,0,1,permit,
+EXP-000071,6A003,chemicals,Cuba,E,commercial,civil,0,1,1,deny,embargoed_destination
+EXP-000072,5A992,aircraft_parts,Netherlands,A,commercial,civil,1,0,0,deny,denied_party
+EXP-000073,5A002,telecom,China,D,government,dual,0,1,0,license_required,controlled_to_group_d
+EXP-000074,7A994,sensors,Australia,A,commercial,dual,0,1,1,permit,
+EXP-000075,6A003,materials,Cambodia,D,commercial,dual,0,1,0,license_required,controlled_to_group_d
+EXP-000076,1C350,chemicals,Cambodia,D,government,civil,0,1,1,permit,
+EXP-000077,7A994,electronics,Cambodia,D,military,military,0,1,0,license_required,military_end_use
+EXP-000078,3A991,sensors,Russia,D,military,civil,0,1,1,permit,
+EXP-000079,6A003,telecom,China,D,military,dual,0,1,0,license_required,controlled_to_group_d
+EXP-000080,5A002,electronics,Canada,A,commercial,dual,0,0,1,permit,

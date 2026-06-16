@@ -54,6 +54,10 @@ regulated industry. Sample data CSVs live in `data/`.
 | `15_environmental_compliance.py` | Environmental regulatory | `data/environmental_monitoring.csv` |
 | `16_timeseries_forecast.py` | Environmental forecasting | `data/environmental_monitoring.csv` |
 | `17_rule_coverage.py` | Vehicle inspection (rule regression) | `data/vehicle_inspections.csv` |
+| `27_aml_transaction_monitoring.py` | AML / transaction monitoring (clear/review/report) | `data/aml_transactions.csv` |
+| `28_medical_device_qms.py` | Medical-device QMS nonconformance triage (ISO 13485 / CAPA) | `data/device_nonconformances.csv` |
+| `29_content_moderation.py` | Trust & Safety content moderation (allow/limit/remove) | `data/content_moderation.csv` |
+| `30_esg_disclosure_check.py` | ESG / CSRD disclosure completeness check | `data/esg_disclosures.csv` |
 
 ### Verified profile demos
 
@@ -67,6 +71,8 @@ symbolic trace.
 | `18_access_governance.py` | Access governance PDP (permit/deny) | `data/access_requests.csv` |
 | `19_air_track_triage.py` | Air track C2 triage (escalate/monitor/clear) | `data/air_tracks.csv` |
 | `24_air_track_isr_hispec.py` | High-spec ISR air track triage (ASTERIX/MISB schema) | `data/air_tracks_hispec.csv` |
+| `31_export_control_screening.py` | Export-control / sanctions screening (permit/license_required/deny) | `data/export_screenings.csv` |
+| `32_kyc_onboarding_decision.py` | KYC onboarding decision (approve/edd/reject) | `data/kyc_applications.csv` |
 
 ### Forecasting demos
 
@@ -80,6 +86,8 @@ what-if scenarios.
 | `21_bitcoin_forecast.py` | BTC-USD daily price | Coinbase connector (no key needed) |
 | `22_equity_forecast.py` | SPY daily price | Yahoo Finance connector (no key needed) |
 | `26_neurosymbolic_bond_yield.py` | US 10y Treasury yield — **full neurosymbolic flow** (train → discover correction rules → symbolic WHY → neural-vs-neurosymbolic comparison) | `data/fred_economic_data.csv` or FRED connector (`FRED_API_KEY`) |
+| `33_energy_demand_forecast.py` | Daily electricity demand — **full neurosymbolic flow** (self-contained, weather-driven) | `data/energy_demand.csv` |
+| `34_fx_currency_forecast.py` | Currency ETF (FXE) close with USD-index covariate | Yahoo Finance connector (no key needed) |
 
 `26_neurosymbolic_bond_yield.py` is the headline forecasting walkthrough: it
 trains a model, **discovers explainable correction rules** from its residuals
@@ -88,6 +96,31 @@ trains a model, **discovers explainable correction rules** from its residuals
 neurosymbolic** R²/RMSE comparison — so you can see whether the symbolic layer
 earns its place. Needs a user-scoped key (`at_...`): discovery is a write
 operation.
+
+### Agent Policy Gate demos
+
+Author the rules an AI agent must obey in **plain English**; Ambertrace compiles
+them to a verified policy and **proves every proposed tool-call permit/deny** —
+fail-closed, with a machine-checked proof. No dataset: policies are
+English-authored. The gate is a **preview** capability — these demos report
+cleanly and skip when it isn't enabled on your deployment (HTTP 404).
+
+| Script | Obligation class | What it shows |
+|--------|------------------|---------------|
+| `25_agent_spend_budget.py` | Cumulative exposure (Σ qty × price) | Mediated session caps total committed spend; `--band` adds the interval-band variant |
+| `35_agent_rate_limit.py` | Cumulative count | Mediated session caps notifications sent per session |
+| `36_agent_tool_allowlist.py` | Per-action condition | Single-action gating: tool allowlist + a safe numeric band (the simplest gate) |
+| `37_agent_pii_egress_gate.py` | Per-action condition | Single-action gating: block outbound payloads containing SSN / credit-card data |
+
+### SDK mechanics demos
+
+Small demos of the SDK's operational surface — error handling and build
+diagnostics — rather than a particular industry domain.
+
+| Script | What it shows | Writes data? |
+|--------|---------------|--------------|
+| `38_error_handling.py` | `AmbertraceError` fields (status_code/code), verified 503 fail-closed, the two `wait_for_job` job types | No (read-only) |
+| `39_build_diagnostics.py` | Read `generation_diagnostics` from the build job — explain whether a platform can reach an adverse decision | Yes |
 
 Domain demos support `--standard` (skip verified profile) and `--tau` (confidence
 threshold) flags. They create resources on your account but do not self-clean —
