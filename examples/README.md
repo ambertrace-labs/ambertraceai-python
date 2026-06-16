@@ -84,6 +84,7 @@ Cross-cutting tools on a verified platform (built on the access-governance domai
 | `49_evaluate_holdout.py` | Evaluation harness: replay labeled rows → accuracy + certification rate + fail-closed rate |
 | `50_verified_vs_standard.py` | Same query, verified vs standard — standard answers, verified fail-closes on under-specified input |
 | `51_proof_anatomy.py` | Deep-dive: unpack every part of one proof-carrying answer (proof, confidence, symbolic trace, certified/rejected facts) |
+| `53_drift_monitoring.py` | Production monitoring: capture a drift baseline at approval, replay traffic, `check_drift` for behavioural drift |
 
 ### Forecasting demos
 
