@@ -75,6 +75,16 @@ symbolic trace.
 | `32_kyc_onboarding_decision.py` | KYC onboarding decision (approve/edd/reject) | `data/kyc_applications.csv` |
 | `46_soc_alert_triage.py` | SOC security-alert triage (auto_close/monitor/escalate) | `data/soc_alerts.csv` |
 
+#### Verified-profile tooling
+
+Cross-cutting tools on a verified platform (built on the access-governance domain).
+
+| Script | What it shows |
+|--------|---------------|
+| `49_evaluate_holdout.py` | Evaluation harness: replay labeled rows → accuracy + certification rate + fail-closed rate |
+| `50_verified_vs_standard.py` | Same query, verified vs standard — standard answers, verified fail-closes on under-specified input |
+| `51_proof_anatomy.py` | Deep-dive: unpack every part of one proof-carrying answer (proof, confidence, symbolic trace, certified/rejected facts) |
+
 ### Forecasting demos
 
 Time-series and scenario forecasting via the prediction API. Create a domain,
@@ -115,6 +125,8 @@ cleanly and skip when it isn't enabled on your deployment (HTTP 404).
 | `36_agent_tool_allowlist.py` | Per-action condition | Single-action gating: tool allowlist + a safe numeric band (the simplest gate) |
 | `37_agent_pii_egress_gate.py` | Per-action condition | Single-action gating: block outbound payloads containing SSN / credit-card data |
 | `47_agent_position_limit.py` | Cumulative sum | Mediated session caps a running position (Σ quantity) at a lot limit |
+| `48_agent_loop_gated.py` | (integration) | A real agent loop: a planner proposes actions, the gate vets each, the agent replans on a deny |
+| `52_policy_gallery.py` | (discovery) | Browse the built-in `examples()` policy library and author one programmatically |
 
 ### SDK mechanics demos
 
