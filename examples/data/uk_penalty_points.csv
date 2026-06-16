@@ -1,0 +1,80 @@
+code,offence,penalty_points,retention_years,retention_from,category,notes
+AC10,Failing to stop after an accident,5-10,4,offence,accident,Leaving the scene of an accident carries 5 to 10 penalty points.
+AC20,Failing to give particulars or report an accident within 24 hours,5-10,4,offence,accident,Not reporting an accident within 24 hours carries 5 to 10 penalty points.
+AC30,Undefined accident offences,4-9,4,offence,accident,Other accident-related offences carry 4 to 9 penalty points.
+BA10,Driving while disqualified by order of court,6,4,offence,disqualified driver,Driving while already banned carries 6 penalty points.
+BA30,Attempting to drive while disqualified by order of court,6,4,offence,disqualified driver,Attempting to drive while banned carries 6 penalty points.
+BA40,Causing death by driving while disqualified,3-11,4,conviction,disqualified driver,Causing death while disqualified is a serious offence (3 to 11 points).
+BA60,Causing serious injury by driving while disqualified,3-11,4,conviction,disqualified driver,Causing serious injury while disqualified carries 3 to 11 points.
+CD10,Driving without due care and attention,3-9,4,offence,careless driving,Careless driving carries 3 to 9 penalty points.
+CD20,Driving without reasonable consideration for other road users,3-9,4,offence,careless driving,Inconsiderate driving carries 3 to 9 penalty points.
+CD30,Driving without due care and attention or without reasonable consideration,3-9,4,offence,careless driving,Careless or inconsiderate driving carries 3 to 9 penalty points.
+CD33,Causing serious injury by careless or inconsiderate driving,3-11,4,conviction,careless driving,Causing serious injury by careless driving carries 3 to 11 points.
+CD40,Causing death through careless driving when unfit through drink,3-11,11,conviction,careless driving,A drink-related death offence; the endorsement stays 11 years from conviction.
+CD50,Causing death by careless driving when unfit through drugs,3-11,11,conviction,careless driving,A drug-related death offence; the endorsement stays 11 years from conviction.
+CD60,Causing death by careless driving with alcohol level above the limit,3-11,11,conviction,careless driving,A drink-related death offence; the endorsement stays 11 years from conviction.
+CD70,Causing death by careless driving then failing to supply a specimen for alcohol analysis,3-11,11,conviction,careless driving,A drink-related death offence; the endorsement stays 11 years from conviction.
+CD80,Causing death by careless or inconsiderate driving,3-11,4,conviction,careless driving,Causing death by careless driving carries 3 to 11 penalty points.
+CD90,Causing death by driving: unlicensed disqualified or uninsured drivers,3-11,4,conviction,careless driving,Causing death while unlicensed disqualified or uninsured carries 3 to 11 points.
+CU10,Using a vehicle with defective brakes,3,4,offence,construction and use,Defective brakes carry 3 penalty points.
+CU20,Using a vehicle with parts or accessories in a dangerous condition,3,4,offence,construction and use,A dangerously-equipped vehicle carries 3 penalty points.
+CU30,Using a vehicle with defective tyres,3,4,offence,construction and use,Each defective tyre can carry 3 penalty points.
+CU40,Using a vehicle with defective steering,3,4,offence,construction and use,Defective steering carries 3 penalty points.
+CU50,Causing or likely to cause danger by reason of load or passengers,3,4,offence,construction and use,An unsafe load or passengers carries 3 penalty points.
+CU80,Breach of requirements as to control of the vehicle such as using a mobile phone,3-6,4,offence,construction and use,Using a hand-held mobile phone while driving carries 6 penalty points and a fine.
+DD10,Causing serious injury by dangerous driving,3-11,4,conviction,dangerous driving,Causing serious injury by dangerous driving carries 3 to 11 points.
+DD40,Dangerous driving,3-11,4,conviction,dangerous driving,Dangerous driving carries 3 to 11 points and the endorsement stays 4 years from conviction.
+DD60,Manslaughter or culpable homicide while driving a vehicle,3-11,4,conviction,dangerous driving,A homicide driving offence carrying 3 to 11 points.
+DD80,Causing death by dangerous driving,3-11,4,conviction,dangerous driving,Causing death by dangerous driving carries 3 to 11 points and a long ban.
+DD90,Furious driving,3-9,4,conviction,dangerous driving,Furious driving carries 3 to 9 penalty points.
+DR10,Driving or attempting to drive with alcohol level above the limit,3-11,11,conviction,drink,Drink-driving; the endorsement stays on the licence for 11 years from conviction.
+DR20,Driving or attempting to drive while unfit through drink,3-11,11,conviction,drink,Driving while unfit through drink; 11 years from conviction.
+DR30,Driving or attempting to drive then failing to supply a specimen for analysis,3-11,11,conviction,drink,Failing to provide a specimen when driving; 11 years from conviction.
+DR31,Driving or attempting to drive then refusing analysis of a blood sample taken without consent,3-11,11,conviction,drink,Refusing analysis of a blood sample; 11 years from conviction.
+DR40,In charge of a vehicle while alcohol level above the limit,10,4,offence,drink,Being drunk in charge of a vehicle carries 10 penalty points.
+DR50,In charge of a vehicle while unfit through drink,10,4,offence,drink,Being in charge while unfit through drink carries 10 penalty points.
+DR60,Failure to provide a specimen for analysis (not driving or attempting to drive),10,4,offence,drink,Failing to provide a specimen when in charge carries 10 penalty points.
+DR61,Refusing analysis of a blood sample taken without consent (not driving),10,4,offence,drink,Refusing analysis when in charge carries 10 penalty points.
+DR70,Failing to co-operate with a preliminary test,4,4,offence,drink,Failing to co-operate with a roadside test carries 4 penalty points.
+DG10,Driving or attempting to drive with drug level above the specified limit,3-11,11,conviction,drugs,Drug-driving; the endorsement stays on the licence for 11 years from conviction.
+DG40,In charge of a vehicle while drug level above the specified limit,10,4,offence,drugs,Being in charge while over the drug limit carries 10 penalty points.
+DG60,Causing death by careless driving with drug level above the limit,3-11,11,conviction,drugs,A drug-related death offence; 11 years from conviction.
+DR80,Driving or attempting to drive when unfit through drugs,3-11,11,conviction,drugs,Driving while unfit through drugs; 11 years from conviction.
+DR90,In charge of a vehicle when unfit through drugs,10,4,offence,drugs,Being in charge while unfit through drugs carries 10 penalty points.
+IN10,Using a vehicle uninsured against third-party risks,6-8,4,offence,insurance,Driving without insurance carries 6 to 8 penalty points.
+LC20,Driving otherwise than in accordance with a licence,3-6,4,offence,licence,Driving outside your licence entitlement carries 3 to 6 penalty points.
+LC30,Driving after making a false declaration about fitness when applying for a licence,3-6,4,offence,licence,A false fitness declaration carries 3 to 6 penalty points.
+LC40,Driving a vehicle having failed to notify a disability,3-6,4,offence,licence,Failing to notify a relevant disability carries 3 to 6 penalty points.
+LC50,Driving after a licence has been cancelled or refused on medical grounds,3-6,4,offence,licence,Driving after a medical revocation carries 3 to 6 penalty points.
+MS10,Leaving a vehicle in a dangerous position,3,4,offence,miscellaneous,Leaving a vehicle dangerously carries 3 penalty points.
+MS20,Unlawful pillion riding,3,4,offence,miscellaneous,Unlawful pillion riding carries 3 penalty points.
+MS30,Play street offences,2,4,offence,miscellaneous,Play street offences carry 2 penalty points.
+MS50,Motor racing on the highway,3-11,4,offence,miscellaneous,Racing on the highway carries 3 to 11 penalty points.
+MS60,Offences not covered by other codes,3,4,offence,miscellaneous,Miscellaneous offences carry around 3 penalty points.
+MS70,Driving with uncorrected defective eyesight,3,4,offence,miscellaneous,Driving with defective eyesight carries 3 penalty points.
+MS80,Refusing to submit to an eyesight test,3,4,offence,miscellaneous,Refusing an eyesight test carries 3 penalty points.
+MS90,Failure to give information as to the identity of the driver,6,4,offence,miscellaneous,Not naming the driver carries 6 penalty points.
+MW10,Contravention of special roads regulations excluding speed limits,3,4,offence,motorway,Breaching motorway regulations carries 3 penalty points.
+PC10,Undefined contravention of pedestrian crossing regulations,3,4,offence,pedestrian crossing,A pedestrian-crossing offence carries 3 penalty points.
+PC20,Contravention of pedestrian crossing regulations with a moving vehicle,3,4,offence,pedestrian crossing,A moving-vehicle crossing offence carries 3 penalty points.
+PC30,Contravention of pedestrian crossing regulations with a stationary vehicle,3,4,offence,pedestrian crossing,A stationary-vehicle crossing offence carries 3 penalty points.
+SP10,Exceeding goods vehicle speed limits,3-6,4,offence,speeding,Exceeding a goods-vehicle speed limit carries 3 to 6 penalty points.
+SP20,Exceeding speed limit for type of vehicle excluding goods or passenger vehicles,3-6,4,offence,speeding,Exceeding a vehicle-type speed limit carries 3 to 6 penalty points.
+SP30,Exceeding the statutory speed limit on a public road,3-6,4,offence,speeding,Speeding on a public road carries 3 to 6 penalty points.
+SP40,Exceeding passenger vehicle speed limit,3-6,4,offence,speeding,Exceeding a passenger-vehicle speed limit carries 3 to 6 penalty points.
+SP50,Exceeding the speed limit on a motorway,3-6,4,offence,speeding,Speeding on a motorway carries 3 to 6 penalty points.
+TS10,Failing to comply with traffic-light signals,3,4,offence,traffic signs,Running a red light carries 3 penalty points.
+TS20,Failing to comply with double white lines,3,4,offence,traffic signs,Crossing double white lines carries 3 penalty points.
+TS30,Failing to comply with a stop sign,3,4,offence,traffic signs,Ignoring a stop sign carries 3 penalty points.
+TS40,Failing to comply with the direction of a constable or warden,3,4,offence,traffic signs,Ignoring a constable's direction carries 3 penalty points.
+TS50,Failing to comply with a traffic sign excluding stop signs traffic lights or double white lines,3,4,offence,traffic signs,Ignoring a traffic sign carries 3 penalty points.
+TS60,Failing to comply with a school crossing patrol sign,3,4,offence,traffic signs,Ignoring a school crossing patrol carries 3 penalty points.
+TS70,Undefined failure to comply with a traffic direction sign,3,4,offence,traffic signs,Other traffic-sign offences carry 3 penalty points.
+UT50,Aggravated taking of a vehicle,3-11,4,offence,theft,Aggravated vehicle taking carries 3 to 11 penalty points.
+TT99,Disqualification under totting-up,0,4,conviction,disqualification,Shown on the record when a driver is disqualified for reaching 12 or more points within 3 years.
+TOTTINGUP,Totting-up disqualification rule,12,3,offence,rule,A driver who totals 12 or more penalty points within 3 years is disqualified for at least 6 months.
+NEWDRIVER,New driver revocation rule,6,2,offence,rule,A driver who reaches 6 or more penalty points within 2 years of passing their first test has their licence revoked and must re-apply and re-pass both theory and practical tests.
+PROBATION,Probationary period for new drivers,6,2,offence,rule,The first 2 years after passing the first driving test are probationary; the 6-point revocation rule applies during this period.
+MINBAN,Minimum totting-up disqualification period,0,0,offence,disqualification,A totting-up ban is normally at least 6 months; 12 months if disqualified once in the previous 3 years and 2 years if disqualified twice in the previous 3 years.
+EXHARDSHIP,Exceptional hardship plea,0,0,offence,mitigation,A driver facing a totting-up ban may argue exceptional hardship to avoid disqualification; it must go beyond ordinary inconvenience and is decided by the court and cannot reuse the same grounds within 3 years.
+RETENTION,How long points stay on the licence,0,0,offence,rule,Most endorsements stay 4 years from the date of the offence; dangerous driving stays 4 years from conviction; serious drink or drug and causing-death offences stay 11 years from conviction.
