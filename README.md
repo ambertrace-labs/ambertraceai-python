@@ -311,6 +311,18 @@ Full API reference: [app.ambertrace.ai/openapi/redoc](https://app.ambertrace.ai/
 
 ## Changelog
 
+### 0.11.2
+
+- **Per-period neurosymbolic-comparison series (for charting).**
+  `neurosymbolic_comparison` now accepts `include_series=True` — the completed job
+  result then carries a `series` list of the per-period neural-vs-neurosymbolic
+  head-to-head over the SAME held-out backtest points the aggregate metrics are
+  computed from, so the comparison can be charted OVER TIME. Each entry is
+  `{index, time?, actual, neural, neurosymbolic, rule_fired}` (`rule_fired` marks
+  the periods where applying the rules changed the prediction). The series
+  reconciles with the aggregate metrics and honours `include_pending`. Omitted by
+  default (additive / back-compatible); timeseries configs only.
+
 ### 0.11.1
 
 - **Sound neurosymbolic loop + `include_pending` preview.** `neurosymbolic_comparison`

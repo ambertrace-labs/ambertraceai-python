@@ -495,6 +495,7 @@ class PredictionResource(_Resource):
     def neurosymbolic_comparison(self, platform_id: int, *,
                                  prediction_config_id: int,
                                  include_pending: bool = False,
+                                 include_series: bool = False,
                                  wait: bool = True,
                                  timeout: float = 600.0,
                                  poll_interval: float = 5.0) -> dict:
@@ -517,13 +518,35 @@ class PredictionResource(_Resource):
         then carries ``mode="preview_pending"`` and ``n_pending_rules``; the default
         (``include_pending=False``) scores active rules only (``mode="active"``).
 
+        Pass ``include_series=True`` to ALSO get the per-period head-to-head over
+        the SAME held-out backtest points the aggregate metrics are computed from,
+        so the comparison can be charted OVER TIME. The result then carries a
+        ``series`` list (omitted by default — additive / back-compatible)::
+
+            "series": [
+              {"index": <position in the engineered holdout>,
+               "time": <ISO-8601 period, when the config has a usable
+                        time_index_field — else absent>,
+               "actual": <the realised level target>,
+               "neural": <the model-only level prediction>,
+               "neurosymbolic": <the prediction after the rules are applied>,
+               "rule_fired": <True iff applying the rules CHANGED the prediction
+                              for that period — i.e. neural != neurosymbolic>},
+              ...
+            ]
+
+        The series reconciles with the aggregate metrics (it is the same
+        computation, not a recompute) and honours ``include_pending`` (the preview
+        series applies the pending rules too). Timeseries configs only.
+
         Pass ``wait=False`` for the raw 202 envelope (``{"job_id", "poll", ...}``)
         to poll the job yourself.
         """
         resp = self._request(
             "GET", f"/api/v1/platforms/{platform_id}/neurosymbolic-comparison",
             params={"prediction_config_id": prediction_config_id,
-                    "include_pending": include_pending})
+                    "include_pending": include_pending,
+                    "include_series": include_series})
         if not wait:
             return resp
         job_id = resp.get("job_id")

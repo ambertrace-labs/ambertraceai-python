@@ -253,3 +253,38 @@ class TestPredictionResource:
         )
         result = api.predictions.neurosymbolic_comparison(1, prediction_config_id=5, wait=False)
         assert result["job_id"] == 21
+
+    @respx.mock
+    def test_neurosymbolic_comparison_include_series(self, api):
+        route = respx.get(
+            "https://test.ambertrace.ai/api/v1/platforms/1/neurosymbolic-comparison"
+        ).mock(
+            return_value=httpx.Response(202, json=_envelope({"job_id": 21, "status": "comparing"}))
+        )
+        respx.get("https://test.ambertrace.ai/api/v1/jobs/21").mock(
+            return_value=httpx.Response(
+                200,
+                json=_envelope({
+                    "id": 21, "status": "completed",
+                    "result": {"platform_id": 1, "prediction_config_id": 5, "target": "GS10",
+                               "neural": {"r2": 0.8, "rmse": 0.3, "mae": 0.2, "n": 2},
+                               "neurosymbolic": {"r2": 0.85, "rmse": 0.27, "mae": 0.18, "n": 2},
+                               "delta": {"r2": 0.05, "rmse": -0.03},
+                               "n_adjustment_rules": 1, "n_constraint_rules": 0, "fire_rate": 0.5,
+                               "series": [
+                                   {"index": 0, "time": "2024-01-01", "actual": 4.0,
+                                    "neural": 4.1, "neurosymbolic": 4.05, "rule_fired": True},
+                                   {"index": 1, "actual": 4.2,
+                                    "neural": 4.2, "neurosymbolic": 4.2, "rule_fired": False},
+                               ]},
+                }),
+            )
+        )
+        with patch("time.sleep"):
+            result = api.predictions.neurosymbolic_comparison(
+                1, prediction_config_id=5, include_series=True)
+        # include_series is wired into the query params
+        assert "include_series=true" in str(route.calls.last.request.url).lower()
+        assert len(result["series"]) == 2
+        assert result["series"][0]["rule_fired"] is True
+        assert result["series"][1]["rule_fired"] is False

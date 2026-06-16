@@ -15,6 +15,7 @@ def _get_kwargs(
     *,
     prediction_config_id: int,
     include_pending: bool | Unset = False,
+    include_series: bool | Unset = False,
 ) -> dict[str, Any]:
 
     params: dict[str, Any] = {}
@@ -22,6 +23,8 @@ def _get_kwargs(
     params["prediction_config_id"] = prediction_config_id
 
     params["include_pending"] = include_pending
+
+    params["include_series"] = include_series
 
     params = {k: v for k, v in params.items() if v is not UNSET and v is not None}
 
@@ -72,6 +75,7 @@ def sync_detailed(
     client: AuthenticatedClient | Client,
     prediction_config_id: int,
     include_pending: bool | Unset = False,
+    include_series: bool | Unset = False,
 ) -> Response[list[ValidationErrorModel]]:
     r"""Neural-vs-neurosymbolic backtest comparison
 
@@ -81,7 +85,10 @@ def sync_detailed(
     GET /api/v1/jobs/{job_id}; the completed job result carries {neural, neurosymbolic, delta,
     n_adjustment_rules, n_constraint_rules, n_pending_rules, fire_rate, mode}. Set include_pending=true
     to ALSO apply the accepted-but-pending discovered rules read-only (a \"what-if\" preview before the
-    approval gate; mode=preview_pending). Timeseries configs only.
+    approval gate; mode=preview_pending). Set include_series=true to ALSO get a per-period \"series\"
+    array over the SAME holdout (each entry {index, time, actual, neural, neurosymbolic, rule_fired}) so
+    the head-to-head can be charted over time; it reconciles with the aggregate metrics and is omitted
+    by default. Timeseries configs only.
 
     Args:
         id (int): Resource ID
@@ -93,6 +100,17 @@ def sync_detailed(
             the discovered set BEFORE the human approval gate). is_active is never mutated. The result
             carries mode='preview_pending' and n_pending_rules. Default false: active rules only (the
             shipped delta). Default: False.
+        include_series (bool | Unset): When true, the completed job result ALSO carries a 'series'
+            array — the per-period neural-vs-neurosymbolic head-to-head over the SAME held-out
+            backtest points the aggregate metrics are computed from, so the comparison can be charted
+            OVER TIME. Each entry is {index (position in the engineered holdout), time (ISO-8601
+            period, when the config has a usable time_index_field), actual (the realised level
+            target), neural (the model-only level prediction), neurosymbolic (the prediction after the
+            rules are applied), rule_fired (true iff applying the rules CHANGED the prediction for
+            that period — i.e. neural != neurosymbolic)}. The series reconciles with the aggregate
+            metrics (it is the same computation, not a recompute). Honours include_pending (the
+            preview series applies the pending rules too). Default false: the 'series' field is
+            omitted entirely (additive / back-compatible). Default: False.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -106,6 +124,7 @@ def sync_detailed(
         id=id,
         prediction_config_id=prediction_config_id,
         include_pending=include_pending,
+        include_series=include_series,
     )
 
     response = client.get_httpx_client().request(
@@ -121,6 +140,7 @@ def sync(
     client: AuthenticatedClient | Client,
     prediction_config_id: int,
     include_pending: bool | Unset = False,
+    include_series: bool | Unset = False,
 ) -> list[ValidationErrorModel] | None:
     r"""Neural-vs-neurosymbolic backtest comparison
 
@@ -130,7 +150,10 @@ def sync(
     GET /api/v1/jobs/{job_id}; the completed job result carries {neural, neurosymbolic, delta,
     n_adjustment_rules, n_constraint_rules, n_pending_rules, fire_rate, mode}. Set include_pending=true
     to ALSO apply the accepted-but-pending discovered rules read-only (a \"what-if\" preview before the
-    approval gate; mode=preview_pending). Timeseries configs only.
+    approval gate; mode=preview_pending). Set include_series=true to ALSO get a per-period \"series\"
+    array over the SAME holdout (each entry {index, time, actual, neural, neurosymbolic, rule_fired}) so
+    the head-to-head can be charted over time; it reconciles with the aggregate metrics and is omitted
+    by default. Timeseries configs only.
 
     Args:
         id (int): Resource ID
@@ -142,6 +165,17 @@ def sync(
             the discovered set BEFORE the human approval gate). is_active is never mutated. The result
             carries mode='preview_pending' and n_pending_rules. Default false: active rules only (the
             shipped delta). Default: False.
+        include_series (bool | Unset): When true, the completed job result ALSO carries a 'series'
+            array — the per-period neural-vs-neurosymbolic head-to-head over the SAME held-out
+            backtest points the aggregate metrics are computed from, so the comparison can be charted
+            OVER TIME. Each entry is {index (position in the engineered holdout), time (ISO-8601
+            period, when the config has a usable time_index_field), actual (the realised level
+            target), neural (the model-only level prediction), neurosymbolic (the prediction after the
+            rules are applied), rule_fired (true iff applying the rules CHANGED the prediction for
+            that period — i.e. neural != neurosymbolic)}. The series reconciles with the aggregate
+            metrics (it is the same computation, not a recompute). Honours include_pending (the
+            preview series applies the pending rules too). Default false: the 'series' field is
+            omitted entirely (additive / back-compatible). Default: False.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -156,6 +190,7 @@ def sync(
         client=client,
         prediction_config_id=prediction_config_id,
         include_pending=include_pending,
+        include_series=include_series,
     ).parsed
 
 
@@ -165,6 +200,7 @@ async def asyncio_detailed(
     client: AuthenticatedClient | Client,
     prediction_config_id: int,
     include_pending: bool | Unset = False,
+    include_series: bool | Unset = False,
 ) -> Response[list[ValidationErrorModel]]:
     r"""Neural-vs-neurosymbolic backtest comparison
 
@@ -174,7 +210,10 @@ async def asyncio_detailed(
     GET /api/v1/jobs/{job_id}; the completed job result carries {neural, neurosymbolic, delta,
     n_adjustment_rules, n_constraint_rules, n_pending_rules, fire_rate, mode}. Set include_pending=true
     to ALSO apply the accepted-but-pending discovered rules read-only (a \"what-if\" preview before the
-    approval gate; mode=preview_pending). Timeseries configs only.
+    approval gate; mode=preview_pending). Set include_series=true to ALSO get a per-period \"series\"
+    array over the SAME holdout (each entry {index, time, actual, neural, neurosymbolic, rule_fired}) so
+    the head-to-head can be charted over time; it reconciles with the aggregate metrics and is omitted
+    by default. Timeseries configs only.
 
     Args:
         id (int): Resource ID
@@ -186,6 +225,17 @@ async def asyncio_detailed(
             the discovered set BEFORE the human approval gate). is_active is never mutated. The result
             carries mode='preview_pending' and n_pending_rules. Default false: active rules only (the
             shipped delta). Default: False.
+        include_series (bool | Unset): When true, the completed job result ALSO carries a 'series'
+            array — the per-period neural-vs-neurosymbolic head-to-head over the SAME held-out
+            backtest points the aggregate metrics are computed from, so the comparison can be charted
+            OVER TIME. Each entry is {index (position in the engineered holdout), time (ISO-8601
+            period, when the config has a usable time_index_field), actual (the realised level
+            target), neural (the model-only level prediction), neurosymbolic (the prediction after the
+            rules are applied), rule_fired (true iff applying the rules CHANGED the prediction for
+            that period — i.e. neural != neurosymbolic)}. The series reconciles with the aggregate
+            metrics (it is the same computation, not a recompute). Honours include_pending (the
+            preview series applies the pending rules too). Default false: the 'series' field is
+            omitted entirely (additive / back-compatible). Default: False.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -199,6 +249,7 @@ async def asyncio_detailed(
         id=id,
         prediction_config_id=prediction_config_id,
         include_pending=include_pending,
+        include_series=include_series,
     )
 
     response = await client.get_async_httpx_client().request(**kwargs)
@@ -212,6 +263,7 @@ async def asyncio(
     client: AuthenticatedClient | Client,
     prediction_config_id: int,
     include_pending: bool | Unset = False,
+    include_series: bool | Unset = False,
 ) -> list[ValidationErrorModel] | None:
     r"""Neural-vs-neurosymbolic backtest comparison
 
@@ -221,7 +273,10 @@ async def asyncio(
     GET /api/v1/jobs/{job_id}; the completed job result carries {neural, neurosymbolic, delta,
     n_adjustment_rules, n_constraint_rules, n_pending_rules, fire_rate, mode}. Set include_pending=true
     to ALSO apply the accepted-but-pending discovered rules read-only (a \"what-if\" preview before the
-    approval gate; mode=preview_pending). Timeseries configs only.
+    approval gate; mode=preview_pending). Set include_series=true to ALSO get a per-period \"series\"
+    array over the SAME holdout (each entry {index, time, actual, neural, neurosymbolic, rule_fired}) so
+    the head-to-head can be charted over time; it reconciles with the aggregate metrics and is omitted
+    by default. Timeseries configs only.
 
     Args:
         id (int): Resource ID
@@ -233,6 +288,17 @@ async def asyncio(
             the discovered set BEFORE the human approval gate). is_active is never mutated. The result
             carries mode='preview_pending' and n_pending_rules. Default false: active rules only (the
             shipped delta). Default: False.
+        include_series (bool | Unset): When true, the completed job result ALSO carries a 'series'
+            array — the per-period neural-vs-neurosymbolic head-to-head over the SAME held-out
+            backtest points the aggregate metrics are computed from, so the comparison can be charted
+            OVER TIME. Each entry is {index (position in the engineered holdout), time (ISO-8601
+            period, when the config has a usable time_index_field), actual (the realised level
+            target), neural (the model-only level prediction), neurosymbolic (the prediction after the
+            rules are applied), rule_fired (true iff applying the rules CHANGED the prediction for
+            that period — i.e. neural != neurosymbolic)}. The series reconciles with the aggregate
+            metrics (it is the same computation, not a recompute). Honours include_pending (the
+            preview series applies the pending rules too). Default false: the 'series' field is
+            omitted entirely (additive / back-compatible). Default: False.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -248,5 +314,6 @@ async def asyncio(
             client=client,
             prediction_config_id=prediction_config_id,
             include_pending=include_pending,
+            include_series=include_series,
         )
     ).parsed
