@@ -1,0 +1,83 @@
+alert_id,source,severity,asset_criticality,known_false_positive,threat_intel_match,user_privileged,off_hours,repeated_count,mfa_anomaly,outcome,triage_reason
+ALRT-000001,edr,critical,1,1,0,0,0,1,0,auto_close,known false positive
+ALRT-000002,ids,low,1,1,0,1,1,2,1,auto_close,known false positive
+ALRT-000003,email_gw,high,2,1,1,1,0,8,0,auto_close,known false positive
+ALRT-000004,email_gw,medium,3,1,1,1,0,2,1,auto_close,known false positive
+ALRT-000005,edr,high,4,1,1,0,1,5,1,auto_close,known false positive
+ALRT-000006,siem,low,2,1,1,0,1,2,1,auto_close,known false positive
+ALRT-000007,siem,high,2,1,0,0,1,2,1,auto_close,known false positive
+ALRT-000008,siem,low,2,1,1,1,0,9,0,auto_close,known false positive
+ALRT-000009,siem,medium,3,1,0,0,1,8,0,auto_close,known false positive
+ALRT-000010,siem,critical,3,1,1,1,0,7,1,auto_close,known false positive
+ALRT-000011,email_gw,medium,4,0,1,0,0,1,0,escalate,critical-confirmed: threat-intel match on high-criticality asset
+ALRT-000012,edr,critical,4,0,1,1,1,1,1,escalate,critical-confirmed: threat-intel match on high-criticality asset
+ALRT-000013,siem,high,4,0,1,1,1,5,0,escalate,critical-confirmed: threat-intel match on high-criticality asset
+ALRT-000014,siem,low,4,0,1,1,1,1,1,escalate,critical-confirmed: threat-intel match on high-criticality asset
+ALRT-000015,edr,high,4,0,1,1,0,2,0,escalate,critical-confirmed: threat-intel match on high-criticality asset
+ALRT-000016,siem,low,4,0,1,1,0,1,0,escalate,critical-confirmed: threat-intel match on high-criticality asset
+ALRT-000017,email_gw,low,3,0,1,0,1,1,1,escalate,critical-confirmed: threat-intel match on high-criticality asset
+ALRT-000018,siem,medium,3,0,1,1,0,8,1,escalate,critical-confirmed: threat-intel match on high-criticality asset
+ALRT-000019,email_gw,medium,4,0,1,0,0,6,0,escalate,critical-confirmed: threat-intel match on high-criticality asset
+ALRT-000020,ids,high,4,0,1,1,0,8,1,escalate,critical-confirmed: threat-intel match on high-criticality asset
+ALRT-000021,ids,medium,4,0,1,1,1,9,1,escalate,critical-confirmed: threat-intel match on high-criticality asset
+ALRT-000022,siem,low,3,0,1,1,0,3,0,escalate,critical-confirmed: threat-intel match on high-criticality asset
+ALRT-000023,ids,low,1,0,1,1,0,6,1,escalate,privileged-account anomaly: MFA anomaly on privileged user
+ALRT-000024,siem,medium,1,0,0,1,1,6,1,escalate,privileged-account anomaly: MFA anomaly on privileged user
+ALRT-000025,email_gw,medium,2,0,1,1,0,6,1,escalate,privileged-account anomaly: MFA anomaly on privileged user
+ALRT-000026,ids,high,2,0,1,1,0,3,1,escalate,privileged-account anomaly: MFA anomaly on privileged user
+ALRT-000027,siem,critical,1,0,1,1,0,3,1,escalate,privileged-account anomaly: MFA anomaly on privileged user
+ALRT-000028,siem,high,1,0,1,1,0,9,1,escalate,privileged-account anomaly: MFA anomaly on privileged user
+ALRT-000029,edr,medium,2,0,1,1,0,3,1,escalate,privileged-account anomaly: MFA anomaly on privileged user
+ALRT-000030,ids,low,2,0,0,1,0,4,1,escalate,privileged-account anomaly: MFA anomaly on privileged user
+ALRT-000031,siem,critical,2,0,1,1,1,7,1,escalate,privileged-account anomaly: MFA anomaly on privileged user
+ALRT-000032,ids,high,1,0,1,1,0,4,1,escalate,privileged-account anomaly: MFA anomaly on privileged user
+ALRT-000033,siem,high,2,0,0,0,0,0,0,monitor,"high-or-critical severity, no confirmed threat"
+ALRT-000034,ids,critical,2,0,1,1,0,0,0,monitor,"high-or-critical severity, no confirmed threat"
+ALRT-000035,ids,critical,1,0,1,0,0,6,0,monitor,"high-or-critical severity, no confirmed threat"
+ALRT-000036,ids,critical,1,0,1,1,1,7,0,monitor,"high-or-critical severity, no confirmed threat"
+ALRT-000037,ids,high,2,0,1,1,0,1,0,monitor,"high-or-critical severity, no confirmed threat"
+ALRT-000038,ids,high,1,0,0,1,1,0,0,monitor,"high-or-critical severity, no confirmed threat"
+ALRT-000039,ids,critical,1,0,0,0,1,5,0,monitor,"high-or-critical severity, no confirmed threat"
+ALRT-000040,siem,critical,2,0,1,1,0,9,0,monitor,"high-or-critical severity, no confirmed threat"
+ALRT-000041,siem,high,2,0,0,1,1,8,0,monitor,"high-or-critical severity, no confirmed threat"
+ALRT-000042,ids,critical,1,0,0,0,1,2,0,monitor,"high-or-critical severity, no confirmed threat"
+ALRT-000043,ids,critical,2,0,1,0,0,3,0,monitor,"high-or-critical severity, no confirmed threat"
+ALRT-000044,email_gw,critical,1,0,1,1,1,1,0,monitor,"high-or-critical severity, no confirmed threat"
+ALRT-000045,ids,medium,1,0,0,1,1,11,0,monitor,noisy: high repeated count
+ALRT-000046,edr,medium,2,0,0,0,0,8,0,monitor,noisy: high repeated count
+ALRT-000047,email_gw,medium,2,0,0,0,0,12,0,monitor,noisy: high repeated count
+ALRT-000048,siem,low,1,0,0,1,0,11,0,monitor,noisy: high repeated count
+ALRT-000049,siem,medium,1,0,0,1,0,12,0,monitor,noisy: high repeated count
+ALRT-000050,ids,medium,1,0,0,1,1,8,0,monitor,noisy: high repeated count
+ALRT-000051,ids,medium,1,0,0,0,1,8,0,monitor,noisy: high repeated count
+ALRT-000052,siem,low,2,0,0,1,0,12,0,monitor,noisy: high repeated count
+ALRT-000053,edr,medium,2,0,0,0,1,10,0,monitor,noisy: high repeated count
+ALRT-000054,edr,medium,1,0,0,0,0,7,0,monitor,noisy: high repeated count
+ALRT-000055,email_gw,medium,1,0,0,0,1,4,0,auto_close,no matching escalation or monitor condition
+ALRT-000056,ids,low,2,0,0,1,0,2,0,auto_close,no matching escalation or monitor condition
+ALRT-000057,edr,medium,1,0,0,1,0,3,0,auto_close,no matching escalation or monitor condition
+ALRT-000058,ids,low,2,0,0,1,1,3,0,auto_close,no matching escalation or monitor condition
+ALRT-000059,email_gw,low,1,0,0,1,1,2,0,auto_close,no matching escalation or monitor condition
+ALRT-000060,siem,medium,1,0,0,1,1,3,0,auto_close,no matching escalation or monitor condition
+ALRT-000061,edr,low,2,0,0,0,0,3,0,auto_close,no matching escalation or monitor condition
+ALRT-000062,edr,low,1,0,0,0,0,1,0,auto_close,no matching escalation or monitor condition
+ALRT-000063,email_gw,low,2,0,0,1,0,1,0,auto_close,no matching escalation or monitor condition
+ALRT-000064,ids,low,2,0,0,0,0,1,0,auto_close,no matching escalation or monitor condition
+ALRT-000065,email_gw,low,1,0,0,0,0,1,0,auto_close,no matching escalation or monitor condition
+ALRT-000066,email_gw,medium,1,0,0,1,0,3,0,auto_close,no matching escalation or monitor condition
+ALRT-000067,siem,low,1,0,0,1,0,1,0,auto_close,no matching escalation or monitor condition
+ALRT-000068,edr,medium,1,0,0,1,0,4,0,auto_close,no matching escalation or monitor condition
+ALRT-000069,siem,critical,3,0,1,1,0,7,1,escalate,critical-confirmed: threat-intel match on high-criticality asset
+ALRT-000070,email_gw,critical,3,0,1,1,0,12,0,escalate,critical-confirmed: threat-intel match on high-criticality asset
+ALRT-000071,email_gw,medium,2,0,1,1,0,8,0,monitor,noisy: high repeated count
+ALRT-000072,ids,critical,3,0,0,0,0,3,0,monitor,"high-or-critical severity, no confirmed threat"
+ALRT-000073,email_gw,high,3,0,0,0,1,0,1,monitor,"high-or-critical severity, no confirmed threat"
+ALRT-000074,edr,high,1,1,1,1,1,0,0,auto_close,known false positive
+ALRT-000075,siem,high,4,1,0,1,1,11,0,auto_close,known false positive
+ALRT-000076,email_gw,critical,2,1,1,0,1,4,1,auto_close,known false positive
+ALRT-000077,siem,medium,3,1,0,0,1,11,1,auto_close,known false positive
+ALRT-000078,edr,critical,1,0,0,1,1,5,0,monitor,"high-or-critical severity, no confirmed threat"
+ALRT-000079,ids,medium,3,0,1,1,0,11,1,escalate,critical-confirmed: threat-intel match on high-criticality asset
+ALRT-000080,email_gw,medium,3,0,0,1,0,6,0,monitor,noisy: high repeated count
+ALRT-000081,ids,low,2,0,0,1,1,0,1,escalate,privileged-account anomaly: MFA anomaly on privileged user
+ALRT-000082,ids,medium,4,0,1,0,0,5,0,escalate,critical-confirmed: threat-intel match on high-criticality asset

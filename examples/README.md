@@ -73,6 +73,7 @@ symbolic trace.
 | `24_air_track_isr_hispec.py` | High-spec ISR air track triage (ASTERIX/MISB schema) | `data/air_tracks_hispec.csv` |
 | `31_export_control_screening.py` | Export-control / sanctions screening (permit/license_required/deny) | `data/export_screenings.csv` |
 | `32_kyc_onboarding_decision.py` | KYC onboarding decision (approve/edd/reject) | `data/kyc_applications.csv` |
+| `46_soc_alert_triage.py` | SOC security-alert triage (auto_close/monitor/escalate) | `data/soc_alerts.csv` |
 
 ### Forecasting demos
 
@@ -88,6 +89,8 @@ what-if scenarios.
 | `26_neurosymbolic_bond_yield.py` | US 10y Treasury yield — **full neurosymbolic flow** (train → discover correction rules → symbolic WHY → neural-vs-neurosymbolic comparison) | `data/fred_economic_data.csv` or FRED connector (`FRED_API_KEY`) |
 | `33_energy_demand_forecast.py` | Daily electricity demand — **full neurosymbolic flow** (self-contained, weather-driven) | `data/energy_demand.csv` |
 | `34_fx_currency_forecast.py` | Currency ETF (FXE) close with USD-index covariate | Yahoo Finance connector (no key needed) |
+| `41_include_pending_whatif.py` | **`include_pending` what-if** — preview accepted-but-pending discovered rules before the approval gate, then activate | `data/fred_economic_data.csv` |
+| `45_residual_diagnosis.py` | Diagnose a forecast miss as **drift vs correction** (`residual_diagnosis`, preview) | `data/fred_economic_data.csv` |
 
 `26_neurosymbolic_bond_yield.py` is the headline forecasting walkthrough: it
 trains a model, **discovers explainable correction rules** from its residuals
@@ -111,6 +114,7 @@ cleanly and skip when it isn't enabled on your deployment (HTTP 404).
 | `35_agent_rate_limit.py` | Cumulative count | Mediated session caps notifications sent per session |
 | `36_agent_tool_allowlist.py` | Per-action condition | Single-action gating: tool allowlist + a safe numeric band (the simplest gate) |
 | `37_agent_pii_egress_gate.py` | Per-action condition | Single-action gating: block outbound payloads containing SSN / credit-card data |
+| `47_agent_position_limit.py` | Cumulative sum | Mediated session caps a running position (Σ quantity) at a lot limit |
 
 ### SDK mechanics demos
 
@@ -121,6 +125,17 @@ diagnostics — rather than a particular industry domain.
 |--------|---------------|--------------|
 | `38_error_handling.py` | `AmbertraceError` fields (status_code/code), verified 503 fail-closed, the two `wait_for_job` job types | No (read-only) |
 | `39_build_diagnostics.py` | Read `generation_diagnostics` from the build job — explain whether a platform can reach an adverse decision | Yes |
+
+### Platform governance & data-source demos
+
+Exercise the rule-governance, domain-configuration, and connector surfaces.
+
+| Script | What it shows | Data |
+|--------|---------------|------|
+| `40_rule_review_loop.py` | Human-in-the-loop rule governance: `suggest_rules` → `approve`/`reject` → `update_rule` (activate/deactivate) | `data/loan_applications.csv` |
+| `42_domain_eval_and_feedback.py` | Domain eval-config (`suggest`/`set`/`get`) + `feedback_stats` | `data/vehicle_inspections.csv` |
+| `43_domain_templates.py` | Reusable domain rule templates (list/create/update/delete) | `data/vehicle_inspections.csv` |
+| `44_rest_connector.py` | Ingest from a generic REST/JSON endpoint (bring-your-own-auth headers) | `rest` connector |
 
 Domain demos support `--standard` (skip verified profile) and `--tau` (confidence
 threshold) flags. They create resources on your account but do not self-clean —
