@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import random
 import time
+import urllib.parse
 from typing import Any
 
 import httpx
@@ -80,6 +81,26 @@ _MAX_RETRIES = 5            # retries after the first attempt
 _BASE_DELAY = 0.5           # seconds
 _MAX_DELAY = 8.0
 _HEALTH_PATH = "/ambertrace/health"
+
+# The API is served from ``app.ambertrace.ai``. A common mistake is to point
+# ``base_url`` at ``api.ambertrace.ai``, which is not an API endpoint and fails
+# with an opaque Cloudflare 525 TLS error — so we reject it up front with a
+# clear message rather than letting the user debug a handshake failure.
+_API_HOST = "app.ambertrace.ai"
+_WRONG_API_HOST = "api.ambertrace.ai"
+
+
+def _is_wrong_api_host(base_url: str) -> bool:
+    """True iff ``base_url``'s host is the known-wrong ``api.ambertrace.ai``.
+
+    Robust to a missing scheme (``api.ambertrace.ai`` parses with no netloc),
+    an explicit port, and case. Any other host — including arbitrary custom or
+    self-hosted endpoints — returns False and constructs normally.
+    """
+    parsed = urllib.parse.urlparse(base_url)
+    # Without a scheme, urlparse puts the host in ``path``; reparse with one.
+    host = parsed.hostname or urllib.parse.urlparse(f"//{base_url}").hostname
+    return (host or "").lower() == _WRONG_API_HOST
 
 
 def _backoff_delay(attempt: int) -> float:
@@ -974,6 +995,11 @@ class AmbertraceAPI:
             raise ValueError("base_url is required")
         if not api_key:
             raise ValueError("api_key is required")
+        if _is_wrong_api_host(base_url):
+            raise ValueError(
+                f"base_url host '{_WRONG_API_HOST}' is not the API endpoint — "
+                f"use 'https://{_API_HOST}'."
+            )
         self._http = httpx.Client(
             base_url=base_url.rstrip("/"),
             headers={"Authorization": f"Bearer {api_key}"},
@@ -1060,6 +1086,15 @@ class AmbertraceAPI:
     def wait_for_job(self, job_id: int, *, timeout: int = 600, poll_interval: int = 5) -> dict:
         """Poll a job until it reaches a terminal status or times out.
 
+        On a terminal FAILED status (``error`` / ``failed``) this **raises**
+        :class:`AmbertraceError`, surfacing the job's ``error_message`` — so a
+        failed build is no longer swallowed (which would otherwise mislead a
+        later ``platforms.query()`` into a "Platform is not active" error). On a
+        success status (``ready`` / ``active`` / ``completed``) it returns the
+        full job dict as before. A build that completes with
+        ``build_quality.status == "needs_review"`` (warnings only) is NOT a
+        failure — its status is a success status, so it still returns normally.
+
         Pass the **platform build job** id (the ``build_job`` returned by
         :meth:`PlatformResource.create`) to get the build-generation
         diagnostics — NOT the ontology build job id (see :meth:`JobResource.get`
@@ -1112,6 +1147,12 @@ class AmbertraceAPI:
             job = self.jobs.get(job_id)
             status = job.get("status", "")
             if status in ("ready", "active", "error", "failed", "completed"):
+                if status in ("error", "failed"):
+                    raise AmbertraceError(
+                        500, "job_failed",
+                        f"Job {job_id} failed (job {job_id}: "
+                        f"{job.get('error_message') or status})",
+                    )
                 return job
             if time.monotonic() >= deadline:
                 raise TimeoutError(f"Job {job_id} did not complete within {timeout}s (last status: {status})")
