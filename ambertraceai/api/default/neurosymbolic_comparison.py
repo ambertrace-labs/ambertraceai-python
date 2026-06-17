@@ -88,7 +88,12 @@ def sync_detailed(
     approval gate; mode=preview_pending). Set include_series=true to ALSO get a per-period \"series\"
     array over the SAME holdout (each entry {index, time, actual, neural, neurosymbolic, rule_fired}) so
     the head-to-head can be charted over time; it reconciles with the aggregate metrics and is omitted
-    by default. Timeseries configs only.
+    by default. Timeseries configs only. BACKTEST-ONLY (no what-if): this endpoint deliberately accepts
+    NO feature_overrides. It scores BOTH branches against KNOWN historical actuals over the expanding-
+    window holdout, so injecting a counterfactual override would compare predictions for inputs that
+    never occurred against the real outcomes — distorting the head-to-head. For scenario / what-if
+    analysis use POST /platforms/{id}/predict (neural what-if, recomputes engineered features from the
+    override) or POST /platforms/{id}/symbolic-forecast (symbolic driver-rule what-if).
 
     Args:
         id (int): Resource ID
@@ -153,7 +158,12 @@ def sync(
     approval gate; mode=preview_pending). Set include_series=true to ALSO get a per-period \"series\"
     array over the SAME holdout (each entry {index, time, actual, neural, neurosymbolic, rule_fired}) so
     the head-to-head can be charted over time; it reconciles with the aggregate metrics and is omitted
-    by default. Timeseries configs only.
+    by default. Timeseries configs only. BACKTEST-ONLY (no what-if): this endpoint deliberately accepts
+    NO feature_overrides. It scores BOTH branches against KNOWN historical actuals over the expanding-
+    window holdout, so injecting a counterfactual override would compare predictions for inputs that
+    never occurred against the real outcomes — distorting the head-to-head. For scenario / what-if
+    analysis use POST /platforms/{id}/predict (neural what-if, recomputes engineered features from the
+    override) or POST /platforms/{id}/symbolic-forecast (symbolic driver-rule what-if).
 
     Args:
         id (int): Resource ID
@@ -213,7 +223,12 @@ async def asyncio_detailed(
     approval gate; mode=preview_pending). Set include_series=true to ALSO get a per-period \"series\"
     array over the SAME holdout (each entry {index, time, actual, neural, neurosymbolic, rule_fired}) so
     the head-to-head can be charted over time; it reconciles with the aggregate metrics and is omitted
-    by default. Timeseries configs only.
+    by default. Timeseries configs only. BACKTEST-ONLY (no what-if): this endpoint deliberately accepts
+    NO feature_overrides. It scores BOTH branches against KNOWN historical actuals over the expanding-
+    window holdout, so injecting a counterfactual override would compare predictions for inputs that
+    never occurred against the real outcomes — distorting the head-to-head. For scenario / what-if
+    analysis use POST /platforms/{id}/predict (neural what-if, recomputes engineered features from the
+    override) or POST /platforms/{id}/symbolic-forecast (symbolic driver-rule what-if).
 
     Args:
         id (int): Resource ID
@@ -276,7 +291,12 @@ async def asyncio(
     approval gate; mode=preview_pending). Set include_series=true to ALSO get a per-period \"series\"
     array over the SAME holdout (each entry {index, time, actual, neural, neurosymbolic, rule_fired}) so
     the head-to-head can be charted over time; it reconciles with the aggregate metrics and is omitted
-    by default. Timeseries configs only.
+    by default. Timeseries configs only. BACKTEST-ONLY (no what-if): this endpoint deliberately accepts
+    NO feature_overrides. It scores BOTH branches against KNOWN historical actuals over the expanding-
+    window holdout, so injecting a counterfactual override would compare predictions for inputs that
+    never occurred against the real outcomes — distorting the head-to-head. For scenario / what-if
+    analysis use POST /platforms/{id}/predict (neural what-if, recomputes engineered features from the
+    override) or POST /platforms/{id}/symbolic-forecast (symbolic driver-rule what-if).
 
     Args:
         id (int): Resource ID

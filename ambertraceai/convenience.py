@@ -390,7 +390,13 @@ class PredictionResource(_Resource):
         """Run a prediction with a trained config.
 
         ``feature_overrides`` is an optional dict of what-if feature values
-        (e.g. {"inflation": 5.0}); omit it to predict from the latest data.
+        (e.g. {"inflation": 5.0}); omit it to predict from the latest data. For
+        timeseries configs a raw-column override is injected into the most-recent
+        point and the engineered features the model consumes (lags / rolling /
+        rate-of-change) are recomputed from it, so the forecast actually moves.
+        Any override key that maps to no model-consumed feature is returned in
+        the response's ``unmatched_overrides`` list (and ignored), so a what-if
+        that could not be applied is visible rather than a silent no-op.
         """
         body: dict[str, Any] = {"prediction_config_id": prediction_config_id, "explain": explain}
         if feature_overrides is not None:
@@ -401,6 +407,39 @@ class PredictionResource(_Resource):
         return self._request("GET", f"/api/v1/platforms/{platform_id}/prediction-configs")
 
     def create_config(self, platform_id: int, **kwargs) -> dict:
+        """Create a prediction config on a platform.
+
+        Pass any of the config fields as keyword args, e.g. ``target_field``,
+        ``time_index_field``, ``horizon``, ``frequency``, ``model_type``,
+        ``feature_fields``, ``feature_config``.
+
+        Explanatory-mode forecasting (timeseries mode):
+
+        * ``autoregressive`` — how much the forecast may rely on the TARGET's own
+          recent values. ``"full"`` (default — history allowed; the target's own
+          lag/rolling/rate-of-change features are available) | ``"limited"``
+          (drivers + a little history — only the shortest target-history feature
+          is allowed) | ``"none"`` (drivers only — no target-derived
+          lag/roc/rolling features at all, so the model and the symbolic rules
+          explain the target through your other indicators). Covariate (driver)
+          features are never restricted. The effective setting is echoed back in
+          the config and in ``predict(...)["explanation"]["model"]``
+          (``autoregressive`` / ``max_ar_lag``).
+        * ``max_ar_lag`` — advanced numeric override for ``autoregressive``: ``0``
+          = drivers only, ``k`` = allow target-history features with
+          lag/window/period <= ``k``. Overrides the enum when set.
+
+        Metrics (see :meth:`PlatformResource.prediction_model` /
+        ``predict(...)["explanation"]["model"]["metrics"]``): when a
+        ``target_transform`` (difference / pct-change / log-diff) is applied, the
+        ``metrics`` block reports THREE views so no single number misleads:
+        ``transformed`` ({r2, rmse, mae} on the modelled change — the hard part),
+        ``level`` ({r2, rmse, mae} on the reconstructed level — what you track,
+        rebuilt from the realized previous level for a 1-step backtest), and
+        ``skill_vs_persistence`` (level-space — the part the model adds over
+        predicting last value), plus ``target_transform``. With no transform,
+        ``transformed == level`` (backward compatible).
+        """
         return self._request("POST", f"/api/v1/platforms/{platform_id}/prediction-configs", json=kwargs)
 
     def delete_config(self, platform_id: int, config_id: int) -> dict:
