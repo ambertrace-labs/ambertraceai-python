@@ -51,6 +51,12 @@ dataset = api.datasets.upload(
     file_path="contracts.csv",
 )
 
+# Build the ontology from the domain + uploaded data (async — returns a job).
+# This MUST run before building a platform: without an ontology the build fails
+# server-side ("Domain has no entities. Define entities before building.").
+onto = api.domains.build_ontology(domain_id=domain["id"])
+api.wait_for_job(onto["job_id"], timeout=600)   # raises if the ontology build fails
+
 # Build a platform (async — returns the platform and a build job)
 result = api.platforms.create(
     domain_id=domain["id"],

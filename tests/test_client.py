@@ -55,3 +55,28 @@ class TestAmbertraceAPIClient:
         api = AmbertraceAPI(base_url="https://example.com/", api_key="at_test", warm=False)
         assert str(api._http.base_url) == "https://example.com"
         api.close()
+
+
+class TestWrongApiHost:
+    @pytest.mark.parametrize("bad_url", [
+        "https://api.ambertrace.ai",
+        "http://api.ambertrace.ai",
+        "https://api.ambertrace.ai/",
+        "https://API.Ambertrace.AI",       # case-insensitive
+        "https://api.ambertrace.ai:443",   # explicit port
+        "api.ambertrace.ai",               # no scheme
+    ])
+    def test_wrong_api_host_raises(self, bad_url):
+        with pytest.raises(ValueError, match="app.ambertrace.ai"):
+            AmbertraceAPI(base_url=bad_url, api_key="at_test", warm=False)
+
+    def test_correct_app_host_constructs(self):
+        api = AmbertraceAPI(base_url="https://app.ambertrace.ai", api_key="at_test", warm=False)
+        assert str(api._http.base_url) == "https://app.ambertrace.ai"
+        api.close()
+
+    def test_arbitrary_custom_host_constructs(self):
+        # A self-hosted / custom endpoint is NOT the known-wrong host — allowed.
+        api = AmbertraceAPI(base_url="https://example.com", api_key="at_test", warm=False)
+        assert str(api._http.base_url) == "https://example.com"
+        api.close()

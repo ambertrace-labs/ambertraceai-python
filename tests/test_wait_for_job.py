@@ -6,7 +6,7 @@ import httpx
 import pytest
 import respx
 
-from ambertraceai import AmbertraceAPI
+from ambertraceai import AmbertraceAPI, AmbertraceError
 
 
 def _envelope(data):
@@ -42,12 +42,52 @@ class TestWaitForJob:
         assert job["status"] == "active"
 
     @respx.mock
-    def test_returns_on_error_status(self, api):
+    def test_returns_on_completed_status(self, api):
+        respx.get("https://test.ambertrace.ai/api/v1/jobs/1").mock(
+            return_value=httpx.Response(200, json=_envelope({"id": 1, "status": "completed"}))
+        )
+        job = api.wait_for_job(1)
+        assert job["status"] == "completed"
+
+    @respx.mock
+    def test_raises_on_error_status(self, api):
         respx.get("https://test.ambertrace.ai/api/v1/jobs/1").mock(
             return_value=httpx.Response(200, json=_envelope({"id": 1, "status": "error", "error_message": "boom"}))
         )
+        with pytest.raises(AmbertraceError, match="boom") as exc:
+            api.wait_for_job(1)
+        assert exc.value.code == "job_failed"
+
+    @respx.mock
+    def test_raises_on_failed_status(self, api):
+        respx.get("https://test.ambertrace.ai/api/v1/jobs/1").mock(
+            return_value=httpx.Response(200, json=_envelope({"id": 1, "status": "failed", "error_message": "ontology gen exploded"}))
+        )
+        with pytest.raises(AmbertraceError, match="ontology gen exploded"):
+            api.wait_for_job(1)
+
+    @respx.mock
+    def test_raises_on_failed_status_without_error_message(self, api):
+        # No error_message — message falls back to the status.
+        respx.get("https://test.ambertrace.ai/api/v1/jobs/1").mock(
+            return_value=httpx.Response(200, json=_envelope({"id": 1, "status": "failed"}))
+        )
+        with pytest.raises(AmbertraceError, match="failed"):
+            api.wait_for_job(1)
+
+    @respx.mock
+    def test_needs_review_is_not_a_failure(self, api):
+        # A build that completes with build_quality warnings is status=ready —
+        # NOT a failure — so it must still return the job dict.
+        respx.get("https://test.ambertrace.ai/api/v1/jobs/1").mock(
+            return_value=httpx.Response(200, json=_envelope({
+                "id": 1, "status": "ready",
+                "result": {"build_quality": {"status": "needs_review"}},
+            }))
+        )
         job = api.wait_for_job(1)
-        assert job["status"] == "error"
+        assert job["status"] == "ready"
+        assert job["result"]["build_quality"]["status"] == "needs_review"
 
     @respx.mock
     def test_raises_on_timeout(self, api):
