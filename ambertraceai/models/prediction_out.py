@@ -31,6 +31,10 @@ class PredictionOut:
         frequency (None | str | Unset):
         horizon (int | None | Unset): Forecast horizon (steps ahead). Null for cross_sectional.
         mode (str | Unset): Prediction mode used: 'timeseries' or 'cross_sectional'. Default: 'timeseries'.
+        unmatched_overrides (list[str] | None | Unset): Override keys from feature_overrides that mapped to NO feature
+            the trained model consumes and were therefore ignored. Present only when at least one override could not be
+            applied — for timeseries, a raw column with no engineered feature in the model; for cross_sectional, a key
+            matching no model feature. Omitted (null) when every override was applied.
     """
 
     platform_id: int
@@ -40,6 +44,7 @@ class PredictionOut:
     frequency: None | str | Unset = UNSET
     horizon: int | None | Unset = UNSET
     mode: str | Unset = "timeseries"
+    unmatched_overrides: list[str] | None | Unset = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -75,6 +80,15 @@ class PredictionOut:
 
         mode = self.mode
 
+        unmatched_overrides: list[str] | None | Unset
+        if isinstance(self.unmatched_overrides, Unset):
+            unmatched_overrides = UNSET
+        elif isinstance(self.unmatched_overrides, list):
+            unmatched_overrides = self.unmatched_overrides
+
+        else:
+            unmatched_overrides = self.unmatched_overrides
+
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
@@ -92,6 +106,8 @@ class PredictionOut:
             field_dict["horizon"] = horizon
         if mode is not UNSET:
             field_dict["mode"] = mode
+        if unmatched_overrides is not UNSET:
+            field_dict["unmatched_overrides"] = unmatched_overrides
 
         return field_dict
 
@@ -148,6 +164,25 @@ class PredictionOut:
 
         mode = d.pop("mode", UNSET)
 
+        def _parse_unmatched_overrides(data: object) -> list[str] | None | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            try:
+                if not isinstance(data, list):
+                    raise TypeError()
+                unmatched_overrides_type_0 = cast(list[str], data)
+
+                return unmatched_overrides_type_0
+            except (TypeError, ValueError, AttributeError, KeyError):
+                pass
+            return cast(list[str] | None | Unset, data)
+
+        unmatched_overrides = _parse_unmatched_overrides(
+            d.pop("unmatched_overrides", UNSET)
+        )
+
         prediction_out = cls(
             platform_id=platform_id,
             prediction=prediction,
@@ -156,6 +191,7 @@ class PredictionOut:
             frequency=frequency,
             horizon=horizon,
             mode=mode,
+            unmatched_overrides=unmatched_overrides,
         )
 
         prediction_out.additional_properties = d

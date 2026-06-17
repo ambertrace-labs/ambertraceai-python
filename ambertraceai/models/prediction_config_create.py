@@ -43,6 +43,14 @@ class PredictionConfigCreate:
         Attributes:
             target_field (str): Column name of the variable to predict. Must exist in the platform's dataset. Examples:
                 'yield_10y', 'loan_approved', 'fraud_score'.
+            autoregressive (str | Unset): Autoregression control (timeseries mode only) — how much the forecast may rely on
+                the TARGET's own recent values. Plain-language framing: 'full' = History allowed (default — the target's own
+                lags/rolling/rate-of-change features are available; today's behaviour, backward compatible); 'limited' = Drivers
+                + a little history (only the most recent value / shortest target-history feature is allowed, so the drivers
+                carry the explanation); 'none' = Drivers only (no target-derived lag/roc/rolling features at all — explain
+                purely through the other indicators). Covariate (driver) features are NEVER restricted. The advanced
+                'max_ar_lag' overrides this. The effective setting is echoed in the model metadata of the predict response.
+                Ignored in cross_sectional mode. Default: 'full'.
             backtest_config (None | PredictionConfigCreateBacktestConfigType0 | Unset): Backtesting configuration. Keys:
                 'test_ratio' (float, default 0.2), 'n_splits' (int, default 1). In timeseries mode, uses expanding-window splits
                 to prevent future leakage. In cross_sectional mode, uses stratified random splits.
@@ -67,6 +75,10 @@ class PredictionConfigCreate:
                 'quarterly'. Determines default lag/rolling window sizes in timeseries mode. Omit for cross_sectional mode.
             horizon (int | None | Unset): Number of steps ahead to forecast. Only meaningful in timeseries mode — e.g.
                 horizon=3 with frequency='monthly' predicts 3 months ahead. Omit or set to null for cross_sectional mode.
+            max_ar_lag (int | None | Unset): Advanced numeric override for autoregression control (timeseries mode only).
+                When set, OVERRIDES 'autoregressive': 0 = no target-derived lag/roc/rolling features (drivers only); k = allow
+                target-history features with lag/window/period <= k. null (default) = defer to the 'autoregressive' enum.
+                Covariate features are never restricted. Ignored in cross_sectional mode.
             mode (str | Unset): Prediction mode. 'timeseries' learns temporal patterns (lags, rolling windows, seasonality)
                 and forecasts future values. 'cross_sectional' treats each row independently and learns a direct feature-to-
                 target mapping. Default: 'timeseries'. Default: 'timeseries'.
@@ -81,6 +93,7 @@ class PredictionConfigCreate:
     """
 
     target_field: str
+    autoregressive: str | Unset = "full"
     backtest_config: None | PredictionConfigCreateBacktestConfigType0 | Unset = UNSET
     eval_metric: str | Unset = "rmse"
     eval_metric_config: None | PredictionConfigCreateEvalMetricConfigType0 | Unset = (
@@ -90,6 +103,7 @@ class PredictionConfigCreate:
     feature_fields: list[str] | None | Unset = UNSET
     frequency: None | str | Unset = UNSET
     horizon: int | None | Unset = UNSET
+    max_ar_lag: int | None | Unset = UNSET
     mode: str | Unset = "timeseries"
     model_tier: str | Unset = "tier1"
     model_type: str | Unset = "gbt"
@@ -108,6 +122,8 @@ class PredictionConfigCreate:
         )
 
         target_field = self.target_field
+
+        autoregressive = self.autoregressive
 
         backtest_config: dict[str, Any] | None | Unset
         if isinstance(self.backtest_config, Unset):
@@ -160,6 +176,12 @@ class PredictionConfigCreate:
         else:
             horizon = self.horizon
 
+        max_ar_lag: int | None | Unset
+        if isinstance(self.max_ar_lag, Unset):
+            max_ar_lag = UNSET
+        else:
+            max_ar_lag = self.max_ar_lag
+
         mode = self.mode
 
         model_tier = self.model_tier
@@ -179,6 +201,8 @@ class PredictionConfigCreate:
                 "target_field": target_field,
             }
         )
+        if autoregressive is not UNSET:
+            field_dict["autoregressive"] = autoregressive
         if backtest_config is not UNSET:
             field_dict["backtest_config"] = backtest_config
         if eval_metric is not UNSET:
@@ -193,6 +217,8 @@ class PredictionConfigCreate:
             field_dict["frequency"] = frequency
         if horizon is not UNSET:
             field_dict["horizon"] = horizon
+        if max_ar_lag is not UNSET:
+            field_dict["max_ar_lag"] = max_ar_lag
         if mode is not UNSET:
             field_dict["mode"] = mode
         if model_tier is not UNSET:
@@ -218,6 +244,8 @@ class PredictionConfigCreate:
 
         d = dict(src_dict)
         target_field = d.pop("target_field")
+
+        autoregressive = d.pop("autoregressive", UNSET)
 
         def _parse_backtest_config(
             data: object,
@@ -323,6 +351,15 @@ class PredictionConfigCreate:
 
         horizon = _parse_horizon(d.pop("horizon", UNSET))
 
+        def _parse_max_ar_lag(data: object) -> int | None | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(int | None | Unset, data)
+
+        max_ar_lag = _parse_max_ar_lag(d.pop("max_ar_lag", UNSET))
+
         mode = d.pop("mode", UNSET)
 
         model_tier = d.pop("model_tier", UNSET)
@@ -340,6 +377,7 @@ class PredictionConfigCreate:
 
         prediction_config_create = cls(
             target_field=target_field,
+            autoregressive=autoregressive,
             backtest_config=backtest_config,
             eval_metric=eval_metric,
             eval_metric_config=eval_metric_config,
@@ -347,6 +385,7 @@ class PredictionConfigCreate:
             feature_fields=feature_fields,
             frequency=frequency,
             horizon=horizon,
+            max_ar_lag=max_ar_lag,
             mode=mode,
             model_tier=model_tier,
             model_type=model_type,

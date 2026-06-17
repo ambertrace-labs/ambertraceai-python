@@ -37,6 +37,8 @@ class PredictionConfigOut:
         status (str): Config lifecycle status: 'pending' (created, not yet trained), 'training' (training in progress),
             'trained' (ready to predict), 'failed' (training failed — see error_message).
         target_field (str):
+        autoregressive (str | Unset): Autoregression control: 'full' (history allowed, default), 'limited' (drivers + a
+            little history), or 'none' (drivers only). Default: 'full'.
         backtest_config (None | PredictionConfigOutBacktestConfigType0 | Unset):
         created_at (None | str | Unset):
         error_message (None | str | Unset): Human-readable error details when status is 'failed'.
@@ -45,6 +47,8 @@ class PredictionConfigOut:
         feature_fields (list[str] | None | Unset):
         frequency (None | str | Unset):
         horizon (int | None | Unset):
+        max_ar_lag (int | None | Unset): Advanced numeric autoregression cap (overrides the enum when set): 0 = drivers
+            only, k = target-history features with lag/window <= k.
         mode (str | Unset): Prediction mode: 'timeseries' or 'cross_sectional'. Default: 'timeseries'.
         time_index_field (None | str | Unset):
         updated_at (None | str | Unset):
@@ -58,6 +62,7 @@ class PredictionConfigOut:
     platform_id: int
     status: str
     target_field: str
+    autoregressive: str | Unset = "full"
     backtest_config: None | PredictionConfigOutBacktestConfigType0 | Unset = UNSET
     created_at: None | str | Unset = UNSET
     error_message: None | str | Unset = UNSET
@@ -66,6 +71,7 @@ class PredictionConfigOut:
     feature_fields: list[str] | None | Unset = UNSET
     frequency: None | str | Unset = UNSET
     horizon: int | None | Unset = UNSET
+    max_ar_lag: int | None | Unset = UNSET
     mode: str | Unset = "timeseries"
     time_index_field: None | str | Unset = UNSET
     updated_at: None | str | Unset = UNSET
@@ -97,6 +103,8 @@ class PredictionConfigOut:
         status = self.status
 
         target_field = self.target_field
+
+        autoregressive = self.autoregressive
 
         backtest_config: dict[str, Any] | None | Unset
         if isinstance(self.backtest_config, Unset):
@@ -157,6 +165,12 @@ class PredictionConfigOut:
         else:
             horizon = self.horizon
 
+        max_ar_lag: int | None | Unset
+        if isinstance(self.max_ar_lag, Unset):
+            max_ar_lag = UNSET
+        else:
+            max_ar_lag = self.max_ar_lag
+
         mode = self.mode
 
         time_index_field: None | str | Unset
@@ -185,6 +199,8 @@ class PredictionConfigOut:
                 "target_field": target_field,
             }
         )
+        if autoregressive is not UNSET:
+            field_dict["autoregressive"] = autoregressive
         if backtest_config is not UNSET:
             field_dict["backtest_config"] = backtest_config
         if created_at is not UNSET:
@@ -201,6 +217,8 @@ class PredictionConfigOut:
             field_dict["frequency"] = frequency
         if horizon is not UNSET:
             field_dict["horizon"] = horizon
+        if max_ar_lag is not UNSET:
+            field_dict["max_ar_lag"] = max_ar_lag
         if mode is not UNSET:
             field_dict["mode"] = mode
         if time_index_field is not UNSET:
@@ -238,6 +256,8 @@ class PredictionConfigOut:
         status = d.pop("status")
 
         target_field = d.pop("target_field")
+
+        autoregressive = d.pop("autoregressive", UNSET)
 
         def _parse_backtest_config(
             data: object,
@@ -357,6 +377,15 @@ class PredictionConfigOut:
 
         horizon = _parse_horizon(d.pop("horizon", UNSET))
 
+        def _parse_max_ar_lag(data: object) -> int | None | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(int | None | Unset, data)
+
+        max_ar_lag = _parse_max_ar_lag(d.pop("max_ar_lag", UNSET))
+
         mode = d.pop("mode", UNSET)
 
         def _parse_time_index_field(data: object) -> None | str | Unset:
@@ -386,6 +415,7 @@ class PredictionConfigOut:
             platform_id=platform_id,
             status=status,
             target_field=target_field,
+            autoregressive=autoregressive,
             backtest_config=backtest_config,
             created_at=created_at,
             error_message=error_message,
@@ -394,6 +424,7 @@ class PredictionConfigOut:
             feature_fields=feature_fields,
             frequency=frequency,
             horizon=horizon,
+            max_ar_lag=max_ar_lag,
             mode=mode,
             time_index_field=time_index_field,
             updated_at=updated_at,
