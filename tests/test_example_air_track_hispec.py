@@ -1,7 +1,6 @@
 """Offline tests for the high-spec ISR air-track example (``24_air_track_isr_hispec``).
 
-All offline — no API, no network. Adapted from the upstream demo's offline tests:
-the ``_triage`` verdict parser, showcase-track well-formedness, reference-policy
+All offline — no API, no network. Showcase-track well-formedness, reference-policy
 correctness of the showcase expected labels, and that the shipped synthetic dataset
 loads and is features-only. (Upstream live-feed-parsing tests are intentionally NOT
 ported — the shipped example is synthetic-only and ships no live-data client.)
@@ -83,31 +82,7 @@ class TestImport:
     def test_example_imports(self, demo) -> None:
         assert demo.DOMAIN_NAME == "Air Track Triage (High-Spec ISR)"
         assert callable(demo.run_air_track_hispec_demo)
-        assert callable(demo._triage)
-
-
-# --- _triage verdict parser --------------------------------------------------
-
-
-class TestTriageParsing:
-    def test_reads_escalate_verdict(self, demo) -> None:
-        report = {"answer": "**Decision: Escalate — zone breach.** more text"}
-        assert demo._triage(report)[0] == "escalate"
-
-    def test_reads_monitor_verdict(self, demo) -> None:
-        assert demo._triage({"answer": "**Decision: Monitor — origin unknown.**"})[0] == "monitor"
-
-    def test_reads_clear_verdict(self, demo) -> None:
-        assert demo._triage({"answer": "**Decision: Clear — nothing applies.**"})[0] == "clear"
-
-    def test_does_not_keyword_match_proof_trace(self, demo) -> None:
-        # A Clear decision whose proof text mentions 'escalate' rules must read Clear.
-        report = {"answer": "**Decision: Clear — no action.**",
-                  "proof_summary": "rules: Escalate for emergency (not fired); Monitor (not)"}
-        assert demo._triage(report)[0] == "clear"
-
-    def test_unparseable_defaults_to_clear(self, demo) -> None:
-        assert demo._triage({"answer": "no verdict here"})[0] == "clear"
+        assert callable(demo._show)
 
 
 # --- showcase tracks ---------------------------------------------------------
