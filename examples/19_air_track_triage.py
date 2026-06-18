@@ -31,7 +31,6 @@ from _common import (
     print_ontology,
     print_section,
     run_demo,
-    symbolic_rules,
 )
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
@@ -60,11 +59,6 @@ DOMAIN_DESCRIPTION = (
     "operator and never suppressed."
 )
 
-_ESCALATE = {"Check Is Emergency Equals Value", "Flag Is Zone Breach Equals Value",
-             "Flag Is Identified Not Equals Value"}
-_MONITOR = {"Flag Is Kinematically Implausible Equals Value",
-            "Flag Is Identified Not Equals Value (2)"}
-
 SHOWCASE_TRACKS = [
     ("emergency squawk (must escalate)", {
         "sensor_source": "radar", "iff_mode": "emergency", "squawk_emergency": True,
@@ -89,22 +83,13 @@ SHOWCASE_TRACKS = [
 ]
 
 
-def _triage(report: dict) -> tuple[str, list[str]]:
-    fired = {r.get("rule_name") for r in symbolic_rules(report) if r.get("fired")}
-    esc = sorted(fired & _ESCALATE)
-    if esc:
-        return "escalate", esc
-    mon = sorted(fired & _MONITOR)
-    if mon:
-        return "monitor", mon
-    return "clear", []
-
-
 def _show(api, platform_id: int, label: str, facts: dict) -> None:
     print(f"\n{'=' * 70}\nTRACK: {label}")
     report = api.platforms.query(platform_id, query="Triage this track.", facts=facts)
-    level, rules = _triage(report)
-    print(f"  Triage: {level.upper()}" + (f"  ({', '.join(rules)})" if rules else ""))
+    level = report.get("decision", "unknown")
+    deciding = (report.get("explanation") or {}).get("decision", {}).get("deciding_rules", [])
+    rule_names = [r.get("rule", "") for r in deciding]
+    print(f"  Triage: {level.upper()}" + (f"  ({', '.join(rule_names)})" if rule_names else ""))
     print(f"  proof_checked: {report.get('proof_checked')}")
     print(f"  {report.get('proof_summary')}")
     print("=" * 70)

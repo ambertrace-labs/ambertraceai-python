@@ -22,6 +22,10 @@ class QueryResponse:
         answer (str):
         platform_id (int):
         query (str):
+        decision (None | str | Unset): The platform's authoritative decision label for this query (e.g. ``approve``,
+            ``deny``, ``refer``, ``escalate``). Derived from the fired verdict rules using the platform's declared decision
+            vocabulary. ``null`` when no verdict rules fire or the platform has no decision layer. Also available inside
+            ``explanation.decision.decision``.
         explanation (None | QueryResponseExplanationType0 | Unset):
         proof_checked (bool | None | Unset): Verified profile only. ``True`` when the decision was independently re-
             derived and verified (the active rule set satisfies the platform's invariant manifest and the proof certificate
@@ -30,14 +34,19 @@ class QueryResponse:
         proof_summary (None | str | Unset): Human-readable summary of the machine-checked certificate (rules fired,
             facts derived, input facts). ``null`` for non-verified platforms. The full derivation proof and any
             ``rejected_facts`` are in ``explanation.proof`` / ``explanation.rejected_facts``.
+        vocabulary_declared (bool | None | Unset): ``True`` when the platform has a declared decision vocabulary — the
+            ``decision`` label is authoritative and domain-specific. ``False`` when the platform uses only the built-in
+            ``deny``/``permit`` taxonomy. ``null`` for platforms with no decision layer.
     """
 
     answer: str
     platform_id: int
     query: str
+    decision: None | str | Unset = UNSET
     explanation: None | QueryResponseExplanationType0 | Unset = UNSET
     proof_checked: bool | None | Unset = UNSET
     proof_summary: None | str | Unset = UNSET
+    vocabulary_declared: bool | None | Unset = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -50,6 +59,12 @@ class QueryResponse:
         platform_id = self.platform_id
 
         query = self.query
+
+        decision: None | str | Unset
+        if isinstance(self.decision, Unset):
+            decision = UNSET
+        else:
+            decision = self.decision
 
         explanation: dict[str, Any] | None | Unset
         if isinstance(self.explanation, Unset):
@@ -71,6 +86,12 @@ class QueryResponse:
         else:
             proof_summary = self.proof_summary
 
+        vocabulary_declared: bool | None | Unset
+        if isinstance(self.vocabulary_declared, Unset):
+            vocabulary_declared = UNSET
+        else:
+            vocabulary_declared = self.vocabulary_declared
+
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
@@ -80,12 +101,16 @@ class QueryResponse:
                 "query": query,
             }
         )
+        if decision is not UNSET:
+            field_dict["decision"] = decision
         if explanation is not UNSET:
             field_dict["explanation"] = explanation
         if proof_checked is not UNSET:
             field_dict["proof_checked"] = proof_checked
         if proof_summary is not UNSET:
             field_dict["proof_summary"] = proof_summary
+        if vocabulary_declared is not UNSET:
+            field_dict["vocabulary_declared"] = vocabulary_declared
 
         return field_dict
 
@@ -101,6 +126,15 @@ class QueryResponse:
         platform_id = d.pop("platform_id")
 
         query = d.pop("query")
+
+        def _parse_decision(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        decision = _parse_decision(d.pop("decision", UNSET))
 
         def _parse_explanation(
             data: object,
@@ -139,13 +173,26 @@ class QueryResponse:
 
         proof_summary = _parse_proof_summary(d.pop("proof_summary", UNSET))
 
+        def _parse_vocabulary_declared(data: object) -> bool | None | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(bool | None | Unset, data)
+
+        vocabulary_declared = _parse_vocabulary_declared(
+            d.pop("vocabulary_declared", UNSET)
+        )
+
         query_response = cls(
             answer=answer,
             platform_id=platform_id,
             query=query,
+            decision=decision,
             explanation=explanation,
             proof_checked=proof_checked,
             proof_summary=proof_summary,
+            vocabulary_declared=vocabulary_declared,
         )
 
         query_response.additional_properties = d

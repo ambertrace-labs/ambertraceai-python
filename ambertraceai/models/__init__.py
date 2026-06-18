@@ -125,6 +125,9 @@ from .rule_out_scorecard_type_0 import RuleOutScorecardType0
 from .rule_update_request import RuleUpdateRequest
 from .rule_update_request_action_type_0 import RuleUpdateRequestActionType0
 from .rule_update_request_condition_type_0 import RuleUpdateRequestConditionType0
+from .schema_reconciliation import SchemaReconciliation
+from .schema_reconciliation_augment import SchemaReconciliationAugment
+from .schema_reconciliation_conflict import SchemaReconciliationConflict
 from .suggestion_out import SuggestionOut
 from .suggestion_out_action_type_0 import SuggestionOutActionType0
 from .suggestion_out_condition_type_0 import SuggestionOutConditionType0
@@ -253,6 +256,9 @@ __all__ = (
     "RuleUpdateRequest",
     "RuleUpdateRequestActionType0",
     "RuleUpdateRequestConditionType0",
+    "SchemaReconciliation",
+    "SchemaReconciliationAugment",
+    "SchemaReconciliationConflict",
     "SuggestionOut",
     "SuggestionOutActionType0",
     "SuggestionOutConditionType0",

@@ -83,8 +83,14 @@ def sync_detailed(
      Updates a subset of a rule's fields (name, description, condition, action, priority, is_active) —
     only the fields provided are applied. On a verified-profile platform, if the patch activates the
     rule OR edits its condition/action, the verification gate is re-run over the prospective active set;
-    an unsafe change is rejected with 409 and the rule is left unchanged. Deactivating a rule is always
-    permitted. Returns 200 with the updated rule; 404 if the rule does not belong to the platform.
+    an unsafe change is rejected with 409 and the rule is left unchanged. When the patch changes the
+    condition, every input-field reference is re-validated against the domain dataset columns (data-
+    driven ontology §2.3): an unmappable reference is rejected with 400 (code schema_conflict) carrying
+    a schema_reconciliation report, and the rule is left unchanged; if the new condition references
+    fields but no dataset is attached, the request is rejected with 400 (code data_required).
+    Deactivating a rule is always permitted. Returns 200 with the updated rule (including its
+    schema_reconciliation report when the condition changed); 404 if the rule does not belong to the
+    platform.
 
     Args:
         id (int): Platform ID
@@ -125,8 +131,14 @@ def sync(
      Updates a subset of a rule's fields (name, description, condition, action, priority, is_active) —
     only the fields provided are applied. On a verified-profile platform, if the patch activates the
     rule OR edits its condition/action, the verification gate is re-run over the prospective active set;
-    an unsafe change is rejected with 409 and the rule is left unchanged. Deactivating a rule is always
-    permitted. Returns 200 with the updated rule; 404 if the rule does not belong to the platform.
+    an unsafe change is rejected with 409 and the rule is left unchanged. When the patch changes the
+    condition, every input-field reference is re-validated against the domain dataset columns (data-
+    driven ontology §2.3): an unmappable reference is rejected with 400 (code schema_conflict) carrying
+    a schema_reconciliation report, and the rule is left unchanged; if the new condition references
+    fields but no dataset is attached, the request is rejected with 400 (code data_required).
+    Deactivating a rule is always permitted. Returns 200 with the updated rule (including its
+    schema_reconciliation report when the condition changed); 404 if the rule does not belong to the
+    platform.
 
     Args:
         id (int): Platform ID
@@ -162,8 +174,14 @@ async def asyncio_detailed(
      Updates a subset of a rule's fields (name, description, condition, action, priority, is_active) —
     only the fields provided are applied. On a verified-profile platform, if the patch activates the
     rule OR edits its condition/action, the verification gate is re-run over the prospective active set;
-    an unsafe change is rejected with 409 and the rule is left unchanged. Deactivating a rule is always
-    permitted. Returns 200 with the updated rule; 404 if the rule does not belong to the platform.
+    an unsafe change is rejected with 409 and the rule is left unchanged. When the patch changes the
+    condition, every input-field reference is re-validated against the domain dataset columns (data-
+    driven ontology §2.3): an unmappable reference is rejected with 400 (code schema_conflict) carrying
+    a schema_reconciliation report, and the rule is left unchanged; if the new condition references
+    fields but no dataset is attached, the request is rejected with 400 (code data_required).
+    Deactivating a rule is always permitted. Returns 200 with the updated rule (including its
+    schema_reconciliation report when the condition changed); 404 if the rule does not belong to the
+    platform.
 
     Args:
         id (int): Platform ID
@@ -202,8 +220,14 @@ async def asyncio(
      Updates a subset of a rule's fields (name, description, condition, action, priority, is_active) —
     only the fields provided are applied. On a verified-profile platform, if the patch activates the
     rule OR edits its condition/action, the verification gate is re-run over the prospective active set;
-    an unsafe change is rejected with 409 and the rule is left unchanged. Deactivating a rule is always
-    permitted. Returns 200 with the updated rule; 404 if the rule does not belong to the platform.
+    an unsafe change is rejected with 409 and the rule is left unchanged. When the patch changes the
+    condition, every input-field reference is re-validated against the domain dataset columns (data-
+    driven ontology §2.3): an unmappable reference is rejected with 400 (code schema_conflict) carrying
+    a schema_reconciliation report, and the rule is left unchanged; if the new condition references
+    fields but no dataset is attached, the request is rejected with 400 (code data_required).
+    Deactivating a rule is always permitted. Returns 200 with the updated rule (including its
+    schema_reconciliation report when the condition changed); 404 if the rule does not belong to the
+    platform.
 
     Args:
         id (int): Platform ID

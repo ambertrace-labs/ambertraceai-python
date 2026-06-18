@@ -46,7 +46,6 @@ Creates resources on your account. Run with --help for options.
 from __future__ import annotations
 
 import argparse
-import re
 import sys
 from pathlib import Path
 
@@ -143,23 +142,6 @@ SHOWCASE_TRACKS = [
          ground_speed_kts=650, baro_altitude_ft=1500, track_confidence=0.58)),
 ]
 
-_DECISION_RE = re.compile(r"decision:\s*\*{0,2}\s*(escalate|monitor|clear)", re.IGNORECASE)
-
-
-def _triage(report: dict) -> tuple[str, str]:
-    """Read the certified triage level from the report's ``Decision: <level>`` verdict.
-
-    The answer leads with e.g. ``**Decision: Escalate — ...**``; we read that verdict
-    directly rather than keyword-scanning the proof trace (whose rule names mention
-    every level and would mis-classify).
-    """
-    for field in ("answer", "verdict", "proof_summary"):
-        m = _DECISION_RE.search(str(report.get(field, "")))
-        if m:
-            return m.group(1).lower(), ""
-    return "clear", ""
-
-
 def _show(api, platform_id: int, label: str, facts: dict, expected: str | None) -> None:
     print(f"\n{'=' * 70}\nTRACK: {label}")
     print(f"  source={facts['position_source']} iff={facts['iff_mode']} "
@@ -168,13 +150,11 @@ def _show(api, platform_id: int, label: str, facts: dict, expected: str | None) 
     try:
         report = api.platforms.query(platform_id, query="Triage this track.", facts=facts)
     except AmbertraceError as exc:
-        # A verified query may fail-closed (503) when it can't certify a result.
-        # Don't let one track abort the showcase — report and continue.
         print(f"  Triage: UNCERTIFIED — query fail-closed ({exc})"
               + (f"   [!! expected {expected}]" if expected else ""))
         print("=" * 70)
         return
-    level, _ = _triage(report)
+    level = report.get("decision", "clear")
     mark = "" if expected is None else (
         "   [OK]" if level == expected else f"   [!! expected {expected}]")
     print(f"  Triage: {level.upper()}{mark}")

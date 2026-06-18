@@ -31,7 +31,6 @@ from _common import (
     print_ontology,
     print_section,
     run_demo,
-    symbolic_rules,
 )
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
@@ -75,21 +74,6 @@ SHOWCASE_REQUESTS = [
 SPARSE_REQUEST = {"requester_role": "contractor", "access_type": "admin",
                   "target_zone": "ot_network"}
 
-_DENY_CONCLUSIONS = {
-    "Flag Clearance Level Below Threshold", "Flag Target Zone Equals Value",
-    "Flag Is Privileged Request Equals Value", "Flag Is Restricted Zone Equals Value",
-}
-
-
-def _decide(report: dict) -> tuple[str, list[str]]:
-    denies = [
-        r.get("rule_name") for r in symbolic_rules(report)
-        if r.get("fired") and (r.get("action_type") == "block"
-                               or r.get("rule_name") in _DENY_CONCLUSIONS)
-    ]
-    return ("deny" if denies else "permit"), denies
-
-
 def _show(api, platform_id: int, label: str, facts: dict) -> None:
     print(f"\n{'=' * 70}\nREQUEST: {label}")
     try:
@@ -98,8 +82,10 @@ def _show(api, platform_id: int, label: str, facts: dict) -> None:
         print(f"  VERIFIED FAIL-SAFE — refused to certify (no decision returned): {exc}")
         print("=" * 70)
         return
-    verdict, denies = _decide(report)
-    print(f"  Decision: {verdict.upper()}" + (f"  ({', '.join(denies)})" if denies else ""))
+    verdict = report.get("decision", "unknown")
+    deciding = (report.get("explanation") or {}).get("decision", {}).get("deciding_rules", [])
+    rule_names = [r.get("rule", "") for r in deciding]
+    print(f"  Decision: {verdict.upper()}" + (f"  ({', '.join(rule_names)})" if rule_names else ""))
     print(f"  proof_checked: {report.get('proof_checked')}")
     print(f"  {report.get('proof_summary')}")
     print("=" * 70)

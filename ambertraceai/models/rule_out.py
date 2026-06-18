@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from ..models.rule_out_action_type_0 import RuleOutActionType0
     from ..models.rule_out_condition_type_0 import RuleOutConditionType0
     from ..models.rule_out_scorecard_type_0 import RuleOutScorecardType0
+    from ..models.schema_reconciliation import SchemaReconciliation
 
 
 T = TypeVar("T", bound="RuleOut")
@@ -31,6 +32,9 @@ class RuleOut:
         description (None | str | Unset): What the rule does and why.
         is_active (bool | Unset): Whether the rule currently fires in queries. Default: False.
         priority (int | Unset): Evaluation priority (higher first). Default: 0.
+        schema_reconciliation (None | SchemaReconciliation | Unset): Column-mapping report for a create/update (data-
+            driven ontology §2.3): which field references mapped to which real columns. Present on createRule/updateRule
+            responses; null on list/get.
         scorecard (None | RuleOutScorecardType0 | Unset): Per-gate verdicts from rule discovery, if any.
         source (None | str | Unset): Provenance, e.g. 'manual', 'auto', 'llm_approved'.
     """
@@ -44,6 +48,7 @@ class RuleOut:
     description: None | str | Unset = UNSET
     is_active: bool | Unset = False
     priority: int | Unset = 0
+    schema_reconciliation: None | SchemaReconciliation | Unset = UNSET
     scorecard: None | RuleOutScorecardType0 | Unset = UNSET
     source: None | str | Unset = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
@@ -52,6 +57,7 @@ class RuleOut:
         from ..models.rule_out_action_type_0 import RuleOutActionType0
         from ..models.rule_out_condition_type_0 import RuleOutConditionType0
         from ..models.rule_out_scorecard_type_0 import RuleOutScorecardType0
+        from ..models.schema_reconciliation import SchemaReconciliation
 
         id = self.id
 
@@ -87,6 +93,14 @@ class RuleOut:
 
         priority = self.priority
 
+        schema_reconciliation: dict[str, Any] | None | Unset
+        if isinstance(self.schema_reconciliation, Unset):
+            schema_reconciliation = UNSET
+        elif isinstance(self.schema_reconciliation, SchemaReconciliation):
+            schema_reconciliation = self.schema_reconciliation.to_dict()
+        else:
+            schema_reconciliation = self.schema_reconciliation
+
         scorecard: dict[str, Any] | None | Unset
         if isinstance(self.scorecard, Unset):
             scorecard = UNSET
@@ -121,6 +135,8 @@ class RuleOut:
             field_dict["is_active"] = is_active
         if priority is not UNSET:
             field_dict["priority"] = priority
+        if schema_reconciliation is not UNSET:
+            field_dict["schema_reconciliation"] = schema_reconciliation
         if scorecard is not UNSET:
             field_dict["scorecard"] = scorecard
         if source is not UNSET:
@@ -133,6 +149,7 @@ class RuleOut:
         from ..models.rule_out_action_type_0 import RuleOutActionType0
         from ..models.rule_out_condition_type_0 import RuleOutConditionType0
         from ..models.rule_out_scorecard_type_0 import RuleOutScorecardType0
+        from ..models.schema_reconciliation import SchemaReconciliation
 
         d = dict(src_dict)
         id = d.pop("id")
@@ -190,6 +207,27 @@ class RuleOut:
 
         priority = d.pop("priority", UNSET)
 
+        def _parse_schema_reconciliation(
+            data: object,
+        ) -> None | SchemaReconciliation | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            try:
+                if not isinstance(data, dict):
+                    raise TypeError()
+                schema_reconciliation_type_0 = SchemaReconciliation.from_dict(data)
+
+                return schema_reconciliation_type_0
+            except (TypeError, ValueError, AttributeError, KeyError):
+                pass
+            return cast(None | SchemaReconciliation | Unset, data)
+
+        schema_reconciliation = _parse_schema_reconciliation(
+            d.pop("schema_reconciliation", UNSET)
+        )
+
         def _parse_scorecard(data: object) -> None | RuleOutScorecardType0 | Unset:
             if data is None:
                 return data
@@ -226,6 +264,7 @@ class RuleOut:
             description=description,
             is_active=is_active,
             priority=priority,
+            schema_reconciliation=schema_reconciliation,
             scorecard=scorecard,
             source=source,
         )

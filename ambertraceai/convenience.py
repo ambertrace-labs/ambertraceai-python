@@ -44,6 +44,13 @@ class AmbertraceError(Exception):
     When the API returns a structured ``error.details`` list (e.g. the verified
     fail-closed 503 naming the rejected fact), it is exposed as ``details`` and
     folded into ``str(e)`` so a bare ``print(e)`` shows *which fact* was rejected.
+
+    For a rule create/edit rejected by the data-driven-ontology column-mapping
+    gate (``code == "schema_conflict"``, HTTP 400), the structured
+    ``schema_reconciliation`` report — ``{status, augmented, conflicts}`` — is
+    exposed as the :attr:`schema_reconciliation` attribute (and the
+    :attr:`unmappable_fields` convenience), so a caller can show exactly which
+    field references have no matching data column.
     """
 
     def __init__(
@@ -52,11 +59,15 @@ class AmbertraceError(Exception):
         code: str,
         message: str,
         details: Any = None,
+        schema_reconciliation: Any = None,
     ):
         self.status_code = status_code
         self.code = code
         self.message = message
         self.details: list[dict] = _coerce_details(details)
+        self.schema_reconciliation: dict | None = (
+            schema_reconciliation if isinstance(schema_reconciliation, dict) else None
+        )
         detail_str = _format_details(self.details)
         full = f"{message} ({detail_str})" if detail_str else message
         super().__init__(full)
@@ -65,6 +76,19 @@ class AmbertraceError(Exception):
     def rejected_facts(self) -> list[str]:
         """Convenience: the ``field`` names carried in ``details`` (may be empty)."""
         return [d["field"] for d in self.details if d.get("field")]
+
+    @property
+    def unmappable_fields(self) -> list[str]:
+        """The field references the column-mapping gate rejected (may be empty).
+
+        Populated on a ``schema_conflict`` (HTTP 400) from a rule create/edit —
+        the ``field`` of each entry in ``schema_reconciliation.conflicts``.
+        """
+        recon = self.schema_reconciliation or {}
+        return [
+            c["field"] for c in recon.get("conflicts", [])
+            if isinstance(c, dict) and c.get("field")
+        ]
 
 
 # --- Cold-start resilience -------------------------------------------------
@@ -168,6 +192,9 @@ class _Resource:
                     err.get("code", "unknown"),
                     err.get("message", resp.text),
                     err.get("details"),
+                    # Data-driven ontology (D1): a schema_conflict 400 carries the
+                    # column-mapping report at the top level of the error body.
+                    body.get("schema_reconciliation") if isinstance(body, dict) else None,
                 )
             return body.get("data", body) if isinstance(body, dict) else body
 
@@ -189,6 +216,16 @@ class DomainResource(_Resource):
         return self._request("DELETE", f"/api/v1/domains/{domain_id}")
 
     def build_ontology(self, domain_id: int) -> dict:
+        """Build the domain's ontology + rules from its description and data.
+
+        A dataset is REQUIRED: upload data to the domain first (the canonical
+        flow is create domain -> upload data -> build_ontology). Rules are
+        authored against the real data columns, and every field reference is
+        validated to map to a column (or an in-set derived concept) at creation
+        time; an unmappable reference fails the build rather than producing a
+        rule that can never fire. Calling without a dataset returns HTTP 400.
+        Returns a 202 job envelope -- poll the job until it completes.
+        """
         return self._request("POST", f"/api/v1/domains/{domain_id}/build-ontology")
 
     # -- Evaluation config --
@@ -359,6 +396,21 @@ class PlatformResource(_Resource):
     def create_rule(self, platform_id: int, *, name: str, condition: dict,
                     action: dict, description: str | None = None,
                     is_active: bool = True, priority: int | None = None) -> dict:
+        """Create a symbolic rule on a platform.
+
+        Every input-field reference in ``condition`` is validated against the
+        domain's dataset columns (data-driven ontology §2.3): a reference that
+        maps to no real column (or in-set derived concept) is rejected with
+        :class:`AmbertraceError` (HTTP 400, ``code == "schema_conflict"``) — the
+        error's :attr:`~AmbertraceError.schema_reconciliation` /
+        :attr:`~AmbertraceError.unmappable_fields` name the offending field(s),
+        and the rule is NOT created. If the rule references fields but the
+        domain has no dataset attached, the error code is ``data_required``.
+
+        On success the returned rule carries a ``schema_reconciliation`` report
+        (``{status: 'ok', augmented: [{rule, from, to}], conflicts: []}``)
+        listing how each field reference mapped to a real column.
+        """
         body: dict[str, Any] = {
             "name": name, "condition": condition, "action": action,
             "is_active": is_active,
@@ -370,6 +422,18 @@ class PlatformResource(_Resource):
         return self._request("POST", f"/api/v1/platforms/{platform_id}/rules", json=body)
 
     def update_rule(self, platform_id: int, rule_id: int, **kwargs) -> dict:
+        """Patch a rule's fields (only those provided are applied).
+
+        When the patch changes ``condition``, every input-field reference is
+        re-validated against the domain's dataset columns (data-driven ontology
+        §2.3): an unmappable reference is rejected with :class:`AmbertraceError`
+        (HTTP 400, ``code == "schema_conflict"`` — see
+        :attr:`~AmbertraceError.schema_reconciliation` /
+        :attr:`~AmbertraceError.unmappable_fields`) and the rule is left
+        unchanged; if it references fields but no dataset is attached, the code
+        is ``data_required``. On success the returned rule carries a
+        ``schema_reconciliation`` report when the condition changed.
+        """
         return self._request("PATCH", f"/api/v1/platforms/{platform_id}/rules/{rule_id}", json=kwargs)
 
     def delete_rule(self, platform_id: int, rule_id: int) -> dict:

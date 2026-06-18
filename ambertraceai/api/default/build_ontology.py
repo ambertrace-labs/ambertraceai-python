@@ -61,12 +61,15 @@ def sync_detailed(
 ) -> Response[list[ValidationErrorModel]]:
     """Build ontology
 
-     Uses LLM to generate entities, relationships, and constraints from the domain description. Returns
-    202 with a job id -- poll GET /jobs/{job_id} until status is 'completed' (success) or 'failed'. The
-    domain status also moves from 'building' to 'active' (success) or the terminal 'error' (failure); on
-    failure the job's error_message carries an actionable reason. The generated constraints become
-    executable symbolic rules automatically when a platform is built from this domain. If datasets are
-    linked, their rows validate generated rules.
+     Generates entities, relationships, and constraints from the domain description, authored against the
+    columns of the attached dataset. A dataset is REQUIRED: upload data to the domain first (returns 400
+    otherwise). Rules are written against the real column vocabulary, and every field reference is
+    validated to map to a column or an in-set derived head at creation time (a schema_reconciliation
+    report is recorded; an unmappable reference fails the build rather than producing a dead rule).
+    Returns 202 with a job id -- poll GET /jobs/{job_id} until status is 'completed' (success) or
+    'failed'. The domain status also moves from 'building' to 'active' (success) or the terminal 'error'
+    (failure); on failure the job's error_message carries an actionable reason. The generated
+    constraints become executable symbolic rules automatically when a platform is built.
 
     Args:
         id (int): Resource ID
@@ -97,12 +100,15 @@ def sync(
 ) -> list[ValidationErrorModel] | None:
     """Build ontology
 
-     Uses LLM to generate entities, relationships, and constraints from the domain description. Returns
-    202 with a job id -- poll GET /jobs/{job_id} until status is 'completed' (success) or 'failed'. The
-    domain status also moves from 'building' to 'active' (success) or the terminal 'error' (failure); on
-    failure the job's error_message carries an actionable reason. The generated constraints become
-    executable symbolic rules automatically when a platform is built from this domain. If datasets are
-    linked, their rows validate generated rules.
+     Generates entities, relationships, and constraints from the domain description, authored against the
+    columns of the attached dataset. A dataset is REQUIRED: upload data to the domain first (returns 400
+    otherwise). Rules are written against the real column vocabulary, and every field reference is
+    validated to map to a column or an in-set derived head at creation time (a schema_reconciliation
+    report is recorded; an unmappable reference fails the build rather than producing a dead rule).
+    Returns 202 with a job id -- poll GET /jobs/{job_id} until status is 'completed' (success) or
+    'failed'. The domain status also moves from 'building' to 'active' (success) or the terminal 'error'
+    (failure); on failure the job's error_message carries an actionable reason. The generated
+    constraints become executable symbolic rules automatically when a platform is built.
 
     Args:
         id (int): Resource ID
@@ -128,12 +134,15 @@ async def asyncio_detailed(
 ) -> Response[list[ValidationErrorModel]]:
     """Build ontology
 
-     Uses LLM to generate entities, relationships, and constraints from the domain description. Returns
-    202 with a job id -- poll GET /jobs/{job_id} until status is 'completed' (success) or 'failed'. The
-    domain status also moves from 'building' to 'active' (success) or the terminal 'error' (failure); on
-    failure the job's error_message carries an actionable reason. The generated constraints become
-    executable symbolic rules automatically when a platform is built from this domain. If datasets are
-    linked, their rows validate generated rules.
+     Generates entities, relationships, and constraints from the domain description, authored against the
+    columns of the attached dataset. A dataset is REQUIRED: upload data to the domain first (returns 400
+    otherwise). Rules are written against the real column vocabulary, and every field reference is
+    validated to map to a column or an in-set derived head at creation time (a schema_reconciliation
+    report is recorded; an unmappable reference fails the build rather than producing a dead rule).
+    Returns 202 with a job id -- poll GET /jobs/{job_id} until status is 'completed' (success) or
+    'failed'. The domain status also moves from 'building' to 'active' (success) or the terminal 'error'
+    (failure); on failure the job's error_message carries an actionable reason. The generated
+    constraints become executable symbolic rules automatically when a platform is built.
 
     Args:
         id (int): Resource ID
@@ -162,12 +171,15 @@ async def asyncio(
 ) -> list[ValidationErrorModel] | None:
     """Build ontology
 
-     Uses LLM to generate entities, relationships, and constraints from the domain description. Returns
-    202 with a job id -- poll GET /jobs/{job_id} until status is 'completed' (success) or 'failed'. The
-    domain status also moves from 'building' to 'active' (success) or the terminal 'error' (failure); on
-    failure the job's error_message carries an actionable reason. The generated constraints become
-    executable symbolic rules automatically when a platform is built from this domain. If datasets are
-    linked, their rows validate generated rules.
+     Generates entities, relationships, and constraints from the domain description, authored against the
+    columns of the attached dataset. A dataset is REQUIRED: upload data to the domain first (returns 400
+    otherwise). Rules are written against the real column vocabulary, and every field reference is
+    validated to map to a column or an in-set derived head at creation time (a schema_reconciliation
+    report is recorded; an unmappable reference fails the build rather than producing a dead rule).
+    Returns 202 with a job id -- poll GET /jobs/{job_id} until status is 'completed' (success) or
+    'failed'. The domain status also moves from 'building' to 'active' (success) or the terminal 'error'
+    (failure); on failure the job's error_message carries an actionable reason. The generated
+    constraints become executable symbolic rules automatically when a platform is built.
 
     Args:
         id (int): Resource ID

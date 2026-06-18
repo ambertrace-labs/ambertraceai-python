@@ -80,8 +80,12 @@ def sync_detailed(
      Creates a symbolic rule manually on a platform. The rule structure is validated (operators, action
     type/value, logical consistency against the existing active rules); structurally invalid rules are
     rejected with 422. On a verified-profile platform an active rule must also pass the verification
-    gate — if it would make the set unsafe the request is rejected with 409 naming the reasons. Returns
-    201 with the created rule.
+    gate — if it would make the set unsafe the request is rejected with 409 naming the reasons. Every
+    input-field reference is also validated against the domain dataset columns (data-driven ontology
+    §2.3): a reference that maps to no real column or in-set derived head is rejected with 400 (code
+    schema_conflict), carrying a schema_reconciliation report; if the rule references fields but the
+    domain has no dataset attached, the request is rejected with 400 (code data_required). Returns 201
+    with the created rule, including its schema_reconciliation report (field-to-column mappings).
 
     Args:
         id (int): Resource ID
@@ -118,8 +122,12 @@ def sync(
      Creates a symbolic rule manually on a platform. The rule structure is validated (operators, action
     type/value, logical consistency against the existing active rules); structurally invalid rules are
     rejected with 422. On a verified-profile platform an active rule must also pass the verification
-    gate — if it would make the set unsafe the request is rejected with 409 naming the reasons. Returns
-    201 with the created rule.
+    gate — if it would make the set unsafe the request is rejected with 409 naming the reasons. Every
+    input-field reference is also validated against the domain dataset columns (data-driven ontology
+    §2.3): a reference that maps to no real column or in-set derived head is rejected with 400 (code
+    schema_conflict), carrying a schema_reconciliation report; if the rule references fields but the
+    domain has no dataset attached, the request is rejected with 400 (code data_required). Returns 201
+    with the created rule, including its schema_reconciliation report (field-to-column mappings).
 
     Args:
         id (int): Resource ID
@@ -151,8 +159,12 @@ async def asyncio_detailed(
      Creates a symbolic rule manually on a platform. The rule structure is validated (operators, action
     type/value, logical consistency against the existing active rules); structurally invalid rules are
     rejected with 422. On a verified-profile platform an active rule must also pass the verification
-    gate — if it would make the set unsafe the request is rejected with 409 naming the reasons. Returns
-    201 with the created rule.
+    gate — if it would make the set unsafe the request is rejected with 409 naming the reasons. Every
+    input-field reference is also validated against the domain dataset columns (data-driven ontology
+    §2.3): a reference that maps to no real column or in-set derived head is rejected with 400 (code
+    schema_conflict), carrying a schema_reconciliation report; if the rule references fields but the
+    domain has no dataset attached, the request is rejected with 400 (code data_required). Returns 201
+    with the created rule, including its schema_reconciliation report (field-to-column mappings).
 
     Args:
         id (int): Resource ID
@@ -187,8 +199,12 @@ async def asyncio(
      Creates a symbolic rule manually on a platform. The rule structure is validated (operators, action
     type/value, logical consistency against the existing active rules); structurally invalid rules are
     rejected with 422. On a verified-profile platform an active rule must also pass the verification
-    gate — if it would make the set unsafe the request is rejected with 409 naming the reasons. Returns
-    201 with the created rule.
+    gate — if it would make the set unsafe the request is rejected with 409 naming the reasons. Every
+    input-field reference is also validated against the domain dataset columns (data-driven ontology
+    §2.3): a reference that maps to no real column or in-set derived head is rejected with 400 (code
+    schema_conflict), carrying a schema_reconciliation report; if the rule references fields but the
+    domain has no dataset attached, the request is rejected with 400 (code data_required). Returns 201
+    with the created rule, including its schema_reconciliation report (field-to-column mappings).
 
     Args:
         id (int): Resource ID
