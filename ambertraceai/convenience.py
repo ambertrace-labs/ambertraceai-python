@@ -267,12 +267,15 @@ class DatasetResource(_Resource):
     def get(self, dataset_id: int) -> dict:
         return self._request("GET", f"/api/v1/datasets/{dataset_id}")
 
-    def upload(self, *, domain_id: int, file_path: str, name: str | None = None) -> dict:
+    def upload(self, *, domain_id: int, file_path: str, name: str | None = None,
+               decision_column: str | None = None) -> dict:
         with open(file_path, "rb") as f:
             files = {"file": (name or file_path.split("/")[-1], f)}
             data = {"domain_id": str(domain_id)}
             if name:
                 data["name"] = name
+            if decision_column:
+                data["decision_column"] = decision_column
             return self._request("POST", "/api/v1/datasets/upload", files=files, data=data)
 
     def fetch(self, *, domain_id: int, connector_type: str, config: dict | None = None) -> dict:
