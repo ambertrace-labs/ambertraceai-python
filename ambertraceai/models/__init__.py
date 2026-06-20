@@ -13,6 +13,7 @@ from .data_context_out_datasets_item import DataContextOutDatasetsItem
 from .data_context_out_domain_type_0 import DataContextOutDomainType0
 from .data_context_out_eval_config_type_0 import DataContextOutEvalConfigType0
 from .dataset_clean_request import DatasetCleanRequest
+from .dataset_fetch_multi_request import DatasetFetchMultiRequest
 from .dataset_fetch_request import DatasetFetchRequest
 from .dataset_fetch_request_config import DatasetFetchRequestConfig
 from .dataset_out import DatasetOut
@@ -49,6 +50,8 @@ from .feedback_stats_out_by_backend import FeedbackStatsOutByBackend
 from .feedback_stats_out_by_category import FeedbackStatsOutByCategory
 from .feedback_stats_out_by_decision import FeedbackStatsOutByDecision
 from .feedback_stats_out_by_template import FeedbackStatsOutByTemplate
+from .fetch_source import FetchSource
+from .fetch_source_config import FetchSourceConfig
 from .forecast_out import ForecastOut
 from .forecast_out_features_used_type_0 import ForecastOutFeaturesUsedType0
 from .forecast_out_rule_adjustments_type_0 import ForecastOutRuleAdjustmentsType0
@@ -160,6 +163,7 @@ __all__ = (
     "DataContextOutDomainType0",
     "DataContextOutEvalConfigType0",
     "DatasetCleanRequest",
+    "DatasetFetchMultiRequest",
     "DatasetFetchRequest",
     "DatasetFetchRequestConfig",
     "DatasetOut",
@@ -194,6 +198,8 @@ __all__ = (
     "FeedbackStatsOutByCategory",
     "FeedbackStatsOutByDecision",
     "FeedbackStatsOutByTemplate",
+    "FetchSource",
+    "FetchSourceConfig",
     "ForecastOut",
     "ForecastOutFeaturesUsedType0",
     "ForecastOutRuleAdjustmentsType0",

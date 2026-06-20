@@ -86,6 +86,44 @@ class TestDatasetResource:
         result = api.datasets.list()
         assert len(result) == 1
 
+    @respx.mock
+    def test_upload_sends_decision_column(self, api, tmp_path):
+        route = respx.post("https://test.ambertrace.ai/api/v1/datasets/upload").mock(
+            return_value=httpx.Response(201, json=_envelope({"id": 5, "status": "ingested"}))
+        )
+        csv = tmp_path / "data.csv"
+        csv.write_text("a,b,decision\n1,2,approve\n")
+        result = api.datasets.upload(
+            domain_id=1, file_path=str(csv), decision_column="decision")
+        assert route.called
+        assert result["id"] == 5
+        # Multipart form must carry the decision_column field.
+        body = route.calls.last.request.content.decode("utf-8", "ignore")
+        assert "decision_column" in body
+        assert "decision" in body
+
+    @respx.mock
+    def test_fetch_multi_posts_sources(self, api):
+        route = respx.post("https://test.ambertrace.ai/api/v1/datasets/fetch-multi").mock(
+            return_value=httpx.Response(202, json=_envelope({"id": 9, "status": "processing"}))
+        )
+        sources = [
+            {"connector_type": "fred", "config": {"series_ids": ["GS10"]}},
+            {"connector_type": "boe", "config": {"series_ids": ["IUDSOIA"]}},
+        ]
+        result = api.datasets.fetch_multi(
+            domain_id=1, sources=sources, frequency="monthly", aggregation="last")
+        assert route.called
+        assert result["id"] == 9
+        sent = route.calls.last.request
+        import json as _json
+        payload = _json.loads(sent.content)
+        assert payload["domain_id"] == 1
+        assert payload["join_on"] == "date"
+        assert payload["frequency"] == "monthly"
+        assert payload["aggregation"] == "last"
+        assert len(payload["sources"]) == 2
+
 
 class TestPlatformResource:
     @respx.mock

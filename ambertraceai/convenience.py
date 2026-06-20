@@ -291,6 +291,39 @@ class DatasetResource(_Resource):
         }
         return self._request("POST", "/api/v1/datasets/fetch", json=body)
 
+    def fetch_multi(self, *, domain_id: int, sources: list[dict],
+                    join_on: str = "date", frequency: str | None = None,
+                    aggregation: str | None = None) -> dict:
+        """Fetch from two or more connectors and MERGE them into ONE date-aligned
+        dataset, so a forecaster can train across sources in a single panel.
+
+        ``sources`` is a list of ``{"connector_type": ..., "config": {...}}``
+        dicts (at least two), e.g. ``[{"connector_type": "fred", "config":
+        {"series_ids": [...], "api_key": ...}}, {"connector_type": "boe",
+        "config": {...}}]``. The sources are outer-joined on the ``join_on`` index
+        column (default ``"date"``); each value column is namespaced by connector
+        type to avoid collisions (e.g. ``boe.IUDSOIA``). Set ``frequency``
+        (``daily``/``weekly``/``monthly``/``quarterly``/``annual``) with
+        ``aggregation`` (``last`` or ``mean``) to resample mixed-cadence sources
+        onto a common grid before joining; without it, mixed-frequency sources
+        outer-join to a mostly-null table.
+
+        Like :meth:`fetch`, this always runs asynchronously (network fetch × N):
+        the call returns the dataset record (HTTP 202, ``status == "processing"``)
+        — poll :meth:`get` until ``status == "ready"`` before building on it. See
+        ``api.connectors.list()`` for available connectors and their requirements.
+        """
+        body: dict[str, Any] = {
+            "domain_id": domain_id,
+            "join_on": join_on,
+            "sources": sources,
+        }
+        if frequency is not None:
+            body["frequency"] = frequency
+        if aggregation is not None:
+            body["aggregation"] = aggregation
+        return self._request("POST", "/api/v1/datasets/fetch-multi", json=body)
+
     def quality(self, dataset_id: int) -> dict:
         return self._request("GET", f"/api/v1/datasets/{dataset_id}/quality")
 

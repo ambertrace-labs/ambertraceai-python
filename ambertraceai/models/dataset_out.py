@@ -27,6 +27,7 @@ class DatasetOut:
         status (str):
         column_count (int | None | Unset):
         created_at (None | str | Unset):
+        decision_column (None | str | Unset):
         description (None | str | Unset):
         row_count (int | None | Unset):
         schema_info (DatasetOutSchemaInfoType0 | None | Unset):
@@ -41,6 +42,7 @@ class DatasetOut:
     status: str
     column_count: int | None | Unset = UNSET
     created_at: None | str | Unset = UNSET
+    decision_column: None | str | Unset = UNSET
     description: None | str | Unset = UNSET
     row_count: int | None | Unset = UNSET
     schema_info: DatasetOutSchemaInfoType0 | None | Unset = UNSET
@@ -73,6 +75,12 @@ class DatasetOut:
             created_at = UNSET
         else:
             created_at = self.created_at
+
+        decision_column: None | str | Unset
+        if isinstance(self.decision_column, Unset):
+            decision_column = UNSET
+        else:
+            decision_column = self.decision_column
 
         description: None | str | Unset
         if isinstance(self.description, Unset):
@@ -116,6 +124,8 @@ class DatasetOut:
             field_dict["column_count"] = column_count
         if created_at is not UNSET:
             field_dict["created_at"] = created_at
+        if decision_column is not UNSET:
+            field_dict["decision_column"] = decision_column
         if description is not UNSET:
             field_dict["description"] = description
         if row_count is not UNSET:
@@ -161,6 +171,15 @@ class DatasetOut:
             return cast(None | str | Unset, data)
 
         created_at = _parse_created_at(d.pop("created_at", UNSET))
+
+        def _parse_decision_column(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        decision_column = _parse_decision_column(d.pop("decision_column", UNSET))
 
         def _parse_description(data: object) -> None | str | Unset:
             if data is None:
@@ -217,6 +236,7 @@ class DatasetOut:
             status=status,
             column_count=column_count,
             created_at=created_at,
+            decision_column=decision_column,
             description=description,
             row_count=row_count,
             schema_info=schema_info,
