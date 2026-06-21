@@ -20,11 +20,20 @@ from ambertraceai import AmbertraceAPI
 api = AmbertraceAPI(base_url="https://app.ambertrace.ai", api_key="at_...")
 ```
 
-Keep the key out of source control — read it from an environment variable in real code:
+Keep the key out of source control — read it from the environment. The SDK does
+this for you: set `AMBERTRACE_API_KEY` (and optionally `AMBERTRACE_BASE_URL`,
+which defaults to `https://app.ambertrace.ai`) and call `from_env()`:
 
 ```python
-import os
-api = AmbertraceAPI(base_url="https://app.ambertrace.ai", api_key=os.environ["AMBERTRACE_API_KEY"])
+api = AmbertraceAPI.from_env()                     # reads AMBERTRACE_API_KEY / AMBERTRACE_BASE_URL
+api = AmbertraceAPI.from_env(dotenv_path=".env")   # also load a .env file (real env wins)
+```
+
+`base_url` / `api_key` are optional on the constructor too — when omitted they
+fall back to those env vars (an explicit argument always wins):
+
+```python
+api = AmbertraceAPI()                               # base_url + api_key from the environment
 ```
 
 See [Agent Keys](#agent-keys) for the user- vs. platform-scoped key model.
@@ -45,7 +54,8 @@ domain = api.domains.create(
     description="Contract analysis for risk and compliance",
 )
 
-# Upload data
+# Upload data. The returned dataset exposes its fields by attribute too
+# (dataset.row_count, dataset.column_count, dataset.decision_column).
 dataset = api.datasets.upload(
     domain_id=domain["id"],
     file_path="contracts.csv",
@@ -55,15 +65,17 @@ dataset = api.datasets.upload(
 # This MUST run before building a platform: without an ontology the build fails
 # server-side ("Domain has no entities. Define entities before building.").
 onto = api.domains.build_ontology(domain_id=domain["id"])
-api.wait_for_job(onto["job_id"], timeout=600)   # raises if the ontology build fails
+api.wait_for_job(onto.job_id, timeout=600)   # raises if the ontology build fails
 
-# Build a platform (async — returns the platform and a build job)
+# Build a platform (async — returns the platform and a build job). The result
+# carries a normalised, stable `id` (the platform) and `job_id` (the build job),
+# so you don't unwrap `build_job.job.id` / `platform.id` by hand.
 result = api.platforms.create(
     domain_id=domain["id"],
     dataset_id=dataset["id"],
 )
-platform_id = result["platform"]["id"]
-build_job_id = result["build_job"]["id"]
+platform_id = result.id          # == result["platform"]["id"]
+build_job_id = result.job_id     # == result["build_job"]["id"]
 
 # Wait for the build to finish
 job = api.wait_for_job(build_job_id, timeout=600)
@@ -76,6 +88,12 @@ answer = api.platforms.query(
 print(answer["answer"])
 print(answer["explanation"])
 ```
+
+> Convenience methods return an `AttrDict` — a `dict` that also exposes its keys
+> as attributes (`result.id`, `dataset.row_count`). Every `result["..."]`
+> subscript, `.get()`, `in` test and `json.dumps()` keeps working exactly as
+> before; the attribute access is additive (a key colliding with a `dict` method
+> like `items` stays reachable via subscript).
 
 ## Resources
 
@@ -186,6 +204,17 @@ raise `AmbertraceError` (404) when not enabled on your deployment. The cumulativ
 / exposure / band classes additionally require the platform's numeric obligation
 checker to be enabled.
 
+**`author()` 404 — feature-off vs not-authorised.** A 404 from `author()` has
+*two* possible meanings: (a) the feature isn't enabled (above), or (b) an org
+agent-policy gate **already exists** and your credentials are not its **owner**
+or an **org-admin**. The org has one gate; the first `author` creates it (you
+become owner) and only the owner/an org-admin may replace it thereafter. The
+refusal is a 404 by design (not a 403) so the gate's existence isn't revealed to
+an unauthorised caller — it is *not* a sign the feature is unavailable. To
+replace an existing org gate, author with the owner's credentials or an org-admin
+key. (`status()` / `authorize_action()` / `step()` against an existing gate are
+read/eval paths and do not require ownership.)
+
 ## Neurosymbolic forecasting
 
 Train a forecasting model, then **discover explainable correction rules** from its
@@ -295,6 +324,22 @@ if job["status"] == "error":
     print(f"Failed: {job.get('error_message')}")
 ```
 
+**Progress + stall detection.** `wait_for_job` takes two optional, back-compatible
+hooks so you can surface progress and catch a build that hangs without
+hand-rolling a retry wrapper:
+
+```python
+# Live progress on every poll:
+api.wait_for_job(job_id, on_progress=lambda j: print(j.get("status"), j.get("progress")))
+
+# Bail out if the build makes no forward progress (a change in status or
+# `progress`) for 120s — even if the overall timeout hasn't elapsed:
+try:
+    api.wait_for_job(job_id, timeout=600, stall_timeout=120)
+except TimeoutError as e:
+    print("build stalled:", e)   # e.g. stuck at building_ontology progress 0
+```
+
 ### Two job types — poll the right one
 
 `GET /api/v1/jobs/{id}` (and `wait_for_job`) returns two different job *types*:
@@ -336,11 +381,62 @@ except AmbertraceError as e:
     print(str(e))         # "Domain not found."
 ```
 
+When a verified `platforms.query` fails closed (the engine could not certify a
+decision), the error carries machine-readable diagnostics so you don't have to
+string-parse the prose message:
+
+```python
+try:
+    api.platforms.query(platform_id, query="...")
+except AmbertraceError as e:
+    e.missing_atoms    # atoms a decision rule needed but were neither supplied nor derived
+    e.deciding_rule    # the rule that stalled, if named
+    e.rejected_facts   # facts the engine rejected
+    e.stalled_stage    # where the chain stopped (e.g. "decision")
+```
+
+Each defaults to `[]` / `None` when the deployment doesn't supply it (back-compatible).
+This brings the query failure path to parity with
+`agent_policy.authorize_action()`, which already returns structured `rejected_facts`
+/ `deciding_rule`.
+
 ## API Documentation
 
 Full API reference: [app.ambertrace.ai/openapi/redoc](https://app.ambertrace.ai/openapi/redoc)
 
 ## Changelog
+
+### 0.17.0
+
+- **Developer-experience ergonomics (no breaking changes).**
+  - **`AmbertraceAPI.from_env()`** (and env defaults on the constructor): reads
+    `AMBERTRACE_API_KEY` / `AMBERTRACE_BASE_URL` (base URL defaults to
+    `https://app.ambertrace.ai`), with optional `.env` loading via
+    `from_env(dotenv_path=...)` — no per-project auth boilerplate. An explicit
+    argument always wins over the environment.
+  - **Consistent envelopes.** `platforms.create` and `domains.build_ontology`
+    return an `AttrDict` stamped with a normalised, stable `id` / `job_id`
+    regardless of the underlying shape (`platform.id`, `build_job.job.id`, ...),
+    so callers no longer hand-roll multi-shape unwrapping. The original keys are
+    preserved.
+  - **Typed dataset returns.** `datasets.upload` / `get` / `list` return an
+    `AttrDict` exposing the documented `DatasetOut` fields (`row_count`,
+    `column_count`, `decision_column`, ...) by attribute as well as subscript —
+    discoverable without grepping SDK source. `AttrDict` is a `dict` subclass, so
+    every existing subscript / `.get()` / `in` / `json.dumps()` is unchanged.
+  - **Build-stall detection in `wait_for_job`.** New optional `on_progress`
+    callback (invoked with the job dict each poll) and `stall_timeout` (raise
+    `TimeoutError` on no forward progress — a change in `status` or `progress` —
+    for N seconds), so a hung build is caught without a hand-rolled retry wrapper.
+    The existing two-arg signature is unchanged.
+  - **Structured fail-closed query errors.** A verified `platforms.query` that
+    can't certify now surfaces `missing_atoms`, `deciding_rule`, `rejected_facts`
+    and `stalled_stage` on `AmbertraceError` (read off the error body; default
+    `[]` / `None` when absent) — parity with `agent_policy.authorize_action`.
+  - **`decision_column` docstring.** `datasets.upload(..., decision_column=...)`
+    now documents that naming a column flips the build from features-only to
+    **label-supervised** (verdict generation grounded against the labelled
+    outcomes).
 
 ### 0.16.0
 

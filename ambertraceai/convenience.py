@@ -2,12 +2,136 @@
 
 from __future__ import annotations
 
+import os
 import random
 import time
 import urllib.parse
-from typing import Any
+from typing import Any, Callable
 
 import httpx
+
+# Sentinel for "no progress marker observed yet" so the first poll always counts
+# as forward progress (distinct from any real status/progress tuple).
+_UNSET = object()
+
+
+class AttrDict(dict):
+    """A ``dict`` that also exposes its keys as attributes.
+
+    Returned by the convenience methods so a result is BOTH subscriptable
+    (``result["id"]`` — the long-standing shape, unchanged) AND attribute-
+    accessible (``result.id``) for IDE autocomplete / discoverability. Nested
+    dicts are wrapped lazily on access, so ``result.platform.id`` works too.
+
+    This is deliberately a plain ``dict`` subclass rather than a generated
+    model class: every existing ``[...]`` access, ``.get(...)``, ``in`` test,
+    ``json.dumps(...)`` and ``**spread`` keeps working byte-for-byte — the
+    attribute access is purely additive and back-compatible.
+
+    Note: a key whose name collides with a built-in ``dict`` method (``items``,
+    ``keys``, ``values``, ``get``, ``update``, ...) resolves to the method on
+    attribute access; read such a key via subscript (``d["items"]``).
+    """
+
+    def __getattr__(self, name: str) -> Any:
+        try:
+            value = self[name]
+        except KeyError as exc:
+            raise AttributeError(name) from exc
+        return _wrap(value)
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        self[name] = value
+
+    def __delattr__(self, name: str) -> None:
+        try:
+            del self[name]
+        except KeyError as exc:
+            raise AttributeError(name) from exc
+
+
+def _wrap(value: Any) -> Any:
+    """Recursively wrap dicts as :class:`AttrDict` (lists element-wise).
+
+    Idempotent and cheap: scalars pass through untouched, an existing
+    ``AttrDict`` is returned as-is.
+    """
+    if isinstance(value, AttrDict):
+        return value
+    if isinstance(value, dict):
+        return AttrDict(value)
+    if isinstance(value, list):
+        return [_wrap(v) for v in value]
+    return value
+
+
+# The id of a created job/platform arrives under different keys across the
+# API's create/dispatch envelopes (`id`, `platform_id`, nested `platform.id`,
+# `job_id`, `build_job.job.id`, ...). The SDK absorbs this inconsistency so
+# callers never hand-roll multi-shape unwrapping (see feature-sdk-dx item 4).
+def _extract_id(body: Any) -> Any:
+    """Best-effort stable resource id from a create/dispatch response.
+
+    Tries the common top-level keys, then a nested ``platform``/``dataset``/
+    ``domain`` object's ``id``. Returns ``None`` if nothing id-like is present
+    (the caller can still read the raw shape).
+    """
+    if not isinstance(body, dict):
+        return None
+    for key in ("id", "platform_id", "dataset_id", "domain_id"):
+        if body.get(key) is not None:
+            return body[key]
+    for nested in ("platform", "dataset", "domain"):
+        obj = body.get(nested)
+        if isinstance(obj, dict) and obj.get("id") is not None:
+            return obj["id"]
+    return None
+
+
+def _extract_job_id(body: Any) -> Any:
+    """Best-effort stable job id from a create/dispatch response.
+
+    Handles ``job_id``, a nested ``job.id``, and ``build_job.job.id`` /
+    ``build_job.id`` (platform create returns the build job under ``build_job``).
+    Returns ``None`` when the response carries no job.
+    """
+    if not isinstance(body, dict):
+        return None
+    if body.get("job_id") is not None:
+        return body["job_id"]
+    for nested in ("job", "build_job"):
+        obj = body.get(nested)
+        if isinstance(obj, dict):
+            if obj.get("job_id") is not None:
+                return obj["job_id"]
+            inner = obj.get("job")
+            if isinstance(inner, dict) and inner.get("id") is not None:
+                return inner["id"]
+            if obj.get("id") is not None:
+                return obj["id"]
+    return None
+
+
+def _normalise_envelope(body: Any) -> Any:
+    """Wrap a response as :class:`AttrDict` and stamp stable ``id`` / ``job_id``.
+
+    Back-compatible: never overwrites an id/job_id the body already carries at
+    the top level; only *fills in* a normalised value derived from a nested or
+    differently-keyed shape when the top-level key is absent. Non-dict bodies
+    (lists, scalars) pass through ``_wrap`` unchanged.
+    """
+    if not isinstance(body, dict):
+        return _wrap(body)
+    wrapped = _wrap(body)
+    if wrapped.get("id") is None:
+        rid = _extract_id(body)
+        if rid is not None:
+            wrapped["id"] = rid
+    if wrapped.get("job_id") is None:
+        jid = _extract_job_id(body)
+        if jid is not None:
+            wrapped["job_id"] = jid
+    return wrapped
 
 
 def _coerce_details(details: Any) -> list[dict]:
@@ -51,6 +175,17 @@ class AmbertraceError(Exception):
     exposed as the :attr:`schema_reconciliation` attribute (and the
     :attr:`unmappable_fields` convenience), so a caller can show exactly which
     field references have no matching data column.
+
+    For a verified ``platforms.query`` that fails closed (the engine could not
+    certify a decision), the structured diagnostic fields the platform attaches
+    to the error body — :attr:`missing_atoms`, :attr:`deciding_rule`,
+    :attr:`rejected_facts` (also folded from ``details``) and
+    :attr:`stalled_stage` — are surfaced so a caller can see *which* atom was
+    missing without string-parsing the prose message (feature-sdk-dx item 3).
+    These bring the query failure path to parity with
+    ``agent_policy.authorize_action``, which already returns structured
+    ``rejected_facts`` / ``deciding_rule``. Each is ``None``/``[]`` when the API
+    did not supply it (back-compatible — older deployments simply omit them).
     """
 
     def __init__(
@@ -60,6 +195,11 @@ class AmbertraceError(Exception):
         message: str,
         details: Any = None,
         schema_reconciliation: Any = None,
+        *,
+        missing_atoms: Any = None,
+        deciding_rule: Any = None,
+        rejected_facts: Any = None,
+        stalled_stage: Any = None,
     ):
         self.status_code = status_code
         self.code = code
@@ -68,13 +208,28 @@ class AmbertraceError(Exception):
         self.schema_reconciliation: dict | None = (
             schema_reconciliation if isinstance(schema_reconciliation, dict) else None
         )
+        # Structured fail-closed diagnostics (feature-sdk-dx item 3). Read off
+        # the error body when present; default to empty/None otherwise.
+        self.missing_atoms: list = list(missing_atoms) if isinstance(missing_atoms, list) else []
+        self.deciding_rule: Any = deciding_rule
+        self._rejected_facts_explicit: list | None = (
+            list(rejected_facts) if isinstance(rejected_facts, list) else None
+        )
+        self.stalled_stage: Any = stalled_stage
         detail_str = _format_details(self.details)
         full = f"{message} ({detail_str})" if detail_str else message
         super().__init__(full)
 
     @property
-    def rejected_facts(self) -> list[str]:
-        """Convenience: the ``field`` names carried in ``details`` (may be empty)."""
+    def rejected_facts(self) -> list:
+        """The facts the verified engine rejected (may be empty).
+
+        Prefers an explicit ``rejected_facts`` list off the error body (the
+        structured fail-closed query error — item 3); falls back to the
+        ``field`` names carried in ``details`` for back-compatibility.
+        """
+        if self._rejected_facts_explicit is not None:
+            return self._rejected_facts_explicit
         return [d["field"] for d in self.details if d.get("field")]
 
     @property
@@ -112,6 +267,44 @@ _HEALTH_PATH = "/ambertrace/health"
 # clear message rather than letting the user debug a handshake failure.
 _API_HOST = "app.ambertrace.ai"
 _WRONG_API_HOST = "api.ambertrace.ai"
+
+# Environment-variable names + the production default base URL, used by
+# :meth:`AmbertraceAPI.from_env` and the constructor's env fallbacks so callers
+# don't re-implement auth boilerplate (feature-sdk-dx item 7).
+_ENV_API_KEY = "AMBERTRACE_API_KEY"
+_ENV_BASE_URL = "AMBERTRACE_BASE_URL"
+_DEFAULT_BASE_URL = f"https://{_API_HOST}"
+
+
+def _load_dotenv(path: str) -> dict[str, str]:
+    """Parse a ``.env`` file into a dict (no third-party dependency).
+
+    Supports ``KEY=value`` lines, ``export KEY=value``, ``#`` comments, blank
+    lines, and single/double-quoted values. Returns ``{}`` when the file is
+    absent or unreadable (best-effort — never raises). Does NOT mutate
+    ``os.environ``; the caller decides precedence.
+    """
+    values: dict[str, str] = {}
+    try:
+        with open(path, encoding="utf-8") as f:
+            for raw in f:
+                line = raw.strip()
+                if not line or line.startswith("#"):
+                    continue
+                if line.startswith("export "):
+                    line = line[len("export "):].lstrip()
+                if "=" not in line:
+                    continue
+                key, _, val = line.partition("=")
+                key = key.strip()
+                val = val.strip()
+                if len(val) >= 2 and val[0] == val[-1] and val[0] in ("'", '"'):
+                    val = val[1:-1]
+                if key:
+                    values[key] = val
+    except OSError:
+        return {}
+    return values
 
 
 def _is_wrong_api_host(base_url: str) -> bool:
@@ -187,6 +380,16 @@ class _Resource:
                 err = body.get("error", {}) if isinstance(body, dict) else {}
                 if not isinstance(err, dict):
                     err = {}
+                top = body if isinstance(body, dict) else {}
+
+                # Structured fail-closed query diagnostics (feature-sdk-dx item
+                # 3). The platform may attach these either inside ``error`` or at
+                # the top level of the body — read whichever is present so the
+                # pass-through is robust to the eventual server placement.
+                def _pick(key: str) -> Any:
+                    v = err.get(key)
+                    return v if v is not None else top.get(key)
+
                 raise AmbertraceError(
                     resp.status_code,
                     err.get("code", "unknown"),
@@ -194,7 +397,11 @@ class _Resource:
                     err.get("details"),
                     # Data-driven ontology (D1): a schema_conflict 400 carries the
                     # column-mapping report at the top level of the error body.
-                    body.get("schema_reconciliation") if isinstance(body, dict) else None,
+                    top.get("schema_reconciliation"),
+                    missing_atoms=_pick("missing_atoms"),
+                    deciding_rule=_pick("deciding_rule"),
+                    rejected_facts=_pick("rejected_facts"),
+                    stalled_stage=_pick("stalled_stage"),
                 )
             return body.get("data", body) if isinstance(body, dict) else body
 
@@ -224,9 +431,12 @@ class DomainResource(_Resource):
         validated to map to a column (or an in-set derived concept) at creation
         time; an unmappable reference fails the build rather than producing a
         rule that can never fire. Calling without a dataset returns HTTP 400.
-        Returns a 202 job envelope -- poll the job until it completes.
+        Returns a 202 job envelope (an :class:`AttrDict`) carrying a stable
+        ``job_id`` -- poll the job until it completes (``api.wait_for_job(
+        onto.job_id)``).
         """
-        return self._request("POST", f"/api/v1/domains/{domain_id}/build-ontology")
+        return _normalise_envelope(
+            self._request("POST", f"/api/v1/domains/{domain_id}/build-ontology"))
 
     # -- Evaluation config --
 
@@ -261,14 +471,46 @@ class DomainResource(_Resource):
 
 
 class DatasetResource(_Resource):
-    def list(self) -> list[dict]:
-        return self._request("GET", "/api/v1/datasets")
+    def list(self) -> list[AttrDict]:
+        """List the caller's datasets.
 
-    def get(self, dataset_id: int) -> dict:
-        return self._request("GET", f"/api/v1/datasets/{dataset_id}")
+        Each item is an :class:`AttrDict` — subscriptable as before
+        (``ds["row_count"]``) and attribute-accessible (``ds.row_count``,
+        ``ds.column_count``, ``ds.decision_column``) for IDE autocomplete.
+        """
+        return [_wrap(d) for d in self._request("GET", "/api/v1/datasets")]
+
+    def get(self, dataset_id: int) -> AttrDict:
+        """Fetch one dataset as an :class:`AttrDict`.
+
+        Exposes the ``DatasetOut`` fields the SDK models document —
+        ``id``, ``name``, ``domain_id``, ``status``, ``source_type``,
+        ``row_count``, ``column_count``, ``decision_column``, ``schema_info``,
+        ``description``, ``created_at``, ``updated_at`` — via both ``[...]`` and
+        attribute access, so the fields are discoverable without grepping SDK
+        source.
+        """
+        return _wrap(self._request("GET", f"/api/v1/datasets/{dataset_id}"))
 
     def upload(self, *, domain_id: int, file_path: str, name: str | None = None,
-               decision_column: str | None = None) -> dict:
+               decision_column: str | None = None) -> AttrDict:
+        """Upload a CSV/data file and ingest it as a dataset on a domain.
+
+        Returns an :class:`AttrDict` carrying the ``DatasetOut`` fields
+        (``id``, ``status``, ``row_count``, ``column_count``,
+        ``decision_column``, ...) — readable via ``[...]`` (unchanged) or
+        attribute access (``ds.row_count``) for discoverability.
+
+        ``decision_column`` — naming a column here flips the build from
+        *features-only* (unsupervised) to **label-supervised**: that column is
+        treated as the labelled outcome the platform learns to reach, and
+        verdict/decision rule generation is grounded against its observed label
+        values rather than inferred from the feature columns alone. Leave it
+        unset to build features-only. (See the supervised coverage caveat in
+        the platform build diagnostics: a supervised build can leave some
+        declared decision classes unreachable — check
+        ``generation_diagnostics`` after the build.)
+        """
         with open(file_path, "rb") as f:
             files = {"file": (name or file_path.split("/")[-1], f)}
             data = {"domain_id": str(domain_id)}
@@ -276,7 +518,7 @@ class DatasetResource(_Resource):
                 data["name"] = name
             if decision_column:
                 data["decision_column"] = decision_column
-            return self._request("POST", "/api/v1/datasets/upload", files=files, data=data)
+            return _wrap(self._request("POST", "/api/v1/datasets/upload", files=files, data=data))
 
     def fetch(self, *, domain_id: int, connector_type: str, config: dict | None = None) -> dict:
         """Ingest a dataset from a registered connector (e.g. 'fred', 'yahoo',
@@ -346,11 +588,25 @@ class PlatformResource(_Resource):
     def list(self) -> list[dict]:
         return self._request("GET", "/api/v1/platforms")
 
-    def create(self, *, domain_id: int, dataset_id: int, name: str | None = None, **kwargs) -> dict:
+    def create(self, *, domain_id: int, dataset_id: int, name: str | None = None, **kwargs) -> AttrDict:
+        """Create a platform and dispatch its build (async).
+
+        Returns an :class:`AttrDict` whose original shape is preserved
+        (``result["platform"]["id"]`` / ``result["build_job"]["id"]`` still
+        work) AND which is stamped with a normalised, stable ``id`` (the new
+        platform's id) and ``job_id`` (the build job's id), so a caller can do::
+
+            result = api.platforms.create(domain_id=1, dataset_id=2)
+            api.wait_for_job(result.job_id)        # or result["job_id"]
+            api.platforms.query(result.id, query=...)
+
+        without unwrapping ``build_job.job.id`` / ``platform.id`` by hand
+        (feature-sdk-dx item 4).
+        """
         body: dict[str, Any] = {"domain_id": domain_id, "dataset_id": dataset_id, **kwargs}
         if name:
             body["name"] = name
-        return self._request("POST", "/api/v1/platforms", json=body)
+        return _normalise_envelope(self._request("POST", "/api/v1/platforms", json=body))
 
     def get(self, platform_id: int) -> dict:
         return self._request("GET", f"/api/v1/platforms/{platform_id}")
@@ -1000,6 +1256,19 @@ class AgentPolicyResource(_Resource):
         An empty or vacuous policy fails closed: the call raises
         :class:`AmbertraceError` (422) and the existing policy (if any) is left
         unchanged.
+
+        **Ownership / authority.** The org has ONE agent-policy gate. The FIRST
+        ``author`` call creates it and makes the calling user its owner. Once a
+        gate EXISTS, only its **owner** or an **org-admin** may replace it —
+        authoring as anyone else raises :class:`AmbertraceError` (**404
+        ``not_found``**). The 404 is intentional governance scoping (it is
+        deliberately a 404, not a 403, so the gate's existence is not revealed to
+        an unauthorised caller) — it does NOT mean authoring is unavailable. So a
+        404 from ``author`` means EITHER (a) the agent-policy-gate feature is not
+        enabled on your deployment, OR (b) an org gate already exists and your
+        credentials lack write authority over it. To replace an existing org
+        gate, author with the gate owner's credentials or an org-admin key; a
+        platform-scoped key bound to a different platform cannot replace it.
         """
         return self._request(
             "POST", "/api/v1/agent-policy-gate/policy",
@@ -1126,14 +1395,26 @@ class AmbertraceAPI:
         domains = api.domains.list()
         platform = api.platforms.create(domain_id=1, dataset_id=2)
         job = api.wait_for_job(platform["job_id"])
+
+    Or read credentials from the environment (``AMBERTRACE_API_KEY`` /
+    ``AMBERTRACE_BASE_URL``), with no auth boilerplate::
+
+        api = AmbertraceAPI.from_env()
+
+    ``base_url`` / ``api_key`` are optional on the constructor too: when not
+    passed they fall back to those env vars (``base_url`` further defaults to the
+    production endpoint ``https://app.ambertrace.ai``). An explicit argument
+    always wins over the environment.
     """
 
-    def __init__(self, *, base_url: str, api_key: str, timeout: float = 30.0,
-                 warm: bool = True):
-        if not base_url:
-            raise ValueError("base_url is required")
+    def __init__(self, *, base_url: str | None = None, api_key: str | None = None,
+                 timeout: float = 30.0, warm: bool = True):
+        base_url = base_url or os.environ.get(_ENV_BASE_URL) or _DEFAULT_BASE_URL
+        api_key = api_key or os.environ.get(_ENV_API_KEY)
         if not api_key:
-            raise ValueError("api_key is required")
+            raise ValueError(
+                f"api_key is required: pass api_key=... or set ${_ENV_API_KEY}"
+            )
         if _is_wrong_api_host(base_url):
             raise ValueError(
                 f"base_url host '{_WRONG_API_HOST}' is not the API endpoint — "
@@ -1150,6 +1431,33 @@ class AmbertraceAPI:
         # Best-effort: never raises. Pass ``warm=False`` to skip (e.g. tests).
         if warm:
             self._ping_health()
+
+    @classmethod
+    def from_env(cls, *, dotenv_path: str | None = None, timeout: float = 30.0,
+                 warm: bool = True) -> "AmbertraceAPI":
+        """Construct a client from the environment — the zero-boilerplate path.
+
+        Reads the API key from ``AMBERTRACE_API_KEY`` and the base URL from
+        ``AMBERTRACE_BASE_URL`` (falling back to the production endpoint
+        ``https://app.ambertrace.ai`` when unset).
+
+        Pass ``dotenv_path`` to also load a ``.env`` file (e.g.
+        ``AmbertraceAPI.from_env(dotenv_path=".env")``); the real process
+        environment takes precedence over ``.env`` values, so an exported
+        variable always wins. Raises :class:`ValueError` if no API key is found
+        in either source.
+        """
+        file_vals = _load_dotenv(dotenv_path) if dotenv_path else {}
+        api_key = os.environ.get(_ENV_API_KEY) or file_vals.get(_ENV_API_KEY)
+        base_url = (
+            os.environ.get(_ENV_BASE_URL)
+            or file_vals.get(_ENV_BASE_URL)
+            or _DEFAULT_BASE_URL
+        )
+        if not api_key:
+            src = f"${_ENV_API_KEY}" + (" or the .env file" if dotenv_path else "")
+            raise ValueError(f"No API key found: set {src}.")
+        return cls(base_url=base_url, api_key=api_key, timeout=timeout, warm=warm)
 
     def _ping_health(self) -> None:
         """Best-effort ping to the UI health endpoint (the process Fly health-
@@ -1222,7 +1530,9 @@ class AmbertraceAPI:
         return _Resource(self._http)._request(
             "GET", "/api/v1/version", headers={"Accept": "application/json"})
 
-    def wait_for_job(self, job_id: int, *, timeout: int = 600, poll_interval: int = 5) -> dict:
+    def wait_for_job(self, job_id: int, *, timeout: int = 600, poll_interval: int = 5,
+                     on_progress: Callable[[dict], None] | None = None,
+                     stall_timeout: float | None = None) -> dict:
         """Poll a job until it reaches a terminal status or times out.
 
         On a terminal FAILED status (``error`` / ``failed``) this **raises**
@@ -1280,11 +1590,40 @@ class AmbertraceAPI:
         Interpreting it: ``verdict_conclusion_count == 0`` (equivalently
         ``can_decide_adversely is False``) means the platform reached no
         deny/block decision; ``decision_coverage_warnings`` explains why.
+
+        **Progress + stall detection** (feature-sdk-dx item 6; both optional and
+        back-compatible — the existing two-arg signature is unchanged):
+
+        * ``on_progress`` — a callback invoked with the full job dict after every
+          poll (terminal poll included). Use it to surface live progress, e.g.
+          ``on_progress=lambda j: print(j.get("status"), j.get("progress"))``.
+          Exceptions raised by the callback propagate to the caller.
+        * ``stall_timeout`` — if set, raise :class:`TimeoutError` when the job
+          makes **no forward progress** for this many seconds, even though the
+          overall ``timeout`` has not elapsed. "Forward progress" is a change in
+          either ``status`` or ``progress`` between polls. This catches a build
+          that hangs (e.g. stuck at ``building_ontology`` progress ``0``) without
+          waiting out the full ``timeout`` — so a caller can detect a hang and
+          delete-and-recreate rather than hand-rolling a ``build_resilient``
+          retry wrapper.
         """
         deadline = time.monotonic() + timeout
+        last_progress_marker: Any = _UNSET
+        last_progress_at = time.monotonic()
         while True:
             job = self.jobs.get(job_id)
             status = job.get("status", "")
+            if on_progress is not None:
+                on_progress(job)
+
+            # Stall detection: a change in status OR progress counts as forward
+            # progress and resets the stall clock.
+            marker = (status, job.get("progress"))
+            now = time.monotonic()
+            if marker != last_progress_marker:
+                last_progress_marker = marker
+                last_progress_at = now
+
             if status in ("ready", "active", "error", "failed", "completed"):
                 if status in ("error", "failed"):
                     raise AmbertraceError(
@@ -1293,8 +1632,14 @@ class AmbertraceAPI:
                         f"{job.get('error_message') or status})",
                     )
                 return job
-            if time.monotonic() >= deadline:
+            if now >= deadline:
                 raise TimeoutError(f"Job {job_id} did not complete within {timeout}s (last status: {status})")
+            if stall_timeout is not None and (now - last_progress_at) >= stall_timeout:
+                raise TimeoutError(
+                    f"Job {job_id} stalled — no forward progress for "
+                    f"{stall_timeout:.0f}s (last status: {status}, "
+                    f"progress: {job.get('progress')})"
+                )
             # Keep the UI process (the health-gated one) warm alongside the API
             # status polls, so a long build doesn't let the machine suspend
             # mid-job. Best-effort.
