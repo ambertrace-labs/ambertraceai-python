@@ -68,6 +68,21 @@ symbolic trace.
 | `19_air_track_triage.py` | Air track C2 triage (escalate/monitor/clear) | `data/air_tracks.csv` |
 | `24_air_track_isr_hispec.py` | High-spec ISR air track triage (ASTERIX/MISB schema) | `data/air_tracks_hispec.csv` |
 
+### Agent Policy Gate demos (preview)
+
+Author a governance policy in **plain English**, then **prove every proposed
+agent action permit/deny** against it — fail-closed, with a machine-checked proof.
+No dataset upload: the policy is authored from English. The proof certificate is
+an OUTPUT (which facts were certified, which rule decided, machine-checked) — it
+does not reveal the kernel/Lean engine that produces it. Preview capability:
+feature-flagged server-side; the endpoints return 404 when not enabled (each demo
+reports that cleanly and skips).
+
+| Script | What it shows |
+|--------|---------------|
+| `27_agent_policy_gate.py` | Single-action gate — author a per-action policy, permit one action and deny another, print the proof certificate |
+| `25_agent_spend_budget.py` | Cumulative spend budget — mediate a session so the obligation is proven over the accumulated ledger (with a `--band` interval variant) |
+
 ### Forecasting demos
 
 Time-series and scenario forecasting via the prediction API. Create a domain,

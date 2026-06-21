@@ -82,7 +82,7 @@ print(answer["explanation"])
 | Resource | Methods |
 |----------|---------|
 | `api.domains` | `list`, `create`, `get`, `update`, `delete`, `build_ontology`, `eval_config`, `set_eval_config`, `delete_eval_config`, `suggest_eval_config`, `list_templates`, `create_template`, `update_template`, `delete_template`, `feedback_stats` |
-| `api.datasets` | `list`, `get`, `upload`, `fetch`, `quality`, `clean`, `preview`, `delete` |
+| `api.datasets` | `list`, `get`, `upload` (incl. `decision_column`), `fetch`, `fetch_multi`, `quality`, `clean`, `preview`, `delete` |
 | `api.platforms` | `list`, `create`, `get`, `delete`, `status`, `query`, `suggest_rules`, `list_suggestions`, `approve_suggestion`, `reject_suggestion`, `graph` |
 | `api.predictions` | `predict`, `list_configs`, `create_config`, `delete_config`, `train`, `list_predictions`, `discover_prediction_rules`, `discovered_prediction_rules`, `neurosymbolic_comparison`, `symbolic_forecast`, `residual_diagnosis` (preview) |
 | `api.connectors` | `list`, `test` |
@@ -95,9 +95,22 @@ print(answer["explanation"])
 
 Write the rules an AI agent must obey in **plain English**; Ambertrace compiles
 them to a verified policy and **proves every proposed tool-call permit/deny** —
-fail-closed, with a machine-checked proof. You author *English* and read back the
-admitted rules (also in English) plus a permit/deny verdict with its proof; the
-compiled form stays internal.
+fail-closed, with a machine-checked proof. The LLM only *proposes*; the kernel
+*proves*. You author *English* and read back the admitted rules (also in English)
+plus a permit/deny verdict with its proof; the compiled form stays internal.
+
+The gate is feature-flagged server-side (`AMBERTRACE_AGENT_POLICY_GATE`) and
+reachable at `api.agent_policy.*`:
+
+| Method | What it does |
+|--------|--------------|
+| `author(policy_text)` | Compile an English policy into a verified gate; returns `{platform, admitted, rejected, policy_text}` |
+| `status()` | The live gate: active policy, admitted controls (English), and the declared `input_fields` an action must supply |
+| `examples()` | The built-in example-policy library (`[{id, domain_label, title, policy_text, try_hint}, ...]`) — ready-to-author policies |
+| `authorize_action(platform_id, *, tool, args, context)` | Gate ONE proposed tool-call — permit/deny **with proof** |
+| `create_session(*, platform_id, goal)` | Open a mediated session (the gate is the sole executor) for a cumulative obligation |
+| `step(session_id, *, tool, args, context)` | Mediate one action in a session: gate → execute-on-permit / block-on-deny |
+| `get_session(session_id)` | Fetch a session and its full mediated step trace |
 
 ```python
 # 1. Author the policy in English
@@ -131,7 +144,19 @@ step = api.agent_policy.step(s["id"], tool="place_order",
 step["step"]["verdict"]["decision"], step["step"]["executed"]
 ```
 
-A runnable end-to-end demo is in [`examples/25_agent_spend_budget.py`](examples/25_agent_spend_budget.py).
+Runnable end-to-end demos:
+[`examples/27_agent_policy_gate.py`](examples/27_agent_policy_gate.py) gates a
+single action (a per-action policy — permit one action, deny another, and print
+the proof certificate), and
+[`examples/25_agent_spend_budget.py`](examples/25_agent_spend_budget.py) mediates
+a session for a cumulative spend budget.
+
+**What the proof is — and is not.** The verdict's proof certificate (`decision`,
+`permitted`, `proof_checked`, `deciding_rule`, `certified_facts`, `rejected_facts`)
+is an **output** the verified engine produces: it demonstrates the *result* —
+which facts were certified, which rule decided, and that the firing set was
+machine-checked. It does **not** ship or reveal the kernel / Lean formalisation
+that produces it; you read the certificate, the engine stays internal.
 
 ### Obligation classes — the English-in authoring contract
 
@@ -316,6 +341,32 @@ except AmbertraceError as e:
 Full API reference: [app.ambertrace.ai/openapi/redoc](https://app.ambertrace.ai/openapi/redoc)
 
 ## Changelog
+
+### 0.16.0
+
+- **Agent Policy Gate — documented + exampled.** The `api.agent_policy` resource
+  (author an English governance policy, then prove every proposed agent action
+  permit/deny against it — fail-closed, with a machine-checked proof) is now fully
+  surfaced in the README (the [Agent Policy Gate](#agent-policy-gate-preview)
+  section, the method table, and the obligation-class authoring contract) and in a
+  new single-action worked example, `examples/27_agent_policy_gate.py` — author a
+  per-action policy, gate a PERMIT case and a DENY case, and print the verdict's
+  proof certificate (`decision`, `permitted`, `proof_checked`, `deciding_rule`,
+  `certified_facts`, `rejected_facts`, `denied_reason`). The proof certificate is
+  an **output** demonstrating the result; it does not reveal the kernel/Lean
+  engine that produces it. The gate is a preview capability (feature-flagged
+  server-side; its endpoints return `AmbertraceError` (404) when not enabled).
+  No client API changed — `AgentPolicyResource` already shipped.
+
+### 0.15.0
+
+- **Multi-source connector fetch + decision-column upload.**
+  `api.datasets.fetch_multi(domain_id=..., sources=[...], join_on="date", ...)`
+  fetches from two or more connectors and merges them into ONE date-aligned panel
+  (each value column namespaced by connector type), with optional `frequency` /
+  `aggregation` resampling so mixed-cadence sources land on a common grid.
+  `api.datasets.upload(...)` now accepts `decision_column=` to declare the
+  dataset's decision/label column at upload time.
 
 ### 0.11.2
 
