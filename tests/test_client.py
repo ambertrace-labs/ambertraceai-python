@@ -15,13 +15,19 @@ class TestAmbertraceAPIClient:
         assert api._http.headers["authorization"] == "Bearer at_test"
         api.close()
 
-    def test_init_missing_api_key_raises(self):
+    def test_init_missing_api_key_raises(self, monkeypatch):
+        # With no explicit key and no env key, construction fails closed.
+        monkeypatch.delenv("AMBERTRACE_API_KEY", raising=False)
         with pytest.raises(ValueError, match="api_key"):
             AmbertraceAPI(base_url="https://example.com", api_key="")
 
-    def test_init_missing_base_url_raises(self):
-        with pytest.raises(ValueError, match="base_url"):
-            AmbertraceAPI(base_url="", api_key="at_test")
+    def test_init_missing_base_url_falls_back_to_default(self, monkeypatch):
+        # base_url is now optional — an unset base_url (no env override) falls
+        # back to the production endpoint rather than raising (item 7).
+        monkeypatch.delenv("AMBERTRACE_BASE_URL", raising=False)
+        api = AmbertraceAPI(base_url="", api_key="at_test", warm=False)
+        assert str(api._http.base_url) == "https://app.ambertrace.ai"
+        api.close()
 
     def test_domains_property_returns_resource(self):
         api = AmbertraceAPI(base_url="https://example.com", api_key="at_test", warm=False)
