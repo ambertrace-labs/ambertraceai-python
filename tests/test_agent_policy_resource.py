@@ -52,6 +52,49 @@ def test_author_posts_policy_text(api):
 
 
 @respx.mock
+def test_author_polls_async_compile_job(api):
+    """When the server answers the POST asynchronously ({job_id, processing}),
+    author() polls the job endpoint and returns the terminal 'done' payload."""
+    respx.post(f"{BASE}/api/v1/agent-policy-gate/policy").mock(
+        return_value=httpx.Response(202, json=_env({
+            "job_id": "abc123", "status": "processing"})),
+    )
+    job = respx.get(
+        f"{BASE}/api/v1/agent-policy-gate/policy/jobs/abc123").mock(
+        return_value=httpx.Response(200, json=_env({
+            "job_id": "abc123", "status": "done",
+            "platform": {"id": 9, "verified_profile": True},
+            "admitted": [{"name": "exposure_within_limit", "kind": "derive",
+                          "description": "cumulative exposure within the limit"}],
+            "rejected": [], "findings": [],
+            "policy_text": "cumulative exposure must stay within 100000"})),
+    )
+    result = api.agent_policy.author(
+        "cumulative exposure must stay within 100000", poll_interval=0)
+    assert job.called
+    assert result["platform"]["id"] == 9
+    assert result["admitted"][0]["name"] == "exposure_within_limit"
+
+
+@respx.mock
+def test_author_raises_on_vacuous_job(api):
+    """A vacuous policy (async terminal 'vacuous') raises AmbertraceError 422."""
+    respx.post(f"{BASE}/api/v1/agent-policy-gate/policy").mock(
+        return_value=httpx.Response(202, json=_env({
+            "job_id": "v1", "status": "processing"})),
+    )
+    respx.get(f"{BASE}/api/v1/agent-policy-gate/policy/jobs/v1").mock(
+        return_value=httpx.Response(200, json=_env({
+            "job_id": "v1", "status": "vacuous",
+            "rejected": [{"name": "x", "reason": "no valid controls"}],
+            "message": "Policy produced no admissible controls."})),
+    )
+    with pytest.raises(AmbertraceError) as exc:
+        api.agent_policy.author("nonsense that compiles to nothing", poll_interval=0)
+    assert exc.value.status_code == 422
+
+
+@respx.mock
 def test_status_gets_gate(api):
     respx.get(f"{BASE}/api/v1/agent-policy-gate").mock(
         return_value=httpx.Response(200, json=_env({
@@ -97,6 +140,83 @@ def test_authorize_action_posts_action_and_context(api):
                     "context": {"day": "mon"}}
     assert verdict["decision"] == "permit"
     assert verdict["proof_checked"] is True
+
+
+@respx.mock
+def test_authorize_action_surfaces_indeterminate_outcome(api):
+    """An indeterminate verdict (the chain needed a declared input it was not
+    given) is returned verbatim - outcome/missing_inputs/stalled_stage/
+    query_diagnostics - and the documented detect->supply->retry branch fires.
+    INVARIANT: indeterminate keeps permitted=False AND proof_checked=False; it is
+    neither a permit nor a deny."""
+    respx.post(f"{BASE}/api/v1/platforms/7/authorize-action").mock(
+        return_value=httpx.Response(200, json=_env({
+            "decision": None,
+            "permitted": False,
+            "proof_checked": False,
+            "denied_reason": None,
+            "outcome": "indeterminate",
+            "missing_inputs": ["target_zone"],
+            "stalled_stage": "classify_zone",
+            "query_diagnostics": {
+                "missing_atoms": ["target_zone"],
+                "deciding_rule": None,
+                "rejected_facts": [],
+                "stalled_stage": "classify_zone",
+            },
+            "certified_facts": [], "rejected_facts": [],
+        })),
+    )
+    v = api.agent_policy.authorize_action(
+        7, tool="dispatch", args={"power": 50})
+
+    # Returned verbatim.
+    assert v["outcome"] == "indeterminate"
+    assert v["missing_inputs"] == ["target_zone"]
+    assert v["stalled_stage"] == "classify_zone"
+    assert v["query_diagnostics"]["missing_atoms"] == ["target_zone"]
+    # The invariant: indeterminate is NOT a permit and NOT a deny.
+    assert v["permitted"] is False
+    assert v["proof_checked"] is False
+
+    # Example-style branch: detect indeterminate -> read what to supply.
+    if v["outcome"] == "indeterminate":
+        needs = v["missing_inputs"]
+    elif v["permitted"]:
+        needs = None  # pragma: no cover - would be a permit
+    else:
+        needs = None  # pragma: no cover - would be a proven deny
+    assert needs == ["target_zone"]
+
+
+@respx.mock
+def test_authorize_action_surfaces_deny_outcome(api):
+    """A proven deny carries outcome='deny' with proof_checked True and an empty
+    missing_inputs - distinct from indeterminate, and not something to blindly
+    retry."""
+    respx.post(f"{BASE}/api/v1/platforms/7/authorize-action").mock(
+        return_value=httpx.Response(200, json=_env({
+            "decision": "deny",
+            "permitted": False,
+            "proof_checked": True,
+            "denied_reason": "cumulative exposure exceeds 100000",
+            "outcome": "deny",
+            "missing_inputs": [],
+            "stalled_stage": None,
+            "query_diagnostics": {
+                "missing_atoms": [], "deciding_rule": "exposure_within_limit",
+                "rejected_facts": [], "stalled_stage": None,
+            },
+            "certified_facts": [], "rejected_facts": [],
+        })),
+    )
+    v = api.agent_policy.authorize_action(
+        7, tool="place_order", args={"qty": 1000, "price": 400})
+    assert v["outcome"] == "deny"
+    assert v["missing_inputs"] == []
+    assert v["permitted"] is False
+    assert v["proof_checked"] is True
+    assert v["denied_reason"] == "cumulative exposure exceeds 100000"
 
 
 @respx.mock

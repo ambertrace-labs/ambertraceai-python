@@ -82,6 +82,13 @@ reports that cleanly and skips).
 the author → status → authorize / session flow, key authority (what a 404 means), and
 the four things to get right — then run the demos below.
 
+**Branch on `verdict["outcome"]`, not just `permitted`.** Each verdict reports one
+of `permit` | `deny` | `indeterminate` | `unavailable`. `indeterminate` means the
+gate needed a declared input it was not given (see `verdict["missing_inputs"]`): it
+keeps `permitted=False` and `proof_checked=False`, but it is **not** a policy
+denial — supply the missing field(s) and retry rather than giving up. Only `deny`
+(with `proof_checked=True`) is a proven violation; only `permit` should execute.
+
 | Script | What it shows |
 |--------|---------------|
 | `27_agent_policy_gate.py` | Single-action gate — author a per-action policy, permit one action and deny another, print the proof certificate |
