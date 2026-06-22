@@ -86,7 +86,10 @@ def sync_detailed(
     facts appear in explanation.rejected_facts), evaluate rules and independently verify the decision.
     The response then carries proof_checked=true and a proof_summary (full derivation in
     explanation.proof). If a verified decision cannot be certified the query fails closed with HTTP 503
-    and returns no answer. For non-verified platforms proof_checked is null.
+    and returns no answer. The 503 body carries a machine-readable query_diagnostics block —
+    missing_atoms (declared atom(s) the decision chain needed but were neither supplied nor derived),
+    deciding_rule, rejected_facts, and stalled_stage — so callers need not parse the prose message. For
+    non-verified platforms proof_checked is null.
 
     Args:
         id (int): Resource ID
@@ -129,7 +132,10 @@ def sync(
     facts appear in explanation.rejected_facts), evaluate rules and independently verify the decision.
     The response then carries proof_checked=true and a proof_summary (full derivation in
     explanation.proof). If a verified decision cannot be certified the query fails closed with HTTP 503
-    and returns no answer. For non-verified platforms proof_checked is null.
+    and returns no answer. The 503 body carries a machine-readable query_diagnostics block —
+    missing_atoms (declared atom(s) the decision chain needed but were neither supplied nor derived),
+    deciding_rule, rejected_facts, and stalled_stage — so callers need not parse the prose message. For
+    non-verified platforms proof_checked is null.
 
     Args:
         id (int): Resource ID
@@ -167,7 +173,10 @@ async def asyncio_detailed(
     facts appear in explanation.rejected_facts), evaluate rules and independently verify the decision.
     The response then carries proof_checked=true and a proof_summary (full derivation in
     explanation.proof). If a verified decision cannot be certified the query fails closed with HTTP 503
-    and returns no answer. For non-verified platforms proof_checked is null.
+    and returns no answer. The 503 body carries a machine-readable query_diagnostics block —
+    missing_atoms (declared atom(s) the decision chain needed but were neither supplied nor derived),
+    deciding_rule, rejected_facts, and stalled_stage — so callers need not parse the prose message. For
+    non-verified platforms proof_checked is null.
 
     Args:
         id (int): Resource ID
@@ -208,7 +217,10 @@ async def asyncio(
     facts appear in explanation.rejected_facts), evaluate rules and independently verify the decision.
     The response then carries proof_checked=true and a proof_summary (full derivation in
     explanation.proof). If a verified decision cannot be certified the query fails closed with HTTP 503
-    and returns no answer. For non-verified platforms proof_checked is null.
+    and returns no answer. The 503 body carries a machine-readable query_diagnostics block —
+    missing_atoms (declared atom(s) the decision chain needed but were neither supplied nor derived),
+    deciding_rule, rejected_facts, and stalled_stage — so callers need not parse the prose message. For
+    non-verified platforms proof_checked is null.
 
     Args:
         id (int): Resource ID

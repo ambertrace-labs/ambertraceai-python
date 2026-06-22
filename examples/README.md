@@ -78,6 +78,10 @@ does not reveal the kernel/Lean engine that produces it. Preview capability:
 feature-flagged server-side; the endpoints return 404 when not enabled (each demo
 reports that cleanly and skips).
 
+**New here? Start with the [Agent Policy Gate quickstart](AGENT_POLICY_GATE_QUICKSTART.md)** —
+the author → status → authorize / session flow, key authority (what a 404 means), and
+the four things to get right — then run the demos below.
+
 | Script | What it shows |
 |--------|---------------|
 | `27_agent_policy_gate.py` | Single-action gate — author a per-action policy, permit one action and deny another, print the proof certificate |

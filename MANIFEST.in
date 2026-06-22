@@ -1,0 +1,15 @@
+# Bundle the runnable examples + their docs/data into the source distribution
+# (sdist). The wheel still ships only the importable `ambertraceai` package, so a
+# `pip install` user reads the examples on GitHub or `help(api.<resource>)`; the
+# sdist carries them for source browsers / `pip download --no-binary :all:`.
+graft examples
+include README.md
+include LICENSE
+include py.typed
+include ambertraceai/py.typed
+global-exclude *.pyc
+global-exclude *.pyo
+prune examples/__pycache__
+prune examples/data/__pycache__
+prune **/__pycache__
+prune **/.pytest_cache
