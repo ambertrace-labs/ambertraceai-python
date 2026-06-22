@@ -1179,6 +1179,20 @@ class AgentPolicyResource(_Resource):
         verdict["decision"]       # "permit" | "deny" | a policy's own verb
         verdict["proof_checked"]  # True - the verified engine certified the firing set
         verdict["denied_reason"]  # on a deny, the specific requirement that failed
+        verdict["outcome"]        # "permit" | "deny" | "indeterminate" | "unavailable"
+
+    Branch on ``verdict["outcome"]`` - it splits apart THREE different non-permits
+    that ``decision``/``permitted`` alone conflate:
+
+    * ``permit`` - within policy; ``permitted`` True, ``proof_checked`` True. Execute.
+    * ``deny`` - a PROVEN policy violation; ``permitted`` False, ``proof_checked``
+      True. Do not execute, and do NOT blindly retry - the action breaks a rule.
+    * ``indeterminate`` - the decision chain needed a declared input it was not
+      given, so the gate reached NO verdict. ``permitted`` False, ``proof_checked``
+      False. This is NOT a denial (don't give up) and NOT a permit (don't execute):
+      the remedy is to supply ``verdict["missing_inputs"]`` and retry.
+    * ``unavailable`` - the verified engine could not run (e.g. checker disabled).
+      ``permitted`` False, ``proof_checked`` False - again, no verdict was reached.
 
     For a CUMULATIVE control (a running count / sum / exposure over a history of
     prior actions), open a *session* instead of gating one action: the harness is
@@ -1236,7 +1250,8 @@ class AgentPolicyResource(_Resource):
     additionally require the platform's numeric obligation checker to be enabled.
     """
 
-    def author(self, policy_text: str) -> dict:
+    def author(self, policy_text: str, *, timeout: float = 300.0,
+               poll_interval: float = 3.0) -> dict:
         """Compile an English governance policy into a verified policy and
         build/replace the org's agent-policy gate.
 
@@ -1269,10 +1284,49 @@ class AgentPolicyResource(_Resource):
         credentials lack write authority over it. To replace an existing org
         gate, author with the gate owner's credentials or an org-admin key; a
         platform-scoped key bound to a different platform cannot replace it.
+
+        **Blocking.** Server-side, authoring is asynchronous: the POST returns a
+        ``{"job_id", "status": "processing"}`` ticket and the compile+build runs in
+        the background. This method hides that — it polls the job to completion and
+        returns the compiled ``{"platform", "admitted", "rejected", ...}`` result, so
+        the documented synchronous contract holds. ``timeout`` (seconds) bounds the
+        wait (raising :class:`TimeoutError` if the build runs long); ``poll_interval``
+        is the gap between status checks. A ``vacuous`` policy raises
+        :class:`AmbertraceError` (422); a transient compiler outage raises
+        :class:`AmbertraceError` (503). (A deployment that still answers the POST
+        synchronously is passed straight through.)
         """
-        return self._request(
+        started = self._request(
             "POST", "/api/v1/agent-policy-gate/policy",
             json={"policy_text": policy_text})
+        # Back-compat: a deployment that compiles synchronously returns the built
+        # gate inline (``platform`` present / ``status == "done"``) — pass it through.
+        if (not isinstance(started, dict) or "platform" in started
+                or started.get("status") == "done"):
+            return started
+        job_id = started.get("job_id")
+        if not job_id:
+            return started  # unrecognised shape — return as-is rather than hang
+        # Async: poll the compile job to a terminal status.
+        deadline = time.monotonic() + timeout
+        while True:
+            job = self._request(
+                "GET", f"/api/v1/agent-policy-gate/policy/jobs/{job_id}")
+            status = job.get("status", "") if isinstance(job, dict) else ""
+            if status == "done":
+                return job
+            if status in ("vacuous", "unavailable", "error"):
+                raise AmbertraceError(
+                    422 if status == "vacuous" else 503,
+                    f"author_{status}",
+                    (job.get("message")
+                     or f"Policy authoring did not complete ({status})."),
+                )
+            if time.monotonic() >= deadline:
+                raise TimeoutError(
+                    f"author did not complete within {timeout:.0f}s "
+                    f"(job {job_id}, last status: {status or 'unknown'})")
+            time.sleep(poll_interval)
 
     def status(self) -> dict:
         """The org's live agent-policy gate: the active policy text, the admitted
@@ -1306,11 +1360,52 @@ class AgentPolicyResource(_Resource):
         facts the policy reasons over (``args`` wins on a key collision). Supply a
         value for each of :meth:`status`'s ``input_fields``.
 
-        Returns ``{"decision", "proof_checked", "proof_summary", "denied_reason",
-        "deciding_rule"?, "certified_facts", "rejected_facts"}``. ``decision`` is
-        the policy's verdict verb (``permit``/``deny``, or a custom verb the policy
-        declares). Fail-closed: a rejected/missing fact, a proof-check failure, or
-        an unavailable engine yields no permit - never a default-allow.
+        Returns ``{"decision", "permitted", "proof_checked", "proof_summary",
+        "denied_reason", "deciding_rule"?, "certified_facts", "rejected_facts",
+        "outcome", "missing_inputs", "stalled_stage", "query_diagnostics"}``.
+        ``decision`` is the policy's verdict verb (``permit``/``deny``, or a custom
+        verb the policy declares). Fail-closed: a rejected/missing fact, a
+        proof-check failure, or an unavailable engine yields no permit - never a
+        default-allow.
+
+        ``outcome`` is the field to BRANCH on - it separates the three distinct
+        non-permits that ``decision``/``permitted`` alone hide:
+
+        * ``outcome == "permit"`` - within policy (``permitted`` True,
+          ``proof_checked`` True). Execute the action.
+        * ``outcome == "deny"`` - a PROVEN policy violation (``permitted`` False,
+          ``proof_checked`` True). See ``denied_reason``. Do NOT blindly retry.
+        * ``outcome == "indeterminate"`` - the decision chain needed a declared
+          input that was not supplied or derived, so the gate reached NO verdict.
+          INVARIANT: ``permitted`` is False and ``proof_checked`` is False - this is
+          NOT a denial and NOT a permit. The remedy is to supply the field(s) in
+          ``missing_inputs`` and retry (don't give up, don't execute).
+        * ``outcome == "unavailable"`` - the verified engine could not run (e.g. the
+          numeric checker is disabled). Same invariant: ``permitted`` False,
+          ``proof_checked`` False; no verdict was reached.
+
+        Supporting diagnostics on a non-permit:
+
+        * ``missing_inputs`` - ``list[str]``: declared input field(s) the decision
+          chain needed but did not get. Populated on ``indeterminate``; supply these
+          and retry.
+        * ``stalled_stage`` - ``str | None``: the decision stage the chain stalled at.
+        * ``query_diagnostics`` - ``{"missing_atoms", "deciding_rule",
+          "rejected_facts", "stalled_stage"}``: the underlying why-it-stalled detail.
+
+        Detect -> supply -> retry::
+
+            v = api.agent_policy.authorize_action(pid, tool="t", args={...})
+            if v["outcome"] == "indeterminate":
+                needs = v["missing_inputs"]   # e.g. ["target_zone"] - supply + retry
+            elif v["permitted"]:
+                ...                            # within policy (proof_checked True)
+            else:
+                ...                            # proven deny - do not blindly retry
+
+        An ``indeterminate`` outcome is NOT a policy denial (don't give up) and NOT
+        a permit (don't execute): it means the gate lacked an input it needed. Fill
+        in ``missing_inputs`` (under ``args`` or ``context``) and call again.
 
         For a CUMULATIVE obligation (class 2-4) this gates the action against an
         EMPTY history - use a :meth:`create_session` + :meth:`step` loop so the
@@ -1346,7 +1441,16 @@ class AgentPolicyResource(_Resource):
         with a checked proof. On a cumulative policy, the executed action's row
         joins the ledger so the next step's obligation folds over the resulting
         history. Returns ``{"session": {...}, "step": {"verdict": {...},
-        "executed": bool, "effect": ...}}``."""
+        "executed": bool, "effect": ...}}``.
+
+        ``step["verdict"]`` carries the SAME shape as :meth:`authorize_action`,
+        including the ``outcome`` field (``"permit"`` | ``"deny"`` |
+        ``"indeterminate"`` | ``"unavailable"``) plus ``missing_inputs``,
+        ``stalled_stage`` and ``query_diagnostics``. Branch on ``outcome``: an
+        ``indeterminate`` verdict leaves ``executed`` False and is NOT a denial - the
+        gate lacked a declared input (``verdict["missing_inputs"]``); supply it and
+        re-issue the step rather than treating it as a policy block. A ``deny`` is a
+        proven violation - do not blindly retry."""
         action: dict = {"tool": tool, "args": args or {}}
         body: dict = {"action": action}
         if context is not None:
