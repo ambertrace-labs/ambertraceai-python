@@ -22,8 +22,8 @@ jobs:
                         # and PyPI rejects with invalid-publisher)
     permissions:
       id-token: write   # OIDC trusted publishing
-      contents: read    # actions/checkout (a permissions block defaults the
-                        # rest to `none`)
+      contents: write   # actions/checkout + create the GitHub Release for the tag
+                        # (a permissions block defaults the rest to `none`)
     steps:
       - uses: actions/checkout@v4
 
@@ -40,3 +40,15 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist/
+
+      # Keep the GitHub "Releases" shop window in lock-step with PyPI: every
+      # published version tag gets a GitHub Release with auto-generated notes
+      # (from the commits since the previous tag) + the built sdist/wheel
+      # attached. Runs only after a successful publish.
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: dist/*
