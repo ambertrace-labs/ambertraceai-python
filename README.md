@@ -165,11 +165,11 @@ step["step"]["verdict"]["decision"], step["step"]["executed"]
 Runnable end-to-end demos (on GitHub — the runnable examples are **not bundled in
 the wheel**, so install-from-PyPI users browse them on the repo, or read the full
 flow offline via `help(api.agent_policy)`):
-[**Agent Policy Gate quickstart**](https://github.com/Pilot-Generative-AI/ambertraceai-python/blob/main/examples/AGENT_POLICY_GATE_QUICKSTART.md)
+[**Agent Policy Gate quickstart**](https://github.com/ambertrace-labs/ambertraceai-python/blob/main/examples/AGENT_POLICY_GATE_QUICKSTART.md)
 (the author → status → authorize / session flow + what a 404 means),
-[`examples/27_agent_policy_gate.py`](https://github.com/Pilot-Generative-AI/ambertraceai-python/blob/main/examples/27_agent_policy_gate.py)
+[`examples/27_agent_policy_gate.py`](https://github.com/ambertrace-labs/ambertraceai-python/blob/main/examples/27_agent_policy_gate.py)
 gates a single action (permit one, deny another, print the proof certificate), and
-[`examples/25_agent_spend_budget.py`](https://github.com/Pilot-Generative-AI/ambertraceai-python/blob/main/examples/25_agent_spend_budget.py)
+[`examples/25_agent_spend_budget.py`](https://github.com/ambertrace-labs/ambertraceai-python/blob/main/examples/25_agent_spend_budget.py)
 mediates a session for a cumulative spend budget.
 
 **What the proof is — and is not.** The verdict's proof certificate (`decision`,
