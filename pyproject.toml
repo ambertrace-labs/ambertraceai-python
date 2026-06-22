@@ -36,7 +36,7 @@ dev = [
 [project.urls]
 Homepage = "https://ambertrace.ai"
 Documentation = "https://app.ambertrace.ai/openapi/redoc"
-Repository = "https://github.com/Pilot-Generative-AI/ambertraceai-python"
+Repository = "https://github.com/ambertrace-labs/ambertraceai-python"
 
 [tool.setuptools.packages.find]
 include = ["ambertraceai*"]
