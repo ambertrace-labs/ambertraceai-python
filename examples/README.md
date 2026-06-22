@@ -82,6 +82,12 @@ reports that cleanly and skips).
 the author → status → authorize / session flow, key authority (what a 404 means), and
 the four things to get right — then run the demos below.
 
+For a software-supply-chain walkthrough, `28_agent_policy_gate_cicd.py` gates a
+CI/CD deploy agent. Note that genuine **temporal / ordering** obligations (release
+only inside the approved change window; review-before-merge) are a roadmap item:
+today the gate proves them as **caller-supplied booleans** (`within_change_window`,
+`code_review_approved`) rather than reasoning about time/order itself.
+
 **Branch on `verdict["outcome"]`, not just `permitted`.** Each verdict reports one
 of `permit` | `deny` | `indeterminate` | `unavailable`. `indeterminate` means the
 gate needed a declared input it was not given (see `verdict["missing_inputs"]`): it
@@ -92,6 +98,7 @@ denial — supply the missing field(s) and retry rather than giving up. Only `de
 | Script | What it shows |
 |--------|---------------|
 | `27_agent_policy_gate.py` | Single-action gate — author a per-action policy, permit one action and deny another, print the proof certificate |
+| `28_agent_policy_gate_cicd.py` | CI/CD deploy gate — a software-supply-chain policy (enum allowlist + boolean preconditions + canary-rollout cap); gates a compliant deploy (permit) and several single-fact-flipped cases (deny). Temporal/ordering rules (change window, review-before-merge) are enforced as caller-supplied booleans — native temporal/happens-before is a roadmap item |
 | `25_agent_spend_budget.py` | Cumulative spend budget — mediate a session so the obligation is proven over the accumulated ledger (with a `--band` interval variant) |
 
 ### Forecasting demos
@@ -103,8 +110,8 @@ what-if scenarios.
 | Script | Domain | Data source |
 |--------|--------|-------------|
 | `20_bond_yield_forecast.py` | US 10y Treasury yield (macro) | `data/fred_economic_data.csv` or FRED connector (`FRED_API_KEY`) |
-| `21_bitcoin_forecast.py` | BTC-USD daily price | Coinbase connector (no key needed) |
-| `22_equity_forecast.py` | SPY daily price | Yahoo Finance connector (no key needed) |
+| `21_bitcoin_macro_forecast.py` | Bitcoin (BTC) — explainable macro-panel forecast; the system picks which crypto + macro drivers explain BTC | `data/btc_macro_panel.csv` (bundled snapshot) or live `coinbase` + `fred` connectors (`--refresh`, `FRED_API_KEY`) |
+| `22_sp500_macro_forecast.py` | S&P 500 — explainable macro forecast; the system picks which macro drivers move the index | FRED connector, **live-fetch only** (`FRED_API_KEY`); S&P 500 data is not redistributable so none is bundled |
 | `26_neurosymbolic_bond_yield.py` | US 10y Treasury yield — **full neurosymbolic flow** (train → discover correction rules → symbolic WHY → neural-vs-neurosymbolic comparison) | `data/fred_economic_data.csv` or FRED connector (`FRED_API_KEY`) |
 
 `26_neurosymbolic_bond_yield.py` is the headline forecasting walkthrough: it
@@ -124,7 +131,7 @@ python 11_fraud_detection.py
 python 12_clinical_safety.py --standard
 python 18_access_governance.py
 python 20_bond_yield_forecast.py
-python 21_bitcoin_forecast.py -v
+python 21_bitcoin_macro_forecast.py -v
 ```
 
 ### Connectors and bring-your-own-key
