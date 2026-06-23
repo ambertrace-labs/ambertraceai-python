@@ -54,6 +54,10 @@ regulated industry. Sample data CSVs live in `data/`.
 | `15_environmental_compliance.py` | Environmental regulatory | `data/environmental_monitoring.csv` |
 | `16_timeseries_forecast.py` | Environmental forecasting | `data/environmental_monitoring.csv` |
 | `17_rule_coverage.py` | Vehicle inspection (rule regression) | `data/vehicle_inspections.csv` |
+| `27_aml_transaction_monitoring.py` | AML / transaction monitoring (clear/review/report) | `data/aml_transactions.csv` |
+| `28_medical_device_qms.py` | Medical-device QMS nonconformance triage (ISO 13485 / CAPA) | `data/device_nonconformances.csv` |
+| `29_content_moderation.py` | Trust & Safety content moderation (allow/limit/remove) | `data/content_moderation.csv` |
+| `30_esg_disclosure_check.py` | ESG / CSRD disclosure completeness check | `data/esg_disclosures.csv` |
 
 ### Verified profile demos
 
@@ -67,6 +71,20 @@ symbolic trace.
 | `18_access_governance.py` | Access governance PDP (permit/deny) | `data/access_requests.csv` |
 | `19_air_track_triage.py` | Air track C2 triage (escalate/monitor/clear) | `data/air_tracks.csv` |
 | `24_air_track_isr_hispec.py` | High-spec ISR air track triage (ASTERIX/MISB schema) | `data/air_tracks_hispec.csv` |
+| `31_export_control_screening.py` | Export-control / sanctions screening (permit/license_required/deny) | `data/export_screenings.csv` |
+| `32_kyc_onboarding_decision.py` | KYC onboarding decision (approve/edd/reject) | `data/kyc_applications.csv` |
+| `46_soc_alert_triage.py` | SOC security-alert triage (auto_close/monitor/escalate) | `data/soc_alerts.csv` |
+
+#### Verified-profile tooling
+
+Cross-cutting tools on a verified platform (built on the access-governance domain).
+
+| Script | What it shows |
+|--------|---------------|
+| `49_evaluate_holdout.py` | Evaluation harness: replay labeled rows → accuracy + certification rate + fail-closed rate |
+| `50_verified_vs_standard.py` | Same query, verified vs standard — standard answers, verified fail-closes on under-specified input |
+| `51_proof_anatomy.py` | Deep-dive: unpack every part of one proof-carrying answer (proof, confidence, symbolic trace, certified/rejected facts) |
+| `53_drift_monitoring.py` | Production monitoring: capture a drift baseline at approval, replay traffic, `check_drift` for behavioural drift |
 
 ### Agent Policy Gate demos (preview)
 
@@ -113,6 +131,10 @@ what-if scenarios.
 | `21_bitcoin_macro_forecast.py` | Bitcoin (BTC) — explainable macro-panel forecast; the system picks which crypto + macro drivers explain BTC | `data/btc_macro_panel.csv` (bundled snapshot) or live `coinbase` + `fred` connectors (`--refresh`, `FRED_API_KEY`) |
 | `22_sp500_macro_forecast.py` | S&P 500 — explainable macro forecast; the system picks which macro drivers move the index | FRED connector, **live-fetch only** (`FRED_API_KEY`); S&P 500 data is not redistributable so none is bundled |
 | `26_neurosymbolic_bond_yield.py` | US 10y Treasury yield — **full neurosymbolic flow** (train → discover correction rules → symbolic WHY → neural-vs-neurosymbolic comparison) | `data/fred_economic_data.csv` or FRED connector (`FRED_API_KEY`) |
+| `33_energy_demand_forecast.py` | Daily electricity demand — **full neurosymbolic flow** (self-contained, weather-driven) | `data/energy_demand.csv` |
+| `34_fx_currency_forecast.py` | Currency ETF (FXE) close with USD-index covariate | Yahoo Finance connector (no key needed) |
+| `41_include_pending_whatif.py` | **`include_pending` what-if** — preview accepted-but-pending discovered rules before the approval gate, then activate | `data/fred_economic_data.csv` |
+| `45_residual_diagnosis.py` | Diagnose a forecast miss as **drift vs correction** (`residual_diagnosis`, preview) | `data/fred_economic_data.csv` |
 
 `26_neurosymbolic_bond_yield.py` is the headline forecasting walkthrough: it
 trains a model, **discovers explainable correction rules** from its residuals
@@ -121,6 +143,45 @@ trains a model, **discovers explainable correction rules** from its residuals
 neurosymbolic** R²/RMSE comparison — so you can see whether the symbolic layer
 earns its place. Needs a user-scoped key (`at_...`): discovery is a write
 operation.
+
+### Agent Policy Gate demos
+
+Author the rules an AI agent must obey in **plain English**; Ambertrace compiles
+them to a verified policy and **proves every proposed tool-call permit/deny** —
+fail-closed, with a machine-checked proof. No dataset: policies are
+English-authored. The gate is a **preview** capability — these demos report
+cleanly and skip when it isn't enabled on your deployment (HTTP 404).
+
+| Script | Obligation class | What it shows |
+|--------|------------------|---------------|
+| `25_agent_spend_budget.py` | Cumulative exposure (Σ qty × price) | Mediated session caps total committed spend; `--band` adds the interval-band variant |
+| `35_agent_rate_limit.py` | Cumulative count | Mediated session caps notifications sent per session |
+| `36_agent_tool_allowlist.py` | Per-action condition | Single-action gating: tool allowlist + a safe numeric band (the simplest gate) |
+| `37_agent_pii_egress_gate.py` | Per-action condition | Single-action gating: block outbound payloads containing SSN / credit-card data |
+| `47_agent_position_limit.py` | Cumulative sum | Mediated session caps a running position (Σ quantity) at a lot limit |
+| `48_agent_loop_gated.py` | (integration) | A real agent loop: a planner proposes actions, the gate vets each, the agent replans on a deny |
+| `52_policy_gallery.py` | (discovery) | Browse the built-in `examples()` policy library and author one programmatically |
+
+### SDK mechanics demos
+
+Small demos of the SDK's operational surface — error handling and build
+diagnostics — rather than a particular industry domain.
+
+| Script | What it shows | Writes data? |
+|--------|---------------|--------------|
+| `38_error_handling.py` | `AmbertraceError` fields (status_code/code), verified 503 fail-closed, the two `wait_for_job` job types | No (read-only) |
+| `39_build_diagnostics.py` | Read `generation_diagnostics` from the build job — explain whether a platform can reach an adverse decision | Yes |
+
+### Platform governance & data-source demos
+
+Exercise the rule-governance, domain-configuration, and connector surfaces.
+
+| Script | What it shows | Data |
+|--------|---------------|------|
+| `40_rule_review_loop.py` | Human-in-the-loop rule governance: `suggest_rules` → `approve`/`reject` → `update_rule` (activate/deactivate) | `data/loan_applications.csv` |
+| `42_domain_eval_and_feedback.py` | Domain eval-config (`suggest`/`set`/`get`) + `feedback_stats` | `data/vehicle_inspections.csv` |
+| `43_domain_templates.py` | Reusable domain rule templates (list/create/update/delete) | `data/vehicle_inspections.csv` |
+| `44_rest_connector.py` | Ingest from a generic REST/JSON endpoint (bring-your-own-auth headers) | `rest` connector |
 
 Domain demos support `--standard` (skip verified profile) and `--tau` (confidence
 threshold) flags. They create resources on your account but do not self-clean —

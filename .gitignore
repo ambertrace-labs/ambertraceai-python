@@ -11,6 +11,7 @@ build/
 
 # Editor / local tooling
 .idea/
+CLAUDE.md
 uv.lock
 .venv/
 *.egg-info/
