@@ -67,6 +67,7 @@ symbolic trace.
 | `18_access_governance.py` | Access governance PDP (permit/deny) | `data/access_requests.csv` |
 | `19_air_track_triage.py` | Air track C2 triage (escalate/monitor/clear) | `data/air_tracks.csv` |
 | `24_air_track_isr_hispec.py` | High-spec ISR air track triage (ASTERIX/MISB schema) | `data/air_tracks_hispec.csv` |
+| `29_rf_resource_manager_conformance.py` | RF resource-manager protocol conformance (conformant/non-conformant) | `data/rf_rm_conformance.csv` |
 
 ### Agent Policy Gate demos (preview)
 
