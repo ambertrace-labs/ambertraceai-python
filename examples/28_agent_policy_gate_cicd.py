@@ -10,9 +10,28 @@ Companion to 27 (single-action clinical-triage) and 25 (cumulative spend-budget)
 which use clinical / financial policies. This one is the software-supply-chain
 case: every rule is a PER-ACTION condition — an enum allowlist (tool,
 target_environment), a boolean precondition (ci_passed, security_scan_passed,
-code_review_approved, change_ticket_approved, within_change_window), or a scalar
-comparison (rollout_pct at most 10) — the obligation class that compiles cleanly
-today.
+code_review_approved, change_ticket_approved, within_change_window), a scalar
+comparison (rollout_pct at most 10), or a cross-field inequality (the approver must
+not be the author) — the obligation class that compiles cleanly today.
+
+SEPARATION OF DUTIES (cross-field inequality — now composes)
+------------------------------------------------------------
+A classic deploy control is *separation of duties*: "the approver must not be the
+author" — a cross-field inequality between two action fields. The production permit
+now carries it (``approver`` != ``author``), and it composes correctly with the
+other per-action conditions: an all-green production deploy with approver != author
+PERMITS, and the same action with approver == author DENIES. (When this example was
+first published the cross-field inequality did not yet compose with the conditional
+permits — the compiler reverted to a satisfaction-field conflation and within-policy
+prod deploys wrongly denied; that enforcement bug is fixed.) The gate proves the
+inequality directly — there is no ``*_check_passed`` discharge fact to supply.
+
+A cosmetic caveat: the gate's self-check may emit ``warning``-severity
+``V6_intent_CONSTRAINT_UNDECLARED_FIELD`` findings on a per-action constraint whose
+right operand is a LITERAL (e.g. the cap ``rollout_pct <= 10`` or the enum value
+``deploy``) — it misclassifies the literal as a cross-field reference. These are
+false positives; enforcement is unaffected (the caps, gates, and SoD all
+demonstrably enforce below). Treat ``warning``-severity findings as non-blocking.
 
 THE HONEST LIMITATION (temporal / sequencing is not yet a gate primitive)
 -------------------------------------------------------------------------
@@ -64,19 +83,22 @@ from _common import add_common_args, print_section, run_demo
 # per-action condition (enum allowlist / boolean precondition / scalar comparison).
 POLICY = (
     "A deployment agent proposes CI/CD actions. Each action has a tool, a "
-    "target_environment, an integer rollout_pct, and the boolean flags ci_passed, "
-    "security_scan_passed, code_review_approved, change_ticket_approved, and "
-    "within_change_window. Only allow actions whose tool is deploy or rollback. "
+    "target_environment, an integer rollout_pct, an author, an approver, and the "
+    "boolean flags ci_passed, security_scan_passed, code_review_approved, "
+    "change_ticket_approved, and within_change_window. Only allow actions whose tool "
+    "is deploy or rollback. "
     "Deny any action whose target_environment is not dev, staging, or production. "
     "Permit a deploy only when ci_passed is true, security_scan_passed is true, "
     "code_review_approved is true, change_ticket_approved is true, "
-    "within_change_window is true, and rollout_pct is at most 10. "
+    "within_change_window is true, rollout_pct is at most 10, and the approver is "
+    "not the author. "
     "Permit a rollback to dev, staging, or production."
 )
 
 # A fully-compliant production deploy; each deny case below flips exactly one fact.
 GOOD = {
     "tool": "deploy", "target_environment": "production", "rollout_pct": 10,
+    "author": "alice", "approver": "bob",
     "ci_passed": True, "security_scan_passed": True, "code_review_approved": True,
     "change_ticket_approved": True, "within_change_window": True,
 }
@@ -100,6 +122,12 @@ SUITE = [
           within_change_window=False),
     _case("no change ticket", "deny", change_ticket_approved=False),
     _case("rollout 50% (> 10 canary cap)", "deny", rollout_pct=50),
+    # Separation of duties — the approver must not be the author (a cross-field
+    # inequality between two action fields). This now composes with the per-env
+    # conditional permits (enforced as of deploy 2c4caa20962b); see the docstring.
+    _case("SoD VIOLATION: approver == author", "deny", author="alice", approver="alice"),
+    _case("SoD satisfied: approver != author (all else green)", "permit",
+          author="alice", approver="carol"),
     _case("unknown target env 'qa' (env allowlist)", "deny", target_environment="qa"),
     _case("forbidden tool terraform_destroy (action-type allowlist)", "deny",
           tool="terraform_destroy"),
@@ -124,6 +152,28 @@ def _print_admitted(result: dict) -> None:
         print(f"  Rejected {len(rejected)} proposal(s) (outside the verified fragment):")
         for r in rejected:
             print(f"    ! {r.get('name')}: {r.get('reason')}")
+
+
+def _print_findings(status: dict) -> None:
+    """Surface the gate's self-verification findings, split blocking vs warning.
+
+    A blocking (HIGH) finding is a real structural-soundness problem; a warning is
+    advisory. The cross-field SoD constraint may draw cosmetic
+    ``V6_intent_CONSTRAINT_UNDECLARED_FIELD`` *warnings* (a literal comparand misread
+    as a cross-field operand) — non-blocking; enforcement is verified by the suite.
+    """
+    findings = status.get("findings") or []
+    high = [f for f in findings if f.get("severity") not in ("warning", "info")]
+    warn = [f for f in findings if f.get("severity") in ("warning", "info")]
+    print(f"  Gate self-verification: {len(findings)} finding(s) "
+          f"({len(high)} blocking, {len(warn)} warning)")
+    for f in high:
+        print(f"    !! {f.get('severity')} {f.get('check')} -> {f.get('control')}")
+    for f in warn:
+        print(f"    ~  {f.get('severity')} {f.get('check')} -> {f.get('control')} "
+              f"(non-blocking; enforcement verified by the suite)")
+    if not findings:
+        print("    (none — compiled clean and passed the gate's own probes)")
 
 
 def _print_inputs(status: dict) -> None:
@@ -181,8 +231,10 @@ def run_cicd_gate_demo(api, args: argparse.Namespace) -> None:
           f"({platform.get('status')}, verified={platform.get('verified_profile')})")
     _print_admitted(result)
 
-    print_section(2, 3, "Reviewing the declared input fields")
-    _print_inputs(api.agent_policy.status())
+    print_section(2, 3, "Reviewing the declared input fields + gate self-verification")
+    status = api.agent_policy.status()
+    _print_inputs(status)
+    _print_findings(status)
 
     print_section(3, 3, "Gating proposed deploy actions (each verdict is proof-carrying)")
     passed = 0
@@ -196,10 +248,12 @@ def run_cicd_gate_demo(api, args: argparse.Namespace) -> None:
     print(f"\n{passed}/{len(SUITE)} cases decided as expected.")
     print("\nDone. Each verdict above is proof-carrying: a permit means the kernel "
           "certified the action satisfies every policy requirement; a deny means it "
-          "could NOT, fail-closed, naming the requirement that failed. The two "
-          "temporal/sequencing rules (change window, review-before-merge) are "
-          "enforced today as caller-supplied booleans — a native temporal/happens-"
-          "before obligation is a roadmap item (see the module docstring).")
+          "could NOT, fail-closed, naming the requirement that failed. Separation of "
+          "duties (approver != author) is proved as a cross-field inequality — no "
+          "discharge fact to supply. The two temporal/sequencing rules (change "
+          "window, review-before-merge) are enforced today as caller-supplied "
+          "booleans — a native temporal/happens-before obligation is a roadmap item "
+          "(see the module docstring).")
 
 
 def main() -> None:
