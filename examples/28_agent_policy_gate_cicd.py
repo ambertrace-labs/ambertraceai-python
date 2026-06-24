@@ -24,14 +24,8 @@ PERMITS, and the same action with approver == author DENIES. (When this example 
 first published the cross-field inequality did not yet compose with the conditional
 permits — the compiler reverted to a satisfaction-field conflation and within-policy
 prod deploys wrongly denied; that enforcement bug is fixed.) The gate proves the
-inequality directly — there is no ``*_check_passed`` discharge fact to supply.
-
-A cosmetic caveat: the gate's self-check may emit ``warning``-severity
-``V6_intent_CONSTRAINT_UNDECLARED_FIELD`` findings on a per-action constraint whose
-right operand is a LITERAL (e.g. the cap ``rollout_pct <= 10`` or the enum value
-``deploy``) — it misclassifies the literal as a cross-field reference. These are
-false positives; enforcement is unaffected (the caps, gates, and SoD all
-demonstrably enforce below). Treat ``warning``-severity findings as non-blocking.
+inequality directly — there is no ``*_check_passed`` discharge fact to supply, and the
+policy now compiles finding-free.
 
 THE HONEST LIMITATION (temporal / sequencing is not yet a gate primitive)
 -------------------------------------------------------------------------
@@ -158,9 +152,9 @@ def _print_findings(status: dict) -> None:
     """Surface the gate's self-verification findings, split blocking vs warning.
 
     A blocking (HIGH) finding is a real structural-soundness problem; a warning is
-    advisory. The cross-field SoD constraint may draw cosmetic
-    ``V6_intent_CONSTRAINT_UNDECLARED_FIELD`` *warnings* (a literal comparand misread
-    as a cross-field operand) — non-blocking; enforcement is verified by the suite.
+    advisory (non-blocking — enforcement is verified by the suite). This policy now
+    compiles finding-free; the split is kept defensively so any future advisory is
+    surfaced rather than hidden.
     """
     findings = status.get("findings") or []
     high = [f for f in findings if f.get("severity") not in ("warning", "info")]
