@@ -100,6 +100,7 @@ denial — supply the missing field(s) and retry rather than giving up. Only `de
 |--------|---------------|
 | `27_agent_policy_gate.py` | Single-action gate — author a per-action policy, permit one action and deny another, print the proof certificate |
 | `28_agent_policy_gate_cicd.py` | CI/CD deploy gate — a software-supply-chain policy (enum allowlist + boolean preconditions + canary-rollout cap + **separation of duties: approver ≠ author**, a cross-field inequality); gates a compliant deploy (permit) and several single-fact-flipped cases including the SoD violation (deny). Temporal/ordering rules (change window, review-before-merge) are enforced as caller-supplied booleans — native temporal/happens-before is a roadmap item |
+| `30_investment_decision_gate.py` | Investment decision-process gate — proves an AI execution agent followed a fiduciary decision process before any trade stands. **Tier-partitioned conditional permits** (`trade_tier` standard/material as the mutually-exclusive partition) + cross-field suitability comparison + concentration caps + restricted-list block + **separation of duties on material trades: approver ≠ recommender**. Synthetic/illustrative CFA Code & Standards encoding — not investment advice, not affiliated with CFA Institute |
 | `25_agent_spend_budget.py` | Cumulative spend budget — mediate a session so the obligation is proven over the accumulated ledger (with a `--band` interval variant) |
 
 ### Forecasting demos
