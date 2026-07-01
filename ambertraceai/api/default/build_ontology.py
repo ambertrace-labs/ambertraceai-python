@@ -59,7 +59,7 @@ def sync_detailed(
     *,
     client: AuthenticatedClient | Client,
 ) -> Response[list[ValidationErrorModel]]:
-    """Build ontology
+    r"""Build ontology
 
      Generates entities, relationships, and constraints from the domain description, authored against the
     columns of the attached dataset. A dataset is REQUIRED: upload data to the domain first (returns 400
@@ -69,7 +69,12 @@ def sync_detailed(
     Returns 202 with a job id -- poll GET /jobs/{job_id} until status is 'completed' (success) or
     'failed'. The domain status also moves from 'building' to 'active' (success) or the terminal 'error'
     (failure); on failure the job's error_message carries an actionable reason. The generated
-    constraints become executable symbolic rules automatically when a platform is built.
+    constraints become executable symbolic rules automatically when a platform is built. Optionally
+    accepts a JSON body {\"relations\": [{\"name\", \"join_key\", \"columns\": [{\"name\", \"type\",
+    \"enum_values\"?}]}]} declaring certified RELATIONS (DIANA Tier-1 cross-domain cueing): the builder
+    then authors `existsRelated` rules over them (e.g. \"X when there exists a related <relation> in the
+    same <join_key> whose <col> is <val>\"), and attached rows are supplied per query via
+    platforms.query(relations=...).
 
     Args:
         id (int): Resource ID
@@ -98,7 +103,7 @@ def sync(
     *,
     client: AuthenticatedClient | Client,
 ) -> list[ValidationErrorModel] | None:
-    """Build ontology
+    r"""Build ontology
 
      Generates entities, relationships, and constraints from the domain description, authored against the
     columns of the attached dataset. A dataset is REQUIRED: upload data to the domain first (returns 400
@@ -108,7 +113,12 @@ def sync(
     Returns 202 with a job id -- poll GET /jobs/{job_id} until status is 'completed' (success) or
     'failed'. The domain status also moves from 'building' to 'active' (success) or the terminal 'error'
     (failure); on failure the job's error_message carries an actionable reason. The generated
-    constraints become executable symbolic rules automatically when a platform is built.
+    constraints become executable symbolic rules automatically when a platform is built. Optionally
+    accepts a JSON body {\"relations\": [{\"name\", \"join_key\", \"columns\": [{\"name\", \"type\",
+    \"enum_values\"?}]}]} declaring certified RELATIONS (DIANA Tier-1 cross-domain cueing): the builder
+    then authors `existsRelated` rules over them (e.g. \"X when there exists a related <relation> in the
+    same <join_key> whose <col> is <val>\"), and attached rows are supplied per query via
+    platforms.query(relations=...).
 
     Args:
         id (int): Resource ID
@@ -132,7 +142,7 @@ async def asyncio_detailed(
     *,
     client: AuthenticatedClient | Client,
 ) -> Response[list[ValidationErrorModel]]:
-    """Build ontology
+    r"""Build ontology
 
      Generates entities, relationships, and constraints from the domain description, authored against the
     columns of the attached dataset. A dataset is REQUIRED: upload data to the domain first (returns 400
@@ -142,7 +152,12 @@ async def asyncio_detailed(
     Returns 202 with a job id -- poll GET /jobs/{job_id} until status is 'completed' (success) or
     'failed'. The domain status also moves from 'building' to 'active' (success) or the terminal 'error'
     (failure); on failure the job's error_message carries an actionable reason. The generated
-    constraints become executable symbolic rules automatically when a platform is built.
+    constraints become executable symbolic rules automatically when a platform is built. Optionally
+    accepts a JSON body {\"relations\": [{\"name\", \"join_key\", \"columns\": [{\"name\", \"type\",
+    \"enum_values\"?}]}]} declaring certified RELATIONS (DIANA Tier-1 cross-domain cueing): the builder
+    then authors `existsRelated` rules over them (e.g. \"X when there exists a related <relation> in the
+    same <join_key> whose <col> is <val>\"), and attached rows are supplied per query via
+    platforms.query(relations=...).
 
     Args:
         id (int): Resource ID
@@ -169,7 +184,7 @@ async def asyncio(
     *,
     client: AuthenticatedClient | Client,
 ) -> list[ValidationErrorModel] | None:
-    """Build ontology
+    r"""Build ontology
 
      Generates entities, relationships, and constraints from the domain description, authored against the
     columns of the attached dataset. A dataset is REQUIRED: upload data to the domain first (returns 400
@@ -179,7 +194,12 @@ async def asyncio(
     Returns 202 with a job id -- poll GET /jobs/{job_id} until status is 'completed' (success) or
     'failed'. The domain status also moves from 'building' to 'active' (success) or the terminal 'error'
     (failure); on failure the job's error_message carries an actionable reason. The generated
-    constraints become executable symbolic rules automatically when a platform is built.
+    constraints become executable symbolic rules automatically when a platform is built. Optionally
+    accepts a JSON body {\"relations\": [{\"name\", \"join_key\", \"columns\": [{\"name\", \"type\",
+    \"enum_values\"?}]}]} declaring certified RELATIONS (DIANA Tier-1 cross-domain cueing): the builder
+    then authors `existsRelated` rules over them (e.g. \"X when there exists a related <relation> in the
+    same <join_key> whose <col> is <val>\"), and attached rows are supplied per query via
+    platforms.query(relations=...).
 
     Args:
         id (int): Resource ID

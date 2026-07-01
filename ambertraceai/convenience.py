@@ -422,7 +422,7 @@ class DomainResource(_Resource):
     def delete(self, domain_id: int) -> dict:
         return self._request("DELETE", f"/api/v1/domains/{domain_id}")
 
-    def build_ontology(self, domain_id: int) -> dict:
+    def build_ontology(self, domain_id: int, *, relations: list[dict] | None = None) -> dict:
         """Build the domain's ontology + rules from its description and data.
 
         A dataset is REQUIRED: upload data to the domain first (the canonical
@@ -434,9 +434,23 @@ class DomainResource(_Resource):
         Returns a 202 job envelope (an :class:`AttrDict`) carrying a stable
         ``job_id`` -- poll the job until it completes (``api.wait_for_job(
         onto.job_id)``).
+
+        ``relations`` (optional) declares certified RELATIONS for DIANA Tier-1
+        cross-domain cueing — a decision that depends on whether a related record
+        exists, with the join brought INSIDE the proof. Each entry is
+        ``{"name": str, "join_key": str, "columns": [{"name": str, "type":
+        "string|enum|bool|float|int", "enum_values"?: [...]}]}``. With a relation
+        declared, a description clause like *"X when there exists a related
+        <name> in the same <join_key> whose <col> is <val>"* is authored as an
+        ``existsRelated`` derive rule grounded against the declared relation
+        schema. Attached rows are then supplied per query via
+        ``platforms.query(..., relations={name: [row, ...]})`` and folded in the
+        proof; matched rows surface in ``explanation.relation_provenance``.
         """
-        return _normalise_envelope(
-            self._request("POST", f"/api/v1/domains/{domain_id}/build-ontology"))
+        body = {"relations": relations} if relations is not None else None
+        return _normalise_envelope(self._request(
+            "POST", f"/api/v1/domains/{domain_id}/build-ontology",
+            **({"json": body} if body is not None else {})))
 
     # -- Evaluation config --
 
@@ -652,8 +666,54 @@ class PlatformResource(_Resource):
     def status(self, platform_id: int) -> dict:
         return self._request("GET", f"/api/v1/platforms/{platform_id}/status")
 
-    def query(self, platform_id: int, *, query: str, explain: bool = True, **kwargs) -> dict:
-        return self._request("POST", f"/api/v1/platforms/{platform_id}/query", json={"query": query, "explain": explain, **kwargs})
+    def query(self, platform_id: int, *, query: str, explain: bool = True,
+              facts: dict | None = None,
+              relations: dict[str, list[dict]] | None = None,
+              **kwargs) -> dict:
+        """Query a platform; returns ``{answer, decision, explanation, ...}``.
+
+        ``facts`` (``{field: scalar}``) is the FOCAL row. On a verified platform
+        these ARE the certified EDB — each is certified through the fact gate
+        (declared in the domain schema, in-domain, ground); neural retrieval is
+        not consulted for the fact base, so a fully-specified request decides
+        deterministically.
+
+        ``relations`` (``{relation_name: [ {column: scalar}, ... ]}``) attaches
+        RELATED FACTS alongside ``facts`` so the verified kernel can bring a
+        relational / cross-domain join INSIDE the proof (DIANA Tier-1
+        cross-domain cueing). A ``derive`` rule whose condition is an aggregate
+        (``count``/``sum``) or an existential (``existsRelated``) leaf folds over
+        the certified related rows — joined on the declared join key — and its
+        derived flag feeds the decision. Every row is certified per-cell at the
+        platform's confidence threshold; if ANY row is rejected the whole query
+        fails CLOSED (no decision over a partial relation). When an existential
+        cue fires, the matched related rows are surfaced in
+        ``explanation["relation_provenance"][<derived_field>] =
+        {relation, matched, min_count, count}`` (audit-only; never affects the
+        decision). Verified platforms only.
+
+        Example (bring a cross-domain join inside the proof)::
+
+            api.platforms.query(
+                pid,
+                query="Triage this track.",
+                facts={"identification": "unidentified", "grid_square": "G3"},
+                relations={"maritime_track": [
+                    {"grid_square": "G3", "zone_status": "exclusion_breach",
+                     "ais_corroborated": True},
+                ]},
+            )
+            # the platform's existsRelated rule ("maritime-cued when there exists a
+            # related maritime_track in the same grid_square whose zone_status is
+            # exclusion_breach and ais_corroborated is true") derives the cue from
+            # the attached rows — no pre-joined boolean in `facts`.
+        """
+        body: dict[str, Any] = {"query": query, "explain": explain, **kwargs}
+        if facts is not None:
+            body["facts"] = facts
+        if relations is not None:
+            body["relations"] = relations
+        return self._request("POST", f"/api/v1/platforms/{platform_id}/query", json=body)
 
     def suggest_rules(self, platform_id: int, *, max_suggestions: int = 5) -> dict:
         return self._request("POST", f"/api/v1/platforms/{platform_id}/suggest-rules", json={"max_suggestions": max_suggestions})
@@ -1336,11 +1396,18 @@ class AgentPolicyResource(_Resource):
         Returns ``{"enabled": True, "platform": {...}|None, "policy_text": ...,
         "admitted_controls": [{"name", "description"}, ...], "input_fields":
         [{"name", "type", "enum_values"?, "min_value"?, "max_value"?,
-        "description"?}, ...], "decision_vocabulary"?: {...}}``.
+        "description"?}, ...], "relations": [{"name", "columns": [{"name",
+        "type"}], "max_rows"?}, ...], "decision_vocabulary"?: {...}}``.
 
         ``input_fields`` is the contract for :meth:`authorize_action` / :meth:`step`
         - supply a value for each (under ``args`` or ``context``) so the gate
         returns a real permit/deny rather than rejecting an unknown/missing fact.
+
+        ``relations`` is the contract for :meth:`authorize_action`'s ``relations``
+        param - the per-request multi-row SETS a policy reasons over (e.g. the
+        approvals backing a distinct-actor quorum). Send ``{<relation name>: [{<col>:
+        value}, ...]}`` using the names/columns listed here. Empty for a policy that
+        declares no relation.
         """
         return self._request("GET", "/api/v1/agent-policy-gate")
 
@@ -1352,13 +1419,30 @@ class AgentPolicyResource(_Resource):
 
     def authorize_action(self, platform_id: int, *, tool: str,
                          args: dict | None = None,
-                         context: dict | None = None) -> dict:
+                         context: dict | None = None,
+                         relations: dict | None = None) -> dict:
         """Gate ONE proposed tool-call against the verified policy - permit/deny
         WITH PROOF.
 
         ``args`` are the action's intrinsic fields; ``context`` carries ambient
         facts the policy reasons over (``args`` wins on a key collision). Supply a
         value for each of :meth:`status`'s ``input_fields``.
+
+        ``relations`` supplies caller-provided multi-row SETS for a policy that
+        reasons over a declared relation as a PER-REQUEST set rather than an
+        accumulated ledger — e.g. the approvers backing a distinct-actor quorum
+        ("at least two DIFFERENT approvers, none the author")::
+
+            api.agent_policy.authorize_action(
+                pid, tool="deploy", args={"environment": "prod", "author": "alice"},
+                relations={"approvals": [{"approver_id": "bob"},
+                                          {"approver_id": "carol"}]})
+
+        Each row is independently certified (declared column / in-domain / ground)
+        and the kernel COMPUTES the aggregate over the certified rows — a caller
+        cannot self-attest a count, and two sign-offs from the same actor fold to one
+        distinct key. Use a :meth:`create_session` + :meth:`step` loop instead when
+        the obligation is CUMULATIVE over actions the agent itself executes.
 
         Returns ``{"decision", "permitted", "proof_checked", "proof_summary",
         "denied_reason", "deciding_rule"?, "certified_facts", "rejected_facts",
@@ -1415,6 +1499,8 @@ class AgentPolicyResource(_Resource):
         body: dict = {"action": action}
         if context is not None:
             body["context"] = context
+        if relations is not None:
+            body["relations"] = relations
         return self._request(
             "POST", f"/api/v1/platforms/{platform_id}/authorize-action", json=body)
 
