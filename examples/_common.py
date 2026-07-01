@@ -264,16 +264,20 @@ def build_ontology(
     poll_interval: int = DEFAULT_POLL_INTERVAL,
     retries: int = DEFAULT_BUILD_RETRIES,
     retry_backoff: int = DEFAULT_RETRY_BACKOFF,
+    relations: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Trigger an ontology build, wait for its job, and return the domain.
 
     Retries on a failed build job — the platform's ontology build is
     intermittently flaky (transient LLM failures) and re-triggering
     typically succeeds.
+
+    ``relations`` (optional) declares certified relations for DIANA Tier-1
+    cross-domain cueing — see ``api.domains.build_ontology``.
     """
     last_err: str | None = None
     for attempt in range(retries + 1):
-        resp = api.domains.build_ontology(domain_id)
+        resp = api.domains.build_ontology(domain_id, relations=relations)
         job_id = _first(resp, "job_id") or _nested_id(resp, "job")
         if job_id is None:
             _poll_status(

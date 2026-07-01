@@ -10,6 +10,7 @@ from ..types import UNSET, Unset
 
 if TYPE_CHECKING:
     from ..models.query_request_facts_type_0 import QueryRequestFactsType0
+    from ..models.query_request_relations_type_0 import QueryRequestRelationsType0
 
 
 T = TypeVar("T", bound="QueryRequest")
@@ -27,17 +28,26 @@ class QueryRequest:
             fully-specified request decides deterministically. Use for policy-decision-point callers that hold the request
             attributes (the request IS the facts); the natural-language `query` then drives only the answer narrative.
             Undeclared or out-of-domain fields are rejected, surfaced in the 503 details.
+        relations (None | QueryRequestRelationsType0 | Unset): Optional ATTACHED RELATED FACTS as a {relation_name:
+            [row, ...]} map, where each row is a {column: scalar} dict. These ride alongside the focal `facts` (the scalar
+            row, including any join-key column) and let the verified kernel bring a relational/cross-domain join INSIDE the
+            proof: an aggregate (count/sum) or existential (existsRelated — DIANA Tier-1 cross-domain cueing) derive rule
+            folds over the certified related rows, joined on the declared join key, and its derived flag feeds the decision.
+            Every row is certified per-cell through the same fact gate at the platform's confidence threshold; if ANY row is
+            rejected the whole query fails CLOSED (no decision over a partial relation). Verified platforms only.
         top_k (int | Unset):  Default: 10.
     """
 
     query: str
     explain: bool | Unset = True
     facts: None | QueryRequestFactsType0 | Unset = UNSET
+    relations: None | QueryRequestRelationsType0 | Unset = UNSET
     top_k: int | Unset = 10
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         from ..models.query_request_facts_type_0 import QueryRequestFactsType0
+        from ..models.query_request_relations_type_0 import QueryRequestRelationsType0
 
         query = self.query
 
@@ -50,6 +60,14 @@ class QueryRequest:
             facts = self.facts.to_dict()
         else:
             facts = self.facts
+
+        relations: dict[str, Any] | None | Unset
+        if isinstance(self.relations, Unset):
+            relations = UNSET
+        elif isinstance(self.relations, QueryRequestRelationsType0):
+            relations = self.relations.to_dict()
+        else:
+            relations = self.relations
 
         top_k = self.top_k
 
@@ -64,6 +82,8 @@ class QueryRequest:
             field_dict["explain"] = explain
         if facts is not UNSET:
             field_dict["facts"] = facts
+        if relations is not UNSET:
+            field_dict["relations"] = relations
         if top_k is not UNSET:
             field_dict["top_k"] = top_k
 
@@ -72,6 +92,7 @@ class QueryRequest:
     @classmethod
     def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
         from ..models.query_request_facts_type_0 import QueryRequestFactsType0
+        from ..models.query_request_relations_type_0 import QueryRequestRelationsType0
 
         d = dict(src_dict)
         query = d.pop("query")
@@ -95,12 +116,30 @@ class QueryRequest:
 
         facts = _parse_facts(d.pop("facts", UNSET))
 
+        def _parse_relations(data: object) -> None | QueryRequestRelationsType0 | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            try:
+                if not isinstance(data, dict):
+                    raise TypeError()
+                relations_type_0 = QueryRequestRelationsType0.from_dict(data)
+
+                return relations_type_0
+            except (TypeError, ValueError, AttributeError, KeyError):
+                pass
+            return cast(None | QueryRequestRelationsType0 | Unset, data)
+
+        relations = _parse_relations(d.pop("relations", UNSET))
+
         top_k = d.pop("top_k", UNSET)
 
         query_request = cls(
             query=query,
             explain=explain,
             facts=facts,
+            relations=relations,
             top_k=top_k,
         )
 

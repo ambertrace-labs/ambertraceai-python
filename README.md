@@ -109,6 +109,36 @@ print(answer["explanation"])
 | `api.api_keys` | `list`, `create`, `revoke` |
 | `api.agent_policy` (preview) | `author`, `status`, `examples`, `authorize_action`, `create_session`, `step`, `get_session` |
 
+## Verified relational queries — cross-domain cueing (preview)
+
+`api.platforms.query` takes an optional `facts` (the focal `{field: scalar}` row)
+and an optional `relations` (`{relation_name: [ {column: scalar}, ... ]}`) of
+attached related facts. On a verified platform the kernel folds those related rows
+**inside the proof** — an aggregate (`count`/`sum`) or existential (`existsRelated`)
+`derive` rule joins them on a declared join key and its derived flag feeds the
+decision. Every related row is certified per-cell at the platform's confidence
+threshold; if any row is rejected the query fails **closed**. When an existential
+cue fires, the matched rows are surfaced under
+`explanation["relation_provenance"][<derived_field>]`.
+
+```python
+report = api.platforms.query(
+    platform_id,
+    query="Triage this track.",
+    facts={"identification": "unidentified", "grid_square": "G3"},
+    relations={"maritime_track": [
+        {"grid_square": "G3", "zone_status": "exclusion_breach", "ais_corroborated": True},
+    ]},
+)
+report["decision"]                              # e.g. "escalate"
+report["explanation"]["relation_provenance"]    # {"<cue_field>": {relation, matched, count, ...}}
+```
+
+The platform's rule (e.g. *"maritime-cued when there exists a related maritime_track
+in the same grid_square whose zone_status is exclusion_breach and ais_corroborated
+is true"*) derives the cue from the attached rows — no pre-joined boolean in `facts`.
+The join is thus verified, not caller-asserted.
+
 ## Agent Policy Gate (preview)
 
 Write the rules an AI agent must obey in **plain English**; Ambertrace compiles
