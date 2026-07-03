@@ -12,7 +12,13 @@ T = TypeVar("T", bound="PredictionOutPrediction")
 @_attrs_define
 class PredictionOutPrediction:
     """Prediction result containing 'value' (point prediction), 'lower_bound', 'upper_bound' (confidence interval), and
-    'raw_value' (before rule adjustments).
+    'raw_value' (before rule adjustments). Also carries value-space labelling (additive) so the consumer knows which
+    space 'value' is in without a second call: 'value_space' ('level' — the point is a level, i.e. no transform or a
+    difference reconstructed back to the level; or 'transformed_unreconstructed' — a raw CHANGE that could not be
+    reconstructed to a level because a difference transform had no base history, treat as unreliable),
+    'target_transform' (the EFFECTIVE, post-'auto'-resolution transform applied at train time), and 'baseline' (the
+    level used to reconstruct a differenced forecast, or null when not applicable). 'value' semantics are unchanged — it
+    is the level whenever value_space='level'.
 
     """
 

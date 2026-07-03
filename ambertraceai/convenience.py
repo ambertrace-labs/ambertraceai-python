@@ -813,6 +813,20 @@ class PredictionResource(_Resource):
         Any override key that maps to no model-consumed feature is returned in
         the response's ``unmatched_overrides`` list (and ignored), so a what-if
         that could not be applied is visible rather than a silent no-op.
+
+        The ``prediction`` object carries value-space labelling so you know which
+        space ``value`` is in without a second call (additive — ``value``
+        semantics are unchanged):
+
+        * ``value_space`` — ``"level"`` when ``value`` is a level (no transform,
+          or a difference reconstructed back to the level; the common case), or
+          ``"transformed_unreconstructed"`` when it is a raw CHANGE that could not
+          be reconstructed to a level (a difference transform with no base
+          history) — treat that as unreliable, not the level;
+        * ``target_transform`` — the EFFECTIVE (post-``auto``-resolution)
+          transform applied at train time;
+        * ``baseline`` — the level used to reconstruct a differenced forecast
+          (``null`` when not applicable).
         """
         body: dict[str, Any] = {"prediction_config_id": prediction_config_id, "explain": explain}
         if feature_overrides is not None:
@@ -855,14 +869,59 @@ class PredictionResource(_Resource):
         ``skill_vs_persistence`` (level-space — the part the model adds over
         predicting last value), plus ``target_transform``. With no transform,
         ``transformed == level`` (backward compatible).
+
+        The returned config (and every :meth:`list_configs` entry) echoes the
+        resolved output space so you learn it WITHOUT predicting:
+        ``resolved_target_transform`` + ``output_space`` (``"level"`` vs
+        ``"change"``) + ``target_transform_reason``. When a concrete
+        ``target_transform`` was given these are populated immediately; when
+        ``"auto"`` was requested the transform resolves at TRAIN time, so before
+        training they read ``"auto (resolved at train time)"`` and reflect the
+        concrete resolved transform once the config is trained.
         """
         return self._request("POST", f"/api/v1/platforms/{platform_id}/prediction-configs", json=kwargs)
 
     def delete_config(self, platform_id: int, config_id: int) -> dict:
         return self._request("DELETE", f"/api/v1/platforms/{platform_id}/prediction-configs/{config_id}")
 
-    def train(self, platform_id: int, config_id: int) -> dict:
-        return self._request("POST", f"/api/v1/platforms/{platform_id}/prediction-configs/{config_id}/train")
+    def train(self, platform_id: int, config_id: int, *,
+              wait: bool = False,
+              timeout: float = 600.0,
+              poll_interval: float = 5.0) -> dict:
+        """Train (build) the model for a prediction config (async, HTTP 202).
+
+        By DEFAULT (``wait=False``) this returns the raw 202 job envelope
+        ``{"config_id", "status": "training", "job_id", "poll"}`` unchanged — you
+        then poll the job yourself (e.g. :meth:`AmbertraceAPI.wait_for_job`) and
+        re-fetch the config via :meth:`list_configs`.
+
+        Pass ``wait=True`` to have the SDK poll the training job to completion (the
+        SAME machinery :meth:`discover_prediction_rules` uses) and return the
+        SETTLED trained :class:`PredictionConfig` dict — so you don't hand-roll
+        poll-then-``list_configs``-and-match-by-id. The returned config reflects the
+        resolved ``target_transform`` / ``output_space`` (echoed once trained).
+
+        ``wait`` defaults to False to preserve the historical return type (the raw
+        job); set it True for the ergonomic settle-and-return path.
+        """
+        resp = self._request(
+            "POST",
+            f"/api/v1/platforms/{platform_id}/prediction-configs/{config_id}/train")
+        if not wait:
+            return resp
+        job_id = resp.get("job_id")
+        if job_id is None:
+            return resp
+        self._await_job(
+            job_id, what=f"Training for config {config_id}",
+            timeout=timeout, poll_interval=poll_interval)
+        # The training job's result is the model summary, not the config; return
+        # the settled config so the caller gets the trained resource directly
+        # (resolves the poll-then-refetch boilerplate the consumer reported).
+        for cfg in self.list_configs(platform_id):
+            if cfg.get("id") == config_id:
+                return cfg
+        return resp
 
     def list_predictions(self, platform_id: int) -> list[dict]:
         return self._request("GET", f"/api/v1/platforms/{platform_id}/predictions")
@@ -1045,7 +1104,15 @@ class PredictionResource(_Resource):
     def symbolic_forecast(self, platform_id: int, *, prediction_config_id: int,
                           feature_overrides: dict | None = None,
                           verified: bool = False,
-                          include_fitted_series: bool = False) -> dict:
+                          include_fitted_series: bool = False,
+                          prediction_name: str | None = None,
+                          prediction_model_id: str | None = None,
+                          as_of: str | None = None,
+                          sector: str | None = None,
+                          period: str | None = None,
+                          entity: str | None = None,
+                          top_drivers_n: int | None = None,
+                          compact_certification: bool = False) -> dict:
         """Run the symbolic forecaster and return the forecast WITH its WHY.
 
         Returns ``{"forecast": {"value", "lower", "upper"}, "baseline",
@@ -1118,14 +1185,129 @@ class PredictionResource(_Resource):
         to the most recent row before composing (e.g. ``{"inflation": 5.0}``). The
         config need not be trained — the symbolic forecaster is independent of the
         neural model.
+
+        ``prediction_record`` — THE CANONICAL STAGE-A OUTPUT (always present)
+        --------------------------------------------------------------------
+        EVERY ``symbolic_forecast`` call (verified or not) also returns a
+        top-level ``prediction_record``: a ready-to-persist, bridge-shaped record
+        in **LEVEL space** (it is the reconstructed level, e.g. a ``4.32`` yield —
+        NOT the change space some raw ``predict()`` paths return, so it resolves the
+        value-space question for free). Prefer this over hand-assembling a record
+        from ``why`` + ``feature_importance``. Shape::
+
+            {
+              "name": <role handle, defaults to target_field>,
+              "model_id": <stable id, defaults to name>,
+              "as_of": <the forecast period / alignment key, or null>,
+              "target_field": "...", "horizon": 1,
+              "value": <the LEVEL-space point forecast>,
+              "interval": {"lower": ..., "upper": ..., "basis": "backtest_rmse"},
+              "probability": <calibrated float in (0,1), or null if uncertified>,
+              "probability_certified": <bool>,
+              "probability_basis": { ... see below ... },
+              "fired_signals": [<driver-rules active on the latest row>],
+              "top_drivers": [{"driver": "...", "kind": "symbolic"|"neural",
+                               "importance": <0..1 within kind>}, ...],
+              "proof_ref": {"proof_checked": bool, "proof_summary": "...",
+                            "model_id": ..., "as_of": ...},
+              "why_certification": { ... the embedded certificate (verified=True) ... },
+              "sector": ..., "period": ..., "entity": ...
+            }
+
+        The decision layer reads ``value`` / ``interval`` / ``probability`` /
+        ``fired_signals``; ``top_drivers`` is the provenance/why narrative.
+        ``proof_ref`` / ``why_certification`` are the proof chain (``why_certification``
+        is only populated with ``verified=True``).
+
+        Certified probability (``probability`` / ``probability_basis``)
+        --------------------------------------------------------------
+        ``probability`` is a CERTIFIED, calibrated probability of the forecast's
+        directional outcome — ``P(outcome on the forecast's side of a threshold)``.
+        It is derived by the ``gaussian_interval_conformal`` method: the forecast
+        interval is read as ``value ± interval_z·sigma`` where ``sigma`` is the
+        model's MEASURED out-of-sample error (backtest RMSE etc.), recovered as
+        ``sigma = half_width / interval_z`` (no re-fit, no new data), then the
+        outcome is modelled ``N(value, sigma)`` and the probability read off. It is
+        a monotone map of the model's own signal-to-noise, NOT an independent
+        confidence. ``probability_basis`` records how it was derived + whether it is
+        certified::
+
+            {"method": "gaussian_interval_conformal",
+             "interval_basis": "backtest_rmse",   # the measured-error basis used
+             "interval_z": 1.0,                    # z used to build the interval
+             "direction": "up"|"down",             # which side of threshold
+             "sigma": <recovered out-of-sample sigma>,
+             "threshold": <the threshold, default the persistence baseline>,
+             "reason": "certified: in_domain and calibration in-regime"}
+
+        ``probability_certified`` — and the FAIL-CLOSED / OOD contract. The
+        probability is only valid (``probability_certified=True``, ``probability``
+        a number) when BOTH gates pass: (1) the forecast's input row is IN-DOMAIN
+        (its ``why_certification`` proof-checked — so this is only certifiable with
+        ``verified=True``), and (2) the calibration is in its validated regime — the
+        ``interval_basis`` is a REAL measured out-of-sample error basis (one of
+        ``driver_bands`` / ``backtest_rmse`` / ``persistence_rmse`` /
+        ``target_change_sd``, not a degenerate flat-series floor) and the recovered
+        ``sigma`` is finite and positive. If EITHER gate fails — out-of-domain input,
+        an out-of-regime interval basis, or a degenerate/non-positive sigma — the
+        platform FAILS CLOSED: ``probability`` is ``None`` and
+        ``probability_certified`` is ``False``, NEVER a spurious confident number.
+        ``probability_basis.reason`` says which gate failed (e.g.
+        ``"out_of_domain: why_certification not proof_checked"`` or
+        ``"calibration_out_of_regime: ..."``). A downstream decision reading an
+        uncertified probability fails closed.
+
+        Addressing the record (WS1 handles)
+        -----------------------------------
+        The optional keyword args address/name the emitted ``prediction_record`` so a
+        Prediction→Decision consumer can fan several models in by role at a shared
+        period. All are additive — omit them and the record still assembles:
+
+        * ``prediction_name`` — semantic role handle (e.g. ``"ust_10y"``); the
+          record's ``name``. Defaults to the config's ``target_field``.
+        * ``prediction_model_id`` — stable id for the record (``model_id``); defaults
+          to ``prediction_name`` / ``target_field``. Used with ``as_of`` as the
+          persisted-record key.
+        * ``as_of`` — the forecast period; the ALIGNMENT KEY a consuming decision
+          shares. Free-form label (e.g. an ISO date ``"2026-06-30"`` or a period tag).
+        * ``sector`` / ``period`` / ``entity`` — optional join keys on the record.
+        * ``top_drivers_n`` — how many ranked drivers to surface in ``top_drivers``
+          (default 5).
+
+        Pass ``compact_certification=True`` (default False) to slim the payload:
+        the per-feature ``why_certification.certified_facts`` list (one certificate
+        per engineered feature — large on a wide panel) is replaced by a compact
+        ``certification_summary`` (``proof_checked`` + counts + min confidence) in
+        both the top-level block and the embedded ``prediction_record``;
+        ``proof_checked`` / ``proof_summary`` are retained. Default False keeps the
+        current full-``certified_facts`` response (non-breaking).
         """
         body: dict[str, Any] = {
             "prediction_config_id": prediction_config_id,
             "verified": verified,
             "include_fitted_series": include_fitted_series,
+            "compact_certification": compact_certification,
         }
         if feature_overrides is not None:
             body["feature_overrides"] = feature_overrides
+        # WS1 addressing handles — thread a semantic name/role + the as_of
+        # alignment key + join keys into the emitted prediction_record. All
+        # optional / back-compatible; omit and the record still assembles (name
+        # defaults to the config's target_field, as_of to None).
+        if prediction_name is not None:
+            body["prediction_name"] = prediction_name
+        if prediction_model_id is not None:
+            body["prediction_model_id"] = prediction_model_id
+        if as_of is not None:
+            body["as_of"] = as_of
+        if sector is not None:
+            body["sector"] = sector
+        if period is not None:
+            body["period"] = period
+        if entity is not None:
+            body["entity"] = entity
+        if top_drivers_n is not None:
+            body["top_drivers_n"] = top_drivers_n
         return self._request(
             "POST", f"/api/v1/platforms/{platform_id}/symbolic-forecast", json=body)
 

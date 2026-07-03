@@ -439,6 +439,35 @@ Full API reference: [app.ambertrace.ai/openapi/redoc](https://app.ambertrace.ai/
 
 ## Changelog
 
+### 0.18.0
+
+- **Verified prediction developer-experience (additive — no breaking changes).**
+  - **Certified `prediction_record`.** `symbolic_forecast` now surfaces a
+    top-level `prediction_record` — the canonical, ready-to-persist Stage-A
+    output (proof-carrying, addressable by role) — alongside a certified
+    probability. This is the bridge-shaped record the query / decision layer
+    ingests.
+  - **Addressing / naming kwargs on `symbolic_forecast`.** Seven optional WS1
+    kwargs (`prediction_name`, `prediction_model_id`, `as_of`, `sector`,
+    `period`, `entity`, `top_drivers_n`) name and address the emitted
+    `prediction_record` so a downstream verified decision can fan several
+    forecasts in by role.
+  - **`compact_certification` on `symbolic_forecast`** (opt-in, default
+    `False`): slims the certification payload (both the top-level block and the
+    embedded `prediction_record`). **Deprecation note:** `compact_certification`
+    becomes the **default (`True`) in 0.19.0** — pass `compact_certification=False`
+    explicitly if you depend on the full payload.
+  - **`predict()` transform surface.** `value_space`, `target_transform` and
+    `baseline` are now documented on the predict workflow: a forecast is emitted
+    in a known space (`"level"` vs `"change"`), with the effective
+    (post-`auto`-resolution) transform and the reconstruction baseline exposed.
+    `PredictionConfigOut` echoes the resolved transform
+    (`resolved_target_transform` / `output_space` / `target_transform_reason`).
+  - **`train(wait=...)`.** `platforms.train(...)` gains an opt-in `wait` flag —
+    `wait=True` polls the training job to completion (returning the resolved
+    transform / output space); `wait=False` (the default) preserves the historic
+    raw-202-envelope return type.
+
 ### 0.17.0
 
 - **Developer-experience ergonomics (no breaking changes).**

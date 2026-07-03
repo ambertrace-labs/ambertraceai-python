@@ -29,6 +29,8 @@ class DatasetOut:
         created_at (None | str | Unset):
         decision_column (None | str | Unset):
         description (None | str | Unset):
+        relation_join_key (None | str | Unset):
+        relation_name (None | str | Unset):
         row_count (int | None | Unset):
         schema_info (DatasetOutSchemaInfoType0 | None | Unset):
         updated_at (None | str | Unset):
@@ -44,6 +46,8 @@ class DatasetOut:
     created_at: None | str | Unset = UNSET
     decision_column: None | str | Unset = UNSET
     description: None | str | Unset = UNSET
+    relation_join_key: None | str | Unset = UNSET
+    relation_name: None | str | Unset = UNSET
     row_count: int | None | Unset = UNSET
     schema_info: DatasetOutSchemaInfoType0 | None | Unset = UNSET
     updated_at: None | str | Unset = UNSET
@@ -88,6 +92,18 @@ class DatasetOut:
         else:
             description = self.description
 
+        relation_join_key: None | str | Unset
+        if isinstance(self.relation_join_key, Unset):
+            relation_join_key = UNSET
+        else:
+            relation_join_key = self.relation_join_key
+
+        relation_name: None | str | Unset
+        if isinstance(self.relation_name, Unset):
+            relation_name = UNSET
+        else:
+            relation_name = self.relation_name
+
         row_count: int | None | Unset
         if isinstance(self.row_count, Unset):
             row_count = UNSET
@@ -128,6 +144,10 @@ class DatasetOut:
             field_dict["decision_column"] = decision_column
         if description is not UNSET:
             field_dict["description"] = description
+        if relation_join_key is not UNSET:
+            field_dict["relation_join_key"] = relation_join_key
+        if relation_name is not UNSET:
+            field_dict["relation_name"] = relation_name
         if row_count is not UNSET:
             field_dict["row_count"] = row_count
         if schema_info is not UNSET:
@@ -190,6 +210,24 @@ class DatasetOut:
 
         description = _parse_description(d.pop("description", UNSET))
 
+        def _parse_relation_join_key(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        relation_join_key = _parse_relation_join_key(d.pop("relation_join_key", UNSET))
+
+        def _parse_relation_name(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        relation_name = _parse_relation_name(d.pop("relation_name", UNSET))
+
         def _parse_row_count(data: object) -> int | None | Unset:
             if data is None:
                 return data
@@ -238,6 +276,8 @@ class DatasetOut:
             created_at=created_at,
             decision_column=decision_column,
             description=description,
+            relation_join_key=relation_join_key,
+            relation_name=relation_name,
             row_count=row_count,
             schema_info=schema_info,
             updated_at=updated_at,

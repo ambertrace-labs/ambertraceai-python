@@ -108,6 +108,10 @@ from .quality_report_out_consistency import QualityReportOutConsistency
 from .quality_report_out_uniqueness import QualityReportOutUniqueness
 from .query_request import QueryRequest
 from .query_request_facts_type_0 import QueryRequestFactsType0
+from .query_request_predictions_type_0 import QueryRequestPredictionsType0
+from .query_request_predictions_type_0_additional_property import (
+    QueryRequestPredictionsType0AdditionalProperty,
+)
 from .query_request_relations_type_0 import QueryRequestRelationsType0
 from .query_request_relations_type_0_additional_property_item import (
     QueryRequestRelationsType0AdditionalPropertyItem,
@@ -246,6 +250,8 @@ __all__ = (
     "QualityReportOutUniqueness",
     "QueryRequest",
     "QueryRequestFactsType0",
+    "QueryRequestPredictionsType0",
+    "QueryRequestPredictionsType0AdditionalProperty",
     "QueryRequestRelationsType0",
     "QueryRequestRelationsType0AdditionalPropertyItem",
     "QueryResponse",

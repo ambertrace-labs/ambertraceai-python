@@ -50,6 +50,17 @@ class PredictionConfigOut:
         max_ar_lag (int | None | Unset): Advanced numeric autoregression cap (overrides the enum when set): 0 = drivers
             only, k = target-history features with lag/window <= k.
         mode (str | Unset): Prediction mode: 'timeseries' or 'cross_sectional'. Default: 'timeseries'.
+        output_space (None | str | Unset): Item 6 — the space predict() 'value' will be in given the resolved transform:
+            'level' (transform 'none' — value is a level) or 'change' (a differencing transform — predict() reconstructs to
+            a level when history is available; see the predict response's 'value_space'). 'unknown (auto — resolved at train
+            time)' before an 'auto' config is trained. Null for cross_sectional configs.
+        resolved_target_transform (None | str | Unset): Item 6 — the EFFECTIVE target transform, echoed on the config so
+            the output space is known without predicting. When a concrete transform was requested ('none' or 'difference')
+            this echoes it immediately at create_config time. When 'auto' was requested it resolves at TRAIN time, so before
+            training this reads 'auto (resolved at train time)'; once trained it reflects the concrete transform the trainer
+            chose (persisted back onto the config). Null for cross_sectional configs.
+        target_transform_reason (None | str | Unset): Why the resolved transform was chosen (the auto-heuristic detail,
+            or 'explicit'). Populated once trained (or when the config carries it). Null otherwise.
         time_index_field (None | str | Unset):
         updated_at (None | str | Unset):
     """
@@ -73,6 +84,9 @@ class PredictionConfigOut:
     horizon: int | None | Unset = UNSET
     max_ar_lag: int | None | Unset = UNSET
     mode: str | Unset = "timeseries"
+    output_space: None | str | Unset = UNSET
+    resolved_target_transform: None | str | Unset = UNSET
+    target_transform_reason: None | str | Unset = UNSET
     time_index_field: None | str | Unset = UNSET
     updated_at: None | str | Unset = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
@@ -173,6 +187,24 @@ class PredictionConfigOut:
 
         mode = self.mode
 
+        output_space: None | str | Unset
+        if isinstance(self.output_space, Unset):
+            output_space = UNSET
+        else:
+            output_space = self.output_space
+
+        resolved_target_transform: None | str | Unset
+        if isinstance(self.resolved_target_transform, Unset):
+            resolved_target_transform = UNSET
+        else:
+            resolved_target_transform = self.resolved_target_transform
+
+        target_transform_reason: None | str | Unset
+        if isinstance(self.target_transform_reason, Unset):
+            target_transform_reason = UNSET
+        else:
+            target_transform_reason = self.target_transform_reason
+
         time_index_field: None | str | Unset
         if isinstance(self.time_index_field, Unset):
             time_index_field = UNSET
@@ -221,6 +253,12 @@ class PredictionConfigOut:
             field_dict["max_ar_lag"] = max_ar_lag
         if mode is not UNSET:
             field_dict["mode"] = mode
+        if output_space is not UNSET:
+            field_dict["output_space"] = output_space
+        if resolved_target_transform is not UNSET:
+            field_dict["resolved_target_transform"] = resolved_target_transform
+        if target_transform_reason is not UNSET:
+            field_dict["target_transform_reason"] = target_transform_reason
         if time_index_field is not UNSET:
             field_dict["time_index_field"] = time_index_field
         if updated_at is not UNSET:
@@ -388,6 +426,37 @@ class PredictionConfigOut:
 
         mode = d.pop("mode", UNSET)
 
+        def _parse_output_space(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        output_space = _parse_output_space(d.pop("output_space", UNSET))
+
+        def _parse_resolved_target_transform(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        resolved_target_transform = _parse_resolved_target_transform(
+            d.pop("resolved_target_transform", UNSET)
+        )
+
+        def _parse_target_transform_reason(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        target_transform_reason = _parse_target_transform_reason(
+            d.pop("target_transform_reason", UNSET)
+        )
+
         def _parse_time_index_field(data: object) -> None | str | Unset:
             if data is None:
                 return data
@@ -426,6 +495,9 @@ class PredictionConfigOut:
             horizon=horizon,
             max_ar_lag=max_ar_lag,
             mode=mode,
+            output_space=output_space,
+            resolved_target_transform=resolved_target_transform,
+            target_transform_reason=target_transform_reason,
             time_index_field=time_index_field,
             updated_at=updated_at,
         )
