@@ -68,12 +68,12 @@ def sync_detailed(
     """Suggest required-invariant obligations
 
      Enumerates candidate ``require`` invariants for this verified platform's active derive rules — one
-    per rule that has no guarding obligation (ARIA threat-model A2, rule suppression). Adding a
-    suggestion to the manifest (via PATCH /platforms/{id}) makes that rule's suppression detectable at
-    the build/query gate: if the rule is later dropped, its required atom stops deriving and the
-    obligation fails. Each suggestion is its own witness — already-declared and currently-failing
-    candidates are skipped (a failing require would brick the manifest). Suggestions are advisory: never
-    auto-applied. Returns 409 if the platform is not in the verified profile.
+    per rule that has no guarding obligation (guards against rule suppression). Adding a suggestion to
+    the manifest (via PATCH /platforms/{id}) makes that rule's suppression detectable at the build/query
+    gate: if the rule is later dropped, its required atom stops deriving and the obligation fails. Each
+    suggestion is its own witness — already-declared and currently-failing candidates are skipped (a
+    failing require would brick the manifest). Suggestions are advisory: never auto-applied. Returns 409
+    if the platform is not in the verified profile.
 
     Args:
         id (int): Resource ID
@@ -105,12 +105,12 @@ def sync(
     """Suggest required-invariant obligations
 
      Enumerates candidate ``require`` invariants for this verified platform's active derive rules — one
-    per rule that has no guarding obligation (ARIA threat-model A2, rule suppression). Adding a
-    suggestion to the manifest (via PATCH /platforms/{id}) makes that rule's suppression detectable at
-    the build/query gate: if the rule is later dropped, its required atom stops deriving and the
-    obligation fails. Each suggestion is its own witness — already-declared and currently-failing
-    candidates are skipped (a failing require would brick the manifest). Suggestions are advisory: never
-    auto-applied. Returns 409 if the platform is not in the verified profile.
+    per rule that has no guarding obligation (guards against rule suppression). Adding a suggestion to
+    the manifest (via PATCH /platforms/{id}) makes that rule's suppression detectable at the build/query
+    gate: if the rule is later dropped, its required atom stops deriving and the obligation fails. Each
+    suggestion is its own witness — already-declared and currently-failing candidates are skipped (a
+    failing require would brick the manifest). Suggestions are advisory: never auto-applied. Returns 409
+    if the platform is not in the verified profile.
 
     Args:
         id (int): Resource ID
@@ -137,12 +137,12 @@ async def asyncio_detailed(
     """Suggest required-invariant obligations
 
      Enumerates candidate ``require`` invariants for this verified platform's active derive rules — one
-    per rule that has no guarding obligation (ARIA threat-model A2, rule suppression). Adding a
-    suggestion to the manifest (via PATCH /platforms/{id}) makes that rule's suppression detectable at
-    the build/query gate: if the rule is later dropped, its required atom stops deriving and the
-    obligation fails. Each suggestion is its own witness — already-declared and currently-failing
-    candidates are skipped (a failing require would brick the manifest). Suggestions are advisory: never
-    auto-applied. Returns 409 if the platform is not in the verified profile.
+    per rule that has no guarding obligation (guards against rule suppression). Adding a suggestion to
+    the manifest (via PATCH /platforms/{id}) makes that rule's suppression detectable at the build/query
+    gate: if the rule is later dropped, its required atom stops deriving and the obligation fails. Each
+    suggestion is its own witness — already-declared and currently-failing candidates are skipped (a
+    failing require would brick the manifest). Suggestions are advisory: never auto-applied. Returns 409
+    if the platform is not in the verified profile.
 
     Args:
         id (int): Resource ID
@@ -172,12 +172,12 @@ async def asyncio(
     """Suggest required-invariant obligations
 
      Enumerates candidate ``require`` invariants for this verified platform's active derive rules — one
-    per rule that has no guarding obligation (ARIA threat-model A2, rule suppression). Adding a
-    suggestion to the manifest (via PATCH /platforms/{id}) makes that rule's suppression detectable at
-    the build/query gate: if the rule is later dropped, its required atom stops deriving and the
-    obligation fails. Each suggestion is its own witness — already-declared and currently-failing
-    candidates are skipped (a failing require would brick the manifest). Suggestions are advisory: never
-    auto-applied. Returns 409 if the platform is not in the verified profile.
+    per rule that has no guarding obligation (guards against rule suppression). Adding a suggestion to
+    the manifest (via PATCH /platforms/{id}) makes that rule's suppression detectable at the build/query
+    gate: if the rule is later dropped, its required atom stops deriving and the obligation fails. Each
+    suggestion is its own witness — already-declared and currently-failing candidates are skipped (a
+    failing require would brick the manifest). Suggestions are advisory: never auto-applied. Returns 409
+    if the platform is not in the verified profile.
 
     Args:
         id (int): Resource ID

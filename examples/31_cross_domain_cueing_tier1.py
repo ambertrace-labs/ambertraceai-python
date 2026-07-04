@@ -87,7 +87,7 @@ DOMAIN_DESCRIPTION = (
     "above apply."
 )
 
-# The certified relation schemas (DIANA Tier-1). Declared at build time so the
+# The certified relation schemas (Tier-1). Declared at build time so the
 # existsRelated cue rules ground against them; rows are attached per query.
 RELATIONS = [
     {"name": "maritime_track", "join_key": "grid_square", "columns": [

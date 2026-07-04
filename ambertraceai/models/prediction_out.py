@@ -22,14 +22,15 @@ class PredictionOut:
 
     Attributes:
         platform_id (int):
-        prediction (PredictionOutPrediction): Prediction result containing 'value' (point prediction), 'lower_bound',
-            'upper_bound' (confidence interval), and 'raw_value' (before rule adjustments). Also carries value-space
-            labelling (additive) so the consumer knows which space 'value' is in without a second call: 'value_space'
-            ('level' — the point is a level, i.e. no transform or a difference reconstructed back to the level; or
-            'transformed_unreconstructed' — a raw CHANGE that could not be reconstructed to a level because a difference
-            transform had no base history, treat as unreliable), 'target_transform' (the EFFECTIVE, post-'auto'-resolution
-            transform applied at train time), and 'baseline' (the level used to reconstruct a differenced forecast, or null
-            when not applicable). 'value' semantics are unchanged — it is the level whenever value_space='level'.
+        prediction (PredictionOutPrediction): Prediction result. Since 1.0.0 'value' is the LEVEL by default: for a
+            differenced target it is the reconstructed level (baseline + change), NOT the raw month-over-month change. The
+            change is exposed alongside as 'value_change' (null for a non-differenced target; for the reconstructable path
+            value == baseline + value_change). Also 'lower_bound'/'upper_bound' (confidence interval). Value-space labelling
+            so the consumer knows which space 'value' is in without a second call: 'value_space' ('level' — the point is a
+            level, i.e. no transform or a difference reconstructed back to the level; or 'transformed_unreconstructed' — a
+            raw CHANGE that could not be reconstructed to a level because a difference transform had no base history, treat
+            'value' as unreliable), 'target_transform' (the EFFECTIVE, post-'auto'-resolution transform applied at train
+            time), and 'baseline' (the level used to reconstruct a differenced forecast, or null when not applicable).
         target (str): Name of the predicted target field.
         explanation (None | PredictionOutExplanationType0 | Unset): Detailed explanation when explain=true. Contains
             'feature_importance' (sorted list), 'adjustment_rules_fired', 'constraint_rules_fired', 'model' metadata, and

@@ -178,6 +178,63 @@ class TestPredictionResource:
         assert result["confidence"] == 0.9
 
     @respx.mock
+    def test_train_default_waits_and_returns_trained_config(self, api):
+        """C2 (1.0.0): train() defaults to wait=True — it polls the training job
+        to completion and returns the SETTLED trained config (matching its
+        discover_prediction_rules sibling), NOT the raw 202 job envelope."""
+        respx.post(
+            "https://test.ambertrace.ai/api/v1/platforms/1/prediction-configs/5/train"
+        ).mock(
+            return_value=httpx.Response(
+                202, json=_envelope({"config_id": 5, "status": "training",
+                                     "job_id": 33, "poll": "/api/v1/jobs/33"})
+            )
+        )
+        respx.get("https://test.ambertrace.ai/api/v1/jobs/33").mock(
+            return_value=httpx.Response(
+                200, json=_envelope({"id": 33, "status": "completed",
+                                     "result": {"model_id": 1}})
+            )
+        )
+        respx.get(
+            "https://test.ambertrace.ai/api/v1/platforms/1/prediction-configs"
+        ).mock(
+            return_value=httpx.Response(
+                200, json=_envelope([
+                    {"id": 5, "status": "trained",
+                     "resolved_target_transform": "difference",
+                     "output_space": "level"},
+                    {"id": 6, "status": "pending"},
+                ])
+            )
+        )
+        with patch("time.sleep"):
+            result = api.predictions.train(1, 5)  # NO wait= passed -> default True
+        # Returns the settled trained CONFIG (matched by id), not the job envelope.
+        assert result["id"] == 5
+        assert result["status"] == "trained"
+        assert result["output_space"] == "level"
+        assert "job_id" not in result
+
+    @respx.mock
+    def test_train_wait_false_returns_job_envelope(self, api):
+        """C2 escape hatch: wait=False returns the raw 202 job envelope unchanged
+        (the historical return type) — no polling, no re-fetch."""
+        route = respx.post(
+            "https://test.ambertrace.ai/api/v1/platforms/1/prediction-configs/5/train"
+        ).mock(
+            return_value=httpx.Response(
+                202, json=_envelope({"config_id": 5, "status": "training",
+                                     "job_id": 33, "poll": "/api/v1/jobs/33"})
+            )
+        )
+        result = api.predictions.train(1, 5, wait=False)
+        assert route.called
+        assert result["job_id"] == 33
+        assert result["status"] == "training"
+        assert result["config_id"] == 5
+
+    @respx.mock
     def test_discover_no_wait_returns_envelope(self, api):
         route = respx.post(
             "https://test.ambertrace.ai/api/v1/platforms/1/discover-prediction-rules"

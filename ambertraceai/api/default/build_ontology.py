@@ -71,10 +71,9 @@ def sync_detailed(
     (failure); on failure the job's error_message carries an actionable reason. The generated
     constraints become executable symbolic rules automatically when a platform is built. Optionally
     accepts a JSON body {\"relations\": [{\"name\", \"join_key\", \"columns\": [{\"name\", \"type\",
-    \"enum_values\"?}]}]} declaring certified RELATIONS (DIANA Tier-1 cross-domain cueing): the builder
-    then authors `existsRelated` rules over them (e.g. \"X when there exists a related <relation> in the
-    same <join_key> whose <col> is <val>\"), and attached rows are supplied per query via
-    platforms.query(relations=...).
+    \"enum_values\"?}]}]} declaring certified RELATIONS: the builder then authors `existsRelated` rules
+    over them (e.g. \"X when there exists a related <relation> in the same <join_key> whose <col> is
+    <val>\"), and attached rows are supplied per query via platforms.query(relations=...).
 
     Args:
         id (int): Resource ID
@@ -115,10 +114,9 @@ def sync(
     (failure); on failure the job's error_message carries an actionable reason. The generated
     constraints become executable symbolic rules automatically when a platform is built. Optionally
     accepts a JSON body {\"relations\": [{\"name\", \"join_key\", \"columns\": [{\"name\", \"type\",
-    \"enum_values\"?}]}]} declaring certified RELATIONS (DIANA Tier-1 cross-domain cueing): the builder
-    then authors `existsRelated` rules over them (e.g. \"X when there exists a related <relation> in the
-    same <join_key> whose <col> is <val>\"), and attached rows are supplied per query via
-    platforms.query(relations=...).
+    \"enum_values\"?}]}]} declaring certified RELATIONS: the builder then authors `existsRelated` rules
+    over them (e.g. \"X when there exists a related <relation> in the same <join_key> whose <col> is
+    <val>\"), and attached rows are supplied per query via platforms.query(relations=...).
 
     Args:
         id (int): Resource ID
@@ -154,10 +152,9 @@ async def asyncio_detailed(
     (failure); on failure the job's error_message carries an actionable reason. The generated
     constraints become executable symbolic rules automatically when a platform is built. Optionally
     accepts a JSON body {\"relations\": [{\"name\", \"join_key\", \"columns\": [{\"name\", \"type\",
-    \"enum_values\"?}]}]} declaring certified RELATIONS (DIANA Tier-1 cross-domain cueing): the builder
-    then authors `existsRelated` rules over them (e.g. \"X when there exists a related <relation> in the
-    same <join_key> whose <col> is <val>\"), and attached rows are supplied per query via
-    platforms.query(relations=...).
+    \"enum_values\"?}]}]} declaring certified RELATIONS: the builder then authors `existsRelated` rules
+    over them (e.g. \"X when there exists a related <relation> in the same <join_key> whose <col> is
+    <val>\"), and attached rows are supplied per query via platforms.query(relations=...).
 
     Args:
         id (int): Resource ID
@@ -196,10 +193,9 @@ async def asyncio(
     (failure); on failure the job's error_message carries an actionable reason. The generated
     constraints become executable symbolic rules automatically when a platform is built. Optionally
     accepts a JSON body {\"relations\": [{\"name\", \"join_key\", \"columns\": [{\"name\", \"type\",
-    \"enum_values\"?}]}]} declaring certified RELATIONS (DIANA Tier-1 cross-domain cueing): the builder
-    then authors `existsRelated` rules over them (e.g. \"X when there exists a related <relation> in the
-    same <join_key> whose <col> is <val>\"), and attached rows are supplied per query via
-    platforms.query(relations=...).
+    \"enum_values\"?}]}]} declaring certified RELATIONS: the builder then authors `existsRelated` rules
+    over them (e.g. \"X when there exists a related <relation> in the same <join_key> whose <col> is
+    <val>\"), and attached rows are supplied per query via platforms.query(relations=...).
 
     Args:
         id (int): Resource ID

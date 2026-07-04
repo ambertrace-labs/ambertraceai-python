@@ -1,4 +1,4 @@
-"""25 — Cross-Domain Cueing (DIANA Tier 0, multi-domain fusion triage).
+"""25 — Cross-Domain Cueing (Tier 0, multi-domain fusion triage).
 
 A single verified core triages BOTH air and maritime-surface tracks that an
 upstream fusion / correlation layer has flattened onto one unified ``fused_track``

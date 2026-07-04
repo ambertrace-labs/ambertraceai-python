@@ -1,6 +1,6 @@
 """Cross-domain cueing dataset — unified ``fused_track`` schema (synthetic, seeded).
 
-Generates the data for the DIANA Tier-0 cross-domain-cueing demo
+Generates the data for the Tier-0 cross-domain-cueing demo
 (``25_cross_domain_cueing.py``). One unified entity carries BOTH air and maritime
 surface tracks through a single verified core; the two cross-domain cue booleans
 (``grid_has_confirmed_maritime_exclusion_breach``, ``grid_has_gps_spoofing``)

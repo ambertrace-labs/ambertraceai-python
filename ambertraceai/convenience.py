@@ -6,9 +6,39 @@ import os
 import random
 import time
 import urllib.parse
-from typing import Any, Callable
+from typing import Any, Callable, cast
 
 import httpx
+
+# Return-shape TypedDicts (additive typing only — see ambertraceai/responses.py).
+# With ``from __future__ import annotations`` every annotation is a string, so
+# these names are used purely for IDE autocomplete / type-checking and add no
+# runtime cost; each convenience method still returns a plain dict / AttrDict.
+# NB: named ``responses`` (not ``types``) so it never shadows the generated
+# client's own ``ambertraceai/types.py`` (Unset/Response/File) at overlay time.
+from .responses import (
+    AgentPolicyStatus,
+    AuthorResult,
+    AuthorizeActionResult,
+    BuildQuality,
+    BuildQualityCheck,
+    DatasetOut,
+    DiscoveredRules,
+    DiscoverySummary,
+    DomainOut,
+    ForecastOut,
+    JobOut,
+    NeurosymbolicComparison,
+    PlatformOut,
+    PlatformStatusOut,
+    PredictResult,
+    PredictionConfigOut,
+    ResidualDiagnosis,
+    SessionResult,
+    StepResult,
+    SymbolicForecastResult,
+    QueryResult,
+)
 
 # Sentinel for "no progress marker observed yet" so the first poll always counts
 # as forward progress (distinct from any real status/progress tuple).
@@ -407,16 +437,16 @@ class _Resource:
 
 
 class DomainResource(_Resource):
-    def list(self) -> list[dict]:
+    def list(self) -> list[DomainOut]:
         return self._request("GET", "/api/v1/domains")
 
-    def create(self, *, name: str, description: str, **kwargs) -> dict:
+    def create(self, *, name: str, description: str, **kwargs) -> DomainOut:
         return self._request("POST", "/api/v1/domains", json={"name": name, "description": description, **kwargs})
 
-    def get(self, domain_id: int) -> dict:
+    def get(self, domain_id: int) -> DomainOut:
         return self._request("GET", f"/api/v1/domains/{domain_id}")
 
-    def update(self, domain_id: int, **kwargs) -> dict:
+    def update(self, domain_id: int, **kwargs) -> DomainOut:
         return self._request("PUT", f"/api/v1/domains/{domain_id}", json=kwargs)
 
     def delete(self, domain_id: int) -> dict:
@@ -435,7 +465,7 @@ class DomainResource(_Resource):
         ``job_id`` -- poll the job until it completes (``api.wait_for_job(
         onto.job_id)``).
 
-        ``relations`` (optional) declares certified RELATIONS for DIANA Tier-1
+        ``relations`` (optional) declares certified RELATIONS for Tier-1
         cross-domain cueing — a decision that depends on whether a related record
         exists, with the join brought INSIDE the proof. Each entry is
         ``{"name": str, "join_key": str, "columns": [{"name": str, "type":
@@ -485,7 +515,7 @@ class DomainResource(_Resource):
 
 
 class DatasetResource(_Resource):
-    def list(self) -> list[AttrDict]:
+    def list(self) -> list[DatasetOut]:
         """List the caller's datasets.
 
         Each item is an :class:`AttrDict` — subscriptable as before
@@ -494,7 +524,7 @@ class DatasetResource(_Resource):
         """
         return [_wrap(d) for d in self._request("GET", "/api/v1/datasets")]
 
-    def get(self, dataset_id: int) -> AttrDict:
+    def get(self, dataset_id: int) -> DatasetOut:
         """Fetch one dataset as an :class:`AttrDict`.
 
         Exposes the ``DatasetOut`` fields the SDK models document —
@@ -507,7 +537,7 @@ class DatasetResource(_Resource):
         return _wrap(self._request("GET", f"/api/v1/datasets/{dataset_id}"))
 
     def upload(self, *, domain_id: int, file_path: str, name: str | None = None,
-               decision_column: str | None = None) -> AttrDict:
+               decision_column: str | None = None) -> DatasetOut:
         """Upload a CSV/data file and ingest it as a dataset on a domain.
 
         Returns an :class:`AttrDict` carrying the ``DatasetOut`` fields
@@ -534,11 +564,17 @@ class DatasetResource(_Resource):
                 data["decision_column"] = decision_column
             return _wrap(self._request("POST", "/api/v1/datasets/upload", files=files, data=data))
 
-    def fetch(self, *, domain_id: int, connector_type: str, config: dict | None = None) -> dict:
+    def fetch(self, *, domain_id: int, connector_type: str, config: dict | None = None) -> DatasetOut:
         """Ingest a dataset from a registered connector (e.g. 'fred', 'yahoo',
         'coinbase', 'rest'). ``config`` carries connector-specific options and any
         bring-your-own-key credentials (e.g. {'api_key': ...} for FRED). See
         api.connectors.list() for available connectors and their requirements.
+
+        ASYNC (like :meth:`fetch_multi`): the network fetch runs in the
+        background, so this returns the dataset record (HTTP 202) with
+        ``status == "processing"`` — poll :meth:`get` until ``status == "ready"``
+        before building an ontology / platform on it (an unready dataset fails the
+        build). ``status == "error"`` means the fetch failed.
         """
         body: dict[str, Any] = {
             "domain_id": domain_id,
@@ -549,7 +585,7 @@ class DatasetResource(_Resource):
 
     def fetch_multi(self, *, domain_id: int, sources: list[dict],
                     join_on: str = "date", frequency: str | None = None,
-                    aggregation: str | None = None) -> dict:
+                    aggregation: str | None = None) -> DatasetOut:
         """Fetch from two or more connectors and MERGE them into ONE date-aligned
         dataset, so a forecaster can train across sources in a single panel.
 
@@ -583,7 +619,14 @@ class DatasetResource(_Resource):
     def quality(self, dataset_id: int) -> dict:
         return self._request("GET", f"/api/v1/datasets/{dataset_id}/quality")
 
-    def clean(self, dataset_id: int, *, steps: list[str] | None = None) -> dict:
+    def clean(self, dataset_id: int, *, steps: list[str] | None = None) -> DatasetOut:
+        """Clean/normalise a dataset (dedupe, type-coerce, drop-empty, ...).
+
+        ASYNC like :meth:`fetch`: cleaning runs in the background and the dataset
+        goes back to ``status == "processing"`` — poll :meth:`get` until
+        ``status == "ready"`` before building on the cleaned dataset. ``steps``
+        (optional) selects specific cleaning steps; omit for the server defaults.
+        """
         # The endpoint expects a JSON body even though all fields default
         # server-side; send {} (or the chosen steps) so validation passes.
         body: dict[str, Any] = {}
@@ -599,7 +642,7 @@ class DatasetResource(_Resource):
 
 
 class PlatformResource(_Resource):
-    def list(self) -> list[dict]:
+    def list(self) -> list[PlatformOut]:
         return self._request("GET", "/api/v1/platforms")
 
     def create(self, *, domain_id: int, dataset_id: int, name: str | None = None, **kwargs) -> AttrDict:
@@ -622,10 +665,10 @@ class PlatformResource(_Resource):
             body["name"] = name
         return _normalise_envelope(self._request("POST", "/api/v1/platforms", json=body))
 
-    def get(self, platform_id: int) -> dict:
+    def get(self, platform_id: int) -> PlatformOut:
         return self._request("GET", f"/api/v1/platforms/{platform_id}")
 
-    def build_quality(self, platform_id: int) -> dict | None:
+    def build_quality(self, platform_id: int) -> BuildQuality | None:
         """The platform's persisted build-quality block, or ``None`` if it has
         not been built yet.
 
@@ -647,7 +690,7 @@ class PlatformResource(_Resource):
         platform = self.get(platform_id)
         return platform.get("build_quality")
 
-    def blocking_checks(self, platform_id: int) -> list[dict]:
+    def blocking_checks(self, platform_id: int) -> list[BuildQualityCheck]:
         """The FAILING blocking checks for a built platform — empty when the
         build has no blocking problems (or has not been built). Each item is a
         check dict from :meth:`build_quality`."""
@@ -663,13 +706,13 @@ class PlatformResource(_Resource):
     def delete(self, platform_id: int) -> dict:
         return self._request("DELETE", f"/api/v1/platforms/{platform_id}")
 
-    def status(self, platform_id: int) -> dict:
+    def status(self, platform_id: int) -> PlatformStatusOut:
         return self._request("GET", f"/api/v1/platforms/{platform_id}/status")
 
     def query(self, platform_id: int, *, query: str, explain: bool = True,
               facts: dict | None = None,
               relations: dict[str, list[dict]] | None = None,
-              **kwargs) -> dict:
+              **kwargs) -> QueryResult:
         """Query a platform; returns ``{answer, decision, explanation, ...}``.
 
         ``facts`` (``{field: scalar}``) is the FOCAL row. On a verified platform
@@ -680,7 +723,7 @@ class PlatformResource(_Resource):
 
         ``relations`` (``{relation_name: [ {column: scalar}, ... ]}``) attaches
         RELATED FACTS alongside ``facts`` so the verified kernel can bring a
-        relational / cross-domain join INSIDE the proof (DIANA Tier-1
+        relational / cross-domain join INSIDE the proof (Tier-1
         cross-domain cueing). A ``derive`` rule whose condition is an aggregate
         (``count``/``sum``) or an existential (``existsRelated``) leaf folds over
         the certified related rows — joined on the declared join key — and its
@@ -802,8 +845,16 @@ class PlatformResource(_Resource):
 
 class PredictionResource(_Resource):
     def predict(self, platform_id: int, *, prediction_config_id: int,
-                feature_overrides: dict | None = None, explain: bool = True) -> dict:
+                feature_overrides: dict | None = None, explain: bool = True) -> PredictResult:
         """Run a prediction with a trained config.
+
+        For a ready-to-persist, always-LEVEL-space record with a certified
+        probability, prefer :meth:`symbolic_forecast`'s ``prediction_record``
+        (the canonical Stage-A output). ``predict`` returns the neural/backtest
+        point forecast: since 1.0.0 ``prediction.value`` is the LEVEL by default,
+        but on the no-history path it can be a raw change
+        (``prediction.value_space == "transformed_unreconstructed"``) — check
+        ``value_space`` before storing ``value`` as a level.
 
         ``feature_overrides`` is an optional dict of what-if feature values
         (e.g. {"inflation": 5.0}); omit it to predict from the latest data. For
@@ -814,10 +865,16 @@ class PredictionResource(_Resource):
         the response's ``unmatched_overrides`` list (and ignored), so a what-if
         that could not be applied is visible rather than a silent no-op.
 
-        The ``prediction`` object carries value-space labelling so you know which
-        space ``value`` is in without a second call (additive — ``value``
-        semantics are unchanged):
+        Since ``1.0.0`` the ``prediction`` object returns ``value`` in LEVEL
+        space by default — for a differenced target ``value`` is the
+        reconstructed level (``baseline + change``), NOT the raw
+        month-over-month change. The change is exposed alongside as
+        ``value_change`` so you can read either without a second transform:
 
+        * ``value`` — the point forecast as a LEVEL (the natural space);
+        * ``value_change`` — the modelled CHANGE alongside the level (``null``
+          for a non-differenced target). For the reconstructable path
+          ``value == baseline + value_change`` holds by construction;
         * ``value_space`` — ``"level"`` when ``value`` is a level (no transform,
           or a difference reconstructed back to the level; the common case), or
           ``"transformed_unreconstructed"`` when it is a raw CHANGE that could not
@@ -827,21 +884,44 @@ class PredictionResource(_Resource):
           transform applied at train time;
         * ``baseline`` — the level used to reconstruct a differenced forecast
           (``null`` when not applicable).
+
+        .. versionchanged:: 1.0.0
+            ``value`` is now the reconstructed LEVEL by default for a differenced
+            target (was the raw change); the change moved to ``value_change``.
         """
         body: dict[str, Any] = {"prediction_config_id": prediction_config_id, "explain": explain}
         if feature_overrides is not None:
             body["feature_overrides"] = feature_overrides
         return self._request("POST", f"/api/v1/platforms/{platform_id}/predict", json=body)
 
-    def list_configs(self, platform_id: int) -> list[dict]:
+    def list_configs(self, platform_id: int) -> list[PredictionConfigOut]:
         return self._request("GET", f"/api/v1/platforms/{platform_id}/prediction-configs")
 
-    def create_config(self, platform_id: int, **kwargs) -> dict:
+    def create_config(self, platform_id: int, **kwargs) -> PredictionConfigOut:
         """Create a prediction config on a platform.
 
-        Pass any of the config fields as keyword args, e.g. ``target_field``,
-        ``time_index_field``, ``horizon``, ``frequency``, ``model_type``,
-        ``feature_fields``, ``feature_config``.
+        Pass the config fields as keyword args. ``target_field`` (the column to
+        predict) is always required.
+
+        ``mode`` — the PRIMARY switch, and the one to set FIRST; it decides the
+        entire mental model, and ``feature_overrides`` on :meth:`predict` means
+        something different in each:
+
+        * ``mode="cross_sectional"`` — each ROW is an independent example (no
+          time index). The model learns ``target_field`` from the other feature
+          columns on the same row. No ``time_index_field`` / ``horizon`` /
+          ``frequency`` are needed. On :meth:`predict`, ``feature_overrides`` ARE
+          the input row (the feature values to predict from), e.g.
+          ``feature_overrides={"inflation": 5.0, "unemployment": 4.0}``.
+        * ``mode="timeseries"`` (the default) — rows are an ordered SERIES indexed
+          by ``time_index_field`` and forecast ``horizon`` steps ahead at
+          ``frequency``. The model consumes engineered lag / rolling /
+          rate-of-change features. On :meth:`predict`, ``feature_overrides``
+          PERTURB the most-recent point (a what-if injected into the latest row,
+          from which the engineered features are recomputed) — it does not supply
+          a fresh row.
+
+        Give ``mode`` explicitly so which contract applies is never ambiguous.
 
         Explanatory-mode forecasting (timeseries mode):
 
@@ -859,8 +939,8 @@ class PredictionResource(_Resource):
           = drivers only, ``k`` = allow target-history features with
           lag/window/period <= ``k``. Overrides the enum when set.
 
-        Metrics (see :meth:`PlatformResource.prediction_model` /
-        ``predict(...)["explanation"]["model"]["metrics"]``): when a
+        Metrics (read off ``predict(...)["explanation"]["model"]["metrics"]``):
+        when a
         ``target_transform`` (difference / pct-change / log-diff) is applied, the
         ``metrics`` block reports THREE views so no single number misleads:
         ``transformed`` ({r2, rmse, mae} on the modelled change — the hard part),
@@ -885,24 +965,28 @@ class PredictionResource(_Resource):
         return self._request("DELETE", f"/api/v1/platforms/{platform_id}/prediction-configs/{config_id}")
 
     def train(self, platform_id: int, config_id: int, *,
-              wait: bool = False,
+              wait: bool = True,
               timeout: float = 600.0,
-              poll_interval: float = 5.0) -> dict:
+              poll_interval: float = 5.0) -> PredictionConfigOut:
         """Train (build) the model for a prediction config (async, HTTP 202).
 
-        By DEFAULT (``wait=False``) this returns the raw 202 job envelope
-        ``{"config_id", "status": "training", "job_id", "poll"}`` unchanged — you
-        then poll the job yourself (e.g. :meth:`AmbertraceAPI.wait_for_job`) and
-        re-fetch the config via :meth:`list_configs`.
-
-        Pass ``wait=True`` to have the SDK poll the training job to completion (the
-        SAME machinery :meth:`discover_prediction_rules` uses) and return the
-        SETTLED trained :class:`PredictionConfig` dict — so you don't hand-roll
+        By DEFAULT (``wait=True``, since ``1.0.0``) the SDK polls the training job
+        to completion — the SAME machinery :meth:`discover_prediction_rules` and
+        :meth:`neurosymbolic_comparison` use — and returns the SETTLED trained
+        :class:`PredictionConfig` dict, so you don't hand-roll
         poll-then-``list_configs``-and-match-by-id. The returned config reflects the
         resolved ``target_transform`` / ``output_space`` (echoed once trained).
 
-        ``wait`` defaults to False to preserve the historical return type (the raw
-        job); set it True for the ergonomic settle-and-return path.
+        Pass ``wait=False`` (the escape hatch) to get the raw 202 job envelope
+        ``{"config_id", "status": "training", "job_id", "poll"}`` unchanged and poll
+        the job yourself (e.g. :meth:`AmbertraceAPI.wait_for_job`), then re-fetch the
+        config via :meth:`list_configs`.
+
+        .. versionchanged:: 1.0.0
+            ``wait`` now defaults to ``True`` (was ``False``), so ``train`` blocks
+            until training settles and returns the trained config instead of the job
+            envelope — matching its ``discover_prediction_rules`` sibling. Pass
+            ``wait=False`` to restore the historical raw-job return.
         """
         resp = self._request(
             "POST",
@@ -923,7 +1007,7 @@ class PredictionResource(_Resource):
                 return cfg
         return resp
 
-    def list_predictions(self, platform_id: int) -> list[dict]:
+    def list_predictions(self, platform_id: int) -> list[ForecastOut]:
         return self._request("GET", f"/api/v1/platforms/{platform_id}/predictions")
 
     # -- Neurosymbolic rule discovery + neural-vs-neurosymbolic comparison --
@@ -940,7 +1024,7 @@ class PredictionResource(_Resource):
     _JOB_FAILED = ("error", "failed")
 
     def _await_job(self, job_id: int, *, what: str, timeout: float,
-                   poll_interval: float) -> dict:
+                   poll_interval: float) -> Any:
         """Poll a job to a terminal status and return its ``result`` payload.
 
         Mirrors :meth:`AmbertraceAPI.wait_for_job` (same terminal-status set,
@@ -975,7 +1059,7 @@ class PredictionResource(_Resource):
                                   max_rounds: int | None = None,
                                   wait: bool = True,
                                   timeout: float = 600.0,
-                                  poll_interval: float = 5.0) -> dict:
+                                  poll_interval: float = 5.0) -> DiscoverySummary:
         """Discover neurosymbolic CORRECTION rules for a trained config (async).
 
         Analyses the trained model's residuals, proposes corrective
@@ -1011,7 +1095,7 @@ class PredictionResource(_Resource):
             timeout=timeout, poll_interval=poll_interval)
 
     def discovered_prediction_rules(self, platform_id: int, *,
-                                    prediction_config_id: int) -> dict:
+                                    prediction_config_id: int) -> DiscoveredRules:
         """The rules discovered for a prediction config — each accepted rule WITH
         its per-rule ``fire_rate`` and backtest ``delta`` (why it earns its
         place), plus how many candidates were rejected.
@@ -1033,7 +1117,7 @@ class PredictionResource(_Resource):
                                  include_series: bool = False,
                                  wait: bool = True,
                                  timeout: float = 600.0,
-                                 poll_interval: float = 5.0) -> dict:
+                                 poll_interval: float = 5.0) -> NeurosymbolicComparison:
         """Compare the neural-only model against the neurosymbolic model — the
         honest "does the symbolic layer earn its place?" backtest (async).
 
@@ -1112,7 +1196,7 @@ class PredictionResource(_Resource):
                           period: str | None = None,
                           entity: str | None = None,
                           top_drivers_n: int | None = None,
-                          compact_certification: bool = False) -> dict:
+                          compact_certification: bool = True) -> SymbolicForecastResult:
         """Run the symbolic forecaster and return the forecast WITH its WHY.
 
         Returns ``{"forecast": {"value", "lower", "upper"}, "baseline",
@@ -1274,13 +1358,17 @@ class PredictionResource(_Resource):
         * ``top_drivers_n`` — how many ranked drivers to surface in ``top_drivers``
           (default 5).
 
-        Pass ``compact_certification=True`` (default False) to slim the payload:
-        the per-feature ``why_certification.certified_facts`` list (one certificate
-        per engineered feature — large on a wide panel) is replaced by a compact
-        ``certification_summary`` (``proof_checked`` + counts + min confidence) in
-        both the top-level block and the embedded ``prediction_record``;
-        ``proof_checked`` / ``proof_summary`` are retained. Default False keeps the
-        current full-``certified_facts`` response (non-breaking).
+        The certification payload is COMPACT BY DEFAULT as of 0.19.0 (the
+        breaking flip announced in 0.18.0). The top-level ``why_certification``
+        per-feature ``certified_facts`` list (one certificate per engineered
+        feature — large on a wide panel) is replaced by a compact
+        ``certification_summary`` (``proof_checked`` + counts + min confidence);
+        ``proof_checked`` / ``proof_summary`` are retained. To get the FULL proof
+        back, pass ``compact_certification=False`` — that restores the full
+        ``certified_facts`` list at the top level. The embedded
+        ``prediction_record.why_certification`` ALWAYS carries the compact handle
+        (it is a proof-carrying handle re-checked by the decision layer, never a
+        second copy of the fact list) regardless of the flag.
         """
         body: dict[str, Any] = {
             "prediction_config_id": prediction_config_id,
@@ -1315,7 +1403,7 @@ class PredictionResource(_Resource):
                            forecast_id: int | None = None,
                            value: float | None = None,
                            actual: float | None = None,
-                           k: float | None = None) -> dict:
+                           k: float | None = None) -> ResidualDiagnosis:
         """Diagnose a forecast residual — drift vs correction.
 
         Computes ``residual = actual - value``, standardises it, and when the
@@ -1493,7 +1581,7 @@ class AgentPolicyResource(_Resource):
     """
 
     def author(self, policy_text: str, *, timeout: float = 300.0,
-               poll_interval: float = 3.0) -> dict:
+               poll_interval: float = 3.0) -> AuthorResult:
         """Compile an English governance policy into a verified policy and
         build/replace the org's agent-policy gate.
 
@@ -1545,10 +1633,10 @@ class AgentPolicyResource(_Resource):
         # gate inline (``platform`` present / ``status == "done"``) — pass it through.
         if (not isinstance(started, dict) or "platform" in started
                 or started.get("status") == "done"):
-            return started
+            return cast(AuthorResult, started)
         job_id = started.get("job_id")
         if not job_id:
-            return started  # unrecognised shape — return as-is rather than hang
+            return cast(AuthorResult, started)  # unrecognised shape — return as-is rather than hang
         # Async: poll the compile job to a terminal status.
         deadline = time.monotonic() + timeout
         while True:
@@ -1556,7 +1644,7 @@ class AgentPolicyResource(_Resource):
                 "GET", f"/api/v1/agent-policy-gate/policy/jobs/{job_id}")
             status = job.get("status", "") if isinstance(job, dict) else ""
             if status == "done":
-                return job
+                return cast(AuthorResult, job)
             if status in ("vacuous", "unavailable", "error"):
                 raise AmbertraceError(
                     422 if status == "vacuous" else 503,
@@ -1570,7 +1658,7 @@ class AgentPolicyResource(_Resource):
                     f"(job {job_id}, last status: {status or 'unknown'})")
             time.sleep(poll_interval)
 
-    def status(self) -> dict:
+    def status(self) -> AgentPolicyStatus:
         """The org's live agent-policy gate: the active policy text, the admitted
         controls (plain English), and the DECLARED INPUT fields an action must
         supply.
@@ -1602,7 +1690,7 @@ class AgentPolicyResource(_Resource):
     def authorize_action(self, platform_id: int, *, tool: str,
                          args: dict | None = None,
                          context: dict | None = None,
-                         relations: dict | None = None) -> dict:
+                         relations: dict | None = None) -> AuthorizeActionResult:
         """Gate ONE proposed tool-call against the verified policy - permit/deny
         WITH PROOF.
 
@@ -1687,7 +1775,7 @@ class AgentPolicyResource(_Resource):
             "POST", f"/api/v1/platforms/{platform_id}/authorize-action", json=body)
 
     def create_session(self, *, platform_id: int,
-                       goal: str | None = None) -> dict:
+                       goal: str | None = None) -> SessionResult:
         """Open a mediated agent session bound to a verified agent-policy gate.
 
         Every action proposed via :meth:`step` is gated; the harness is the SOLE
@@ -1701,7 +1789,7 @@ class AgentPolicyResource(_Resource):
         return self._request("POST", "/api/v1/agent-sessions", json=body)
 
     def step(self, session_id: str, *, tool: str, args: dict | None = None,
-             context: dict | None = None) -> dict:
+             context: dict | None = None) -> StepResult:
         """Mediate ONE proposed action in a session: gate -> execute-on-permit /
         block-on-deny.
 
@@ -1726,14 +1814,18 @@ class AgentPolicyResource(_Resource):
         return self._request(
             "POST", f"/api/v1/agent-sessions/{session_id}/step", json=body)
 
-    def get_session(self, session_id: str) -> dict:
+    def get_session(self, session_id: str) -> SessionResult:
         """Fetch a session and its full mediated step trace."""
         return self._request("GET", f"/api/v1/agent-sessions/{session_id}")
 
 
 class JobResource(_Resource):
-    def get(self, job_id: int) -> dict:
+    def get(self, job_id: int | str) -> JobOut:
         """Fetch a job by id.
+
+        ``job_id`` is typically an ``int``, but some deployments/resources use
+        string ids (a session job id polled by ``author``); ``int | str`` is
+        accepted and interpolated into the path either way.
 
         Two job *types* surface through this one endpoint — be sure you are
         polling the right one:
@@ -1902,9 +1994,9 @@ class AmbertraceAPI:
         return _Resource(self._http)._request(
             "GET", "/api/v1/version", headers={"Accept": "application/json"})
 
-    def wait_for_job(self, job_id: int, *, timeout: int = 600, poll_interval: int = 5,
-                     on_progress: Callable[[dict], None] | None = None,
-                     stall_timeout: float | None = None) -> dict:
+    def wait_for_job(self, job_id: int | str, *, timeout: int = 600, poll_interval: int = 5,
+                     on_progress: Callable[[JobOut], None] | None = None,
+                     stall_timeout: float | None = None) -> JobOut:
         """Poll a job until it reaches a terminal status or times out.
 
         On a terminal FAILED status (``error`` / ``failed``) this **raises**

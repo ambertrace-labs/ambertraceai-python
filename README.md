@@ -254,12 +254,19 @@ Train a forecasting model, then **discover explainable correction rules** from i
 residuals and check — honestly — whether they earn their place against the neural
 model alone.
 
+> **Preview.** `symbolic_forecast` is a preview capability behind the
+> `AMBERTRACE_SYMBOLIC_FORECAST` server flag — it raises `AmbertraceError` (404)
+> when the feature is not enabled on your deployment. `discover_prediction_rules`
+> / `neurosymbolic_comparison` are generally available.
+
 ```python
-# Train a Time-Series config (target = GS10, the 10y Treasury yield)
-config = api.predictions.create_config(platform_id, target_field="GS10",
+# Train a Time-Series config (target = GS10, the 10y Treasury yield). `mode`
+# decides the whole model — set it explicitly (see create_config's docstring).
+config = api.predictions.create_config(platform_id, mode="timeseries",
+                                       target_field="GS10",
                                        time_index_field="date", horizon=1,
                                        frequency="monthly", model_type="gbt")
-api.predictions.train(platform_id, config["id"])
+api.predictions.train(platform_id, config["id"])   # blocks by default (1.0.0)
 
 # 1) Discover correction rules — async; the SDK polls the job and returns the summary
 summary = api.predictions.discover_prediction_rules(
@@ -278,6 +285,10 @@ for r in rules:
 fc = api.predictions.symbolic_forecast(platform_id, prediction_config_id=config["id"],
                                        include_fitted_series=True)
 fc["forecast"], fc["why"]   # each why-entry: driver, direction, contribution, base_features
+# `prediction_record` is the canonical LEVEL-space, ready-to-persist output. Its
+# `probability` is a CERTIFIED, calibrated probability — but only non-null with
+# verified=True AND an in-regime calibration; otherwise it fails closed to None
+# (`probability_certified=False`). Never treat a None probability as "confident".
 
 # 4) Neural vs neurosymbolic — does the symbolic layer earn its place? (async; polled)
 cmp = api.predictions.neurosymbolic_comparison(platform_id, prediction_config_id=config["id"])
@@ -347,9 +358,29 @@ api.api_keys.revoke(platform_key["id"])
 
 User-scoped keys cannot create other user-scoped keys (no self-replication). Chat, conversations, and billing remain human-only.
 
+## Async operations
+
+Long-running calls follow one of three conventions. This table says, per method,
+whether it blocks, returns a job to poll, or is synchronous:
+
+| Method | Behaviour | How you wait |
+|--------|-----------|--------------|
+| `platforms.create`, `domains.build_ontology` | returns a 202 envelope with a normalised `job_id` | `api.wait_for_job(result.job_id)` |
+| `predictions.train` | **blocks** by default (`wait=True`), returns the trained config | automatic; `wait=False` for the raw job envelope |
+| `predictions.discover_prediction_rules`, `neurosymbolic_comparison` | **blocks** by default (`wait=True`), returns the result | automatic; `wait=False` for the raw job envelope |
+| `agent_policy.author` | **blocks** always (polling hidden), returns the built gate | automatic (bounded by `timeout=`) |
+| `datasets.fetch`, `fetch_multi`, `clean` | returns the dataset record with `status="processing"` | poll `datasets.get(id)` until `status="ready"` |
+| `platforms.query`, `authorize_action`, `step`, `predict` | synchronous | — |
+
+The rule of thumb since 1.0.0: the prediction async methods (`train`,
+`discover_prediction_rules`, `neurosymbolic_comparison`) all **block and return
+the result by default**, with `wait=False` as the raw-job escape hatch;
+`platforms.create` / `domains.build_ontology` return a `job_id` you pass to
+`wait_for_job`; connector fetches poll the dataset's own `status`.
+
 ## Job Polling
 
-Long-running operations (platform builds, data cleaning, training) return a `job_id`. Use `wait_for_job` to poll:
+Operations that return a `job_id` (platform builds, ontology builds) are polled with `wait_for_job`:
 
 ```python
 job = api.wait_for_job(job_id, timeout=300, poll_interval=5)
@@ -438,6 +469,60 @@ This brings the query failure path to parity with
 Full API reference: [app.ambertrace.ai/openapi/redoc](https://app.ambertrace.ai/openapi/redoc)
 
 ## Changelog
+
+### 1.0.0
+
+First stable release. Three **breaking default flips** land together (the SDK is
+onboarding its first customers — the correct defaults are set now, while few
+consumers depend on the old behaviour). See `MIGRATION.md` for the exact
+before/after and the escape hatch for each.
+
+- **BREAKING (C1) — compact certification by default.** `symbolic_forecast` now
+  returns **compact certification by default** (as announced in 0.18.0). The
+  top-level `why_certification` carries a `certification_summary` (`proof_checked`
+  + counts + min confidence) instead of the full per-feature `certified_facts`
+  list. Pass `compact_certification=False` for the full `certified_facts`.
+  - **De-dup:** the embedded `prediction_record.why_certification` now ALWAYS
+    carries the compact handle (proof-carrying, re-checked by the decision layer),
+    never a second copy of the fact list — regardless of `compact_certification`.
+    The full list, when opted into, appears only once, at the top level.
+- **BREAKING (C2) — `train()` blocks and returns the trained config by default.**
+  `platforms.train(...)` now defaults to `wait=True`: it polls the training job
+  to completion and returns the SETTLED trained `PredictionConfig` (matching its
+  `discover_prediction_rules` / `neurosymbolic_comparison` siblings), instead of
+  the raw 202 job envelope. Pass `wait=False` to restore the historic raw-job
+  return and poll yourself.
+- **BREAKING (C3) — `predict().value` is the LEVEL by default.** For a differenced
+  target (`target_transform="difference"`) `prediction.value` is now the
+  reconstructed **level** (`baseline + change`), NOT the raw month-over-month
+  change. The change is exposed alongside as **`value_change`**, and
+  `value_space` is `"level"` on the reconstructable path. When there is no base
+  history to reconstruct from, `value` remains the raw change and `value_space`
+  is `"transformed_unreconstructed"` (treat as unreliable). Public `predict`
+  contract change — regenerated OpenAPI + client.
+
+**Additive in 1.0.0 (no access change):**
+
+- **Typed convenience returns (`TypedDict`).** Every convenience method now
+  declares a `TypedDict` return type (`query(...) -> QueryResult`,
+  `authorize_action(...) -> AuthorizeActionResult`,
+  `symbolic_forecast(...) -> SymbolicForecastResult`, `get(...) -> PlatformOut`,
+  …) instead of a bare `dict`. Since a `TypedDict` **is** a `dict` at runtime,
+  nothing changes at runtime — `result["answer"]` / `result.answer` / `.get(...)`
+  keep working byte-for-byte — but your IDE now autocompletes the fields and a
+  type-checker catches a typo (`result["desicion"]`). The shapes live in
+  `ambertraceai.responses` and are exported from the top-level package.
+  Genuinely open sub-blocks (`explanation`, the raw `prediction`, a
+  `why_certification` payload) are typed as an open `dict[str, Any]` (aliased
+  `JsonDict`) rather than forced into a rigid shape.
+- **DX doc/example fixes.** `create_config` now documents `mode`
+  (`cross_sectional` vs `timeseries`) as its primary switch and what it means for
+  `feature_overrides`; `datasets.fetch` / `clean` document their async
+  processing→ready poll; a dangling `PlatformResource.prediction_model` docstring
+  reference was removed; `wait_for_job` / `JobResource.get` accept `int | str`
+  ids. `examples/06_predictions.py` was corrected to the real `predict(...)` /
+  `train(...)` signatures, and `examples/02_platform_lifecycle.py` now agrees
+  with the README/docstring on polling build-ontology by its returned `job_id`.
 
 ### 0.18.0
 

@@ -15,7 +15,7 @@ T = TypeVar("T", bound="DriftAlert")
 class DriftAlert:
     """A single drift signal. Shape varies by ``signal`` (see drift_service).
 
-    ``signal == "rule_suppression"`` (ARIA WP5, threat-model A2) additionally
+    ``signal == "rule_suppression"`` additionally
     carries ``severity`` ('silenced' = stopped firing entirely, 'degraded' =
     fire rate collapsed) and the affected ``rule`` name — a previously-active
     safety rule going quiet, surfaced distinctly from generic metric drift.

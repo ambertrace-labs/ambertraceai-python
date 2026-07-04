@@ -67,7 +67,7 @@ symbolic trace.
 | `18_access_governance.py` | Access governance PDP (permit/deny) | `data/access_requests.csv` |
 | `19_air_track_triage.py` | Air track C2 triage (escalate/monitor/clear) | `data/air_tracks.csv` |
 | `24_air_track_isr_hispec.py` | High-spec ISR air track triage (ASTERIX/MISB schema) | `data/air_tracks_hispec.csv` |
-| `25_cross_domain_cueing.py` | Cross-domain cueing — unified air+maritime `fused_track` triage with a top-precedence cross-cue rule, a separate human-review obligation, and a derived position-trust flag (DIANA Tier 0). The two cross-domain cue booleans are **pre-joined by the fusion layer outside the proof** — the certified claim is conditional on them (Tier 1 brings the join inside) | `data/fused_tracks.csv` (regenerate via `python gen_fused_tracks.py`) |
+| `25_cross_domain_cueing.py` | Cross-domain cueing — unified air+maritime `fused_track` triage with a top-precedence cross-cue rule, a separate human-review obligation, and a derived position-trust flag (Tier 0). The two cross-domain cue booleans are **pre-joined by the fusion layer outside the proof** — the certified claim is conditional on them (Tier 1 brings the join inside) | `data/fused_tracks.csv` (regenerate via `python gen_fused_tracks.py`) |
 
 ### Agent Policy Gate demos (preview)
 

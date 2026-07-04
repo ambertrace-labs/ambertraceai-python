@@ -13,7 +13,7 @@ import csv
 import tempfile
 from pathlib import Path
 
-from _common import banner, get_client, step, wait_for_domain
+from _common import banner, get_client, step
 from ambertraceai import AmbertraceError
 
 
@@ -54,11 +54,13 @@ def main() -> None:
         step(f"Uploaded dataset #{dataset_id}")
 
         # Build the ontology (entities/relationships) from the description + data.
-        # NOTE: build-ontology runs in the background and returns no job id, so we
-        # poll the domain status rather than using wait_for_job. The platform build
-        # requires the domain to be 'active' with at least one entity.
-        api.domains.build_ontology(domain_id)
-        domain = wait_for_domain(api, domain_id, timeout=240)
+        # build-ontology runs in the background and returns a 202 job envelope with
+        # a stable job_id — poll it with wait_for_job (which raises if the build
+        # fails). The platform build then requires the domain to be 'active' with
+        # at least one entity.
+        onto = api.domains.build_ontology(domain_id)
+        api.wait_for_job(onto.job_id, timeout=240)
+        domain = api.domains.get(domain_id)
         step(f"Ontology build finished: domain status={domain.get('status')}")
         if domain.get("status") != "active":
             step("Domain did not become active; aborting build.")

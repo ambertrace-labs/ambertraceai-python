@@ -272,7 +272,7 @@ def build_ontology(
     intermittently flaky (transient LLM failures) and re-triggering
     typically succeeds.
 
-    ``relations`` (optional) declares certified relations for DIANA Tier-1
+    ``relations`` (optional) declares certified relations for Tier-1
     cross-domain cueing — see ``api.domains.build_ontology``.
     """
     last_err: str | None = None

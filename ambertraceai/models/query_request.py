@@ -36,18 +36,18 @@ class QueryRequest:
             value). The platform fetches the SCOPED (org+owner) stored record and admits its certified fields to the
             decision's certified EDB keyed `<role>.<field>`: `<role>.value`, `<role>.probability` (only if the record's
             probability certified), and `<role>.fired.<signal>` per fired signal. A rule reading `<role>.<field>` then
-            decides over trusted facts. FAIL-CLOSED (WS4): a reference that is missing / not proof_checked / whose as_of !=
-            the requested as_of / (for probability) not probability_certified admits NO fact, so a rule reading it cannot
-            fire a certified permit and the decision abstains. `proof_checked=True` iff the decision certifies AND every
-            referenced prediction was found+aligned+certified. Verified platforms only. Example: {"ust_10y": {"model_id":
-            "ust_10y", "as_of": "2026-06-30"}}.
+            decides over trusted facts. FAIL-CLOSED: a reference that is missing / not proof_checked / whose as_of != the
+            requested as_of / (for probability) not probability_certified admits NO fact, so a rule reading it cannot fire a
+            certified permit and the decision abstains. `proof_checked=True` iff the decision certifies AND every referenced
+            prediction was found+aligned+certified. Verified platforms only. Example: {"ust_10y": {"model_id": "ust_10y",
+            "as_of": "2026-06-30"}}.
         relations (None | QueryRequestRelationsType0 | Unset): Optional ATTACHED RELATED FACTS as a {relation_name:
             [row, ...]} map, where each row is a {column: scalar} dict. These ride alongside the focal `facts` (the scalar
-            row, including any join-key column) and let the verified kernel bring a relational/cross-domain join INSIDE the
-            proof: an aggregate (count/sum) or existential (existsRelated — DIANA Tier-1 cross-domain cueing) derive rule
-            folds over the certified related rows, joined on the declared join key, and its derived flag feeds the decision.
-            Every row is certified per-cell through the same fact gate at the platform's confidence threshold; if ANY row is
-            rejected the whole query fails CLOSED (no decision over a partial relation). Verified platforms only.
+            row, including any join-key column) and let a rule bring a relational join INSIDE the verified decision: an
+            aggregate (count/sum) or existential (existsRelated) derive rule folds over the certified related rows, joined
+            on the declared join key, and its derived flag feeds the decision. Every row is certified per-cell through the
+            same fact gate at the platform's confidence threshold; if ANY row is rejected the whole query fails CLOSED (no
+            decision over a partial relation). Verified platforms only.
         top_k (int | Unset):  Default: 10.
     """
 

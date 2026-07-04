@@ -17,11 +17,11 @@ T = TypeVar("T", bound="ObligationSuggestion")
 
 @_attrs_define
 class ObligationSuggestion:
-    """A suggested ``require`` invariant for a verified platform (ARIA WP5).
+    """A suggested ``require`` invariant for a verified platform.
 
     One per active verified ``derive`` rule that has no guarding obligation.
     Adding it to the manifest makes that rule's suppression detectable at the
-    build/query gate (threat-model A2). Suggestions are advisory — never
+    build/query gate. Suggestions are advisory — never
     auto-applied; the author reviews and adds via PATCH /platforms/{id}.
 
         Attributes:

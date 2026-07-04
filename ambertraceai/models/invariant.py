@@ -46,13 +46,11 @@ class Invariant:
         derive is_trusted_device if device_managed and device_posture_score >= 70
         derive deny_access       if is_restricted_zone and not is_trusted_device
         # invariant (manifest gate): the deny conclusion must derive from THIS
-        # concrete witness — catches A2 rule suppression anywhere in the chain.
+        # concrete witness — catches rule suppression anywhere in the chain.
         {"name": "untrusted device into restricted zone must deny",
          "kind": "require", "target": "deny_access",
          "given": [{"field": "target_zone", "value": "ot_network"},
                    {"field": "device_managed", "value": false}]}
-
-    See ``docs/aria-design.md`` §2 and ``docs/aria-witness-value-binding.md``.
 
         Attributes:
             assumed_absent (list[str] | None | Unset): forbid only: boolean atoms treated as absent from every admissible
@@ -65,7 +63,7 @@ class Invariant:
                 prevents a forbidden outcome regardless of how rules are authored; value-/comparison-blind by design. 'require'
                 (liveness): from the concrete witness base ``given`` (bare atom names ⇒ True; {'field','value'} objects bind
                 real scalars), the ``target`` must be derivable — ensures a required safety conclusion, possibly several rule
-                hops deep, is maintained (see schema docstring + docs/aria-design.md §2). Default: 'forbid'.
+                hops deep, is maintained (see the schema description). Default: 'forbid'.
             name (None | str | Unset): Human-readable invariant name; appears in violation messages.
             target (None | str | Unset): The boolean atom / derived field this invariant constrains (e.g. 'permit_delete',
                 'block_approval'). Not a value test — see schema docstring for the value-gated pattern.
