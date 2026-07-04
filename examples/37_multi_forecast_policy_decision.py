@@ -1,6 +1,6 @@
-"""36 — Multiple Predictions → one Decision: three macro forecasts feeding a policy stance.
+"""37 — Multiple Predictions → one Decision: three macro forecasts feeding a policy stance.
 
-The multi-forecast companion to ``35_credit_forecast_to_loan_decision.py`` (a SINGLE
+The multi-forecast companion to ``36_credit_forecast_to_loan_decision.py`` (a SINGLE
 Prediction → Decision). It proves that ONE verified Query/Decision platform can consume
 SEVERAL independent forecast platforms at once: ``facts`` has no arity limit, so each
 forecaster's output is attached as its OWN certified fact and the policy rules combine them.
@@ -30,9 +30,9 @@ DATA: the three macro panels are FRED (US-government public domain, bundled); th
 dataset is a small SEEDED SYNTHETIC features-only table generated on first run (labels-free —
 it only has to DECLARE the three forecast fields). No FRED key is needed.
 
-    python 36_multi_forecast_policy_decision.py
-    python 36_multi_forecast_policy_decision.py --inflation-value 3.5 --gdp-value 2.8
-    python 36_multi_forecast_policy_decision.py --credit-platform-id 42  # reuse a forecaster
+    python 37_multi_forecast_policy_decision.py
+    python 37_multi_forecast_policy_decision.py --inflation-value 3.5 --gdp-value 2.8
+    python 37_multi_forecast_policy_decision.py --credit-platform-id 42  # reuse a forecaster
 """
 
 from __future__ import annotations

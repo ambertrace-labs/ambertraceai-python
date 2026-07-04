@@ -118,6 +118,7 @@ what-if scenarios.
 | `32_inflation_macro_forecast.py` | US CPI inflation (INFL_YOY) — system picks the macro drivers | `data/inflation_macro_panel.csv` (bundled, FRED public domain) |
 | `33_credit_spread_macro_forecast.py` | US investment-grade credit spread (IG_SPREAD) — system picks the drivers | `data/credit_macro_panel.csv` (bundled, FRED public domain) |
 | `34_real_gdp_growth_macro_forecast.py` | US real GDP growth (REAL_GDP_GROWTH) — system picks the drivers | `data/gdp_macro_panel.csv` (bundled, FRED public domain) |
+| `35_geopolitical_risk_macro_forecast.py` | Geopolitical risk (GPR, Caldara-Iacoviello index) — system picks the drivers; an honest read on how little macro explains an EXOGENOUS target | `data/geopol_macro_panel.csv` (bundled; GPR index public — cite matteoiacoviello.com on reuse; macro panel FRED public domain) |
 
 These are **classical / symbolic** forecasters — a gradient-boosted model over a broad
 macro panel plus an induced set of readable WHEN→THEN driver rules and a persistence
@@ -137,8 +138,8 @@ forecast becomes part of the machine-checked proof — not an opaque side input.
 
 | Script | What it shows |
 |--------|---------------|
-| `35_credit_forecast_to_loan_decision.py` | **Single** forecast → decision. One credit-spread forecast feeds one verified lending decision; the same marginal borrower APPROVES when the forecast is benign and is REFERRED when it signals tightening credit — a counterfactual proving the forecast is *material* |
-| `36_multi_forecast_policy_decision.py` | **Multiple** forecasts → one decision. Three independent forecasters (inflation, GDP growth, credit spread) fan into ONE verified "monetary policy stance" decision (hike / cut / hold); `facts` has no arity limit so each forecast is its own certified fact in the one proof |
+| `36_credit_forecast_to_loan_decision.py` | **Single** forecast → decision. One credit-spread forecast feeds one verified lending decision; the same marginal borrower APPROVES when the forecast is benign and is REFERRED when it signals tightening credit — a counterfactual proving the forecast is *material* |
+| `37_multi_forecast_policy_decision.py` | **Multiple** forecasts → one decision. Three independent forecasters (inflation, GDP growth, credit spread) fan into ONE verified "monetary policy stance" decision (hike / cut / hold); `facts` has no arity limit so each forecast is its own certified fact in the one proof |
 
 **The pattern (the seam, today).** There is no native "prediction inside a query" call —
 `query()` takes `facts` / `relations` — so the composition is application-layer:

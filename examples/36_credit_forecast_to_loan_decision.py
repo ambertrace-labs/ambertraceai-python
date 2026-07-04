@@ -1,4 +1,4 @@
-"""35 — Prediction → Decision: a credit-spread FORECAST feeding a verified lending DECISION.
+"""36 — Prediction → Decision: a credit-spread FORECAST feeding a verified lending DECISION.
 
 The first example that wires an AmberTrace **Prediction** into an AmberTrace verified
 **Query/Decision**. There is no single native call for this — forecasting and decisioning
@@ -23,7 +23,7 @@ forecast spread is benign is REFERRED to manual review when the forecast says cr
 conditions are tightening — same applicant, different macro forecast, different auditable
 outcome.
 
-This is the SINGLE-forecast case; ``36_multi_forecast_policy_decision.py`` fans THREE
+This is the SINGLE-forecast case; ``37_multi_forecast_policy_decision.py`` fans THREE
 forecasts into one decision. Both are the ship-now, application-layer form of the
 Prediction→Decision bridge — see the "Predictions → Decision bridge" section of the
 examples README for the end-to-end pattern and the four gotchas each demo preserves.
@@ -32,9 +32,9 @@ DATA: the credit-spread panel is FRED (US-government public domain); the lending
 is a small SEEDED SYNTHETIC features-only table generated on first run (it only has to
 DECLARE the schema — no labels). No FRED key is needed.
 
-    python 35_credit_forecast_to_loan_decision.py                 # build the forecaster + decide
-    python 35_credit_forecast_to_loan_decision.py --forecast-value 1.6  # force a regime (no build)
-    python 35_credit_forecast_to_loan_decision.py --credit-platform-id 42  # reuse a forecaster
+    python 36_credit_forecast_to_loan_decision.py                 # build the forecaster + decide
+    python 36_credit_forecast_to_loan_decision.py --forecast-value 1.6  # force a regime (no build)
+    python 36_credit_forecast_to_loan_decision.py --credit-platform-id 42  # reuse a forecaster
 """
 
 from __future__ import annotations

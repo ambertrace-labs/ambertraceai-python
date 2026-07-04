@@ -470,6 +470,15 @@ Full API reference: [app.ambertrace.ai/openapi/redoc](https://app.ambertrace.ai/
 
 ## Changelog
 
+### 1.0.2
+
+Examples-only release (no client-code change). Adds the geopolitical-risk
+forecast example (`35_geopolitical_risk_macro_forecast.py`, with a bundled
+`geopol_macro_panel.csv` panel) and renumbers the decision-bridge examples to
+`36_credit_forecast_to_loan_decision.py` and
+`37_multi_forecast_policy_decision.py`. No API surface, client, or default
+changes.
+
 ### 1.0.1
 
 Examples-only release (no client-code change). Adds the **Predictions → Decision
