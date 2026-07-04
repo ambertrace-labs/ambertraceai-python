@@ -470,6 +470,15 @@ Full API reference: [app.ambertrace.ai/openapi/redoc](https://app.ambertrace.ai/
 
 ## Changelog
 
+### 1.0.1
+
+Examples-only release (no client-code change). Adds the **Predictions → Decision
+bridge** examples — `35_credit_forecast_to_loan_decision.py` (single-forecast) and
+`36_multi_forecast_policy_decision.py` (multi-forecast) — plus a "Predictions →
+Decision bridge" section in `examples/README.md`. These demonstrate feeding
+proof-carrying forecasts into a verified decision. No API surface, client, or
+default changes.
+
 ### 1.0.0
 
 First stable release. Three **breaking default flips** land together (the SDK is
@@ -532,7 +541,7 @@ before/after and the escape hatch for each.
     output (proof-carrying, addressable by role) — alongside a certified
     probability. This is the bridge-shaped record the query / decision layer
     ingests.
-  - **Addressing / naming kwargs on `symbolic_forecast`.** Seven optional WS1
+  - **Addressing / naming kwargs on `symbolic_forecast`.** Seven optional
     kwargs (`prediction_name`, `prediction_model_id`, `as_of`, `sector`,
     `period`, `entity`, `top_drivers_n`) name and address the emitted
     `prediction_record` so a downstream verified decision can fan several

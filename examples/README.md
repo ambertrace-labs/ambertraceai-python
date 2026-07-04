@@ -115,6 +115,88 @@ what-if scenarios.
 | `21_bitcoin_macro_forecast.py` | Bitcoin (BTC) — explainable macro-panel forecast; the system picks which crypto + macro drivers explain BTC | `data/btc_macro_panel.csv` (bundled snapshot) or live `coinbase` + `fred` connectors (`--refresh`, `FRED_API_KEY`) |
 | `22_sp500_macro_forecast.py` | S&P 500 — explainable macro forecast; the system picks which macro drivers move the index | FRED connector, **live-fetch only** (`FRED_API_KEY`); S&P 500 data is not redistributable so none is bundled |
 | `26_neurosymbolic_bond_yield.py` | US 10y Treasury yield — **full neurosymbolic flow** (train → discover correction rules → symbolic WHY → neural-vs-neurosymbolic comparison) | `data/fred_economic_data.csv` or FRED connector (`FRED_API_KEY`) |
+| `32_inflation_macro_forecast.py` | US CPI inflation (INFL_YOY) — system picks the macro drivers | `data/inflation_macro_panel.csv` (bundled, FRED public domain) |
+| `33_credit_spread_macro_forecast.py` | US investment-grade credit spread (IG_SPREAD) — system picks the drivers | `data/credit_macro_panel.csv` (bundled, FRED public domain) |
+| `34_real_gdp_growth_macro_forecast.py` | US real GDP growth (REAL_GDP_GROWTH) — system picks the drivers | `data/gdp_macro_panel.csv` (bundled, FRED public domain) |
+
+These are **classical / symbolic** forecasters — a gradient-boosted model over a broad
+macro panel plus an induced set of readable WHEN→THEN driver rules and a persistence
+baseline. The value is the *explained fit and the readable drivers*, not a market-beating
+signal (on infrequent, freely-available macro series nobody beats a last-value baseline —
+`skill_vs_persistence` is honest context, never a pass/fail gate).
+
+### Predictions → Decision bridge
+
+Feed a verified **forecast** into a verified **decision** so the whole chain — *data →
+forecast → decision* — is one auditable artifact. Forecasting and decisioning are separate,
+independently-governed platforms, so today you compose them at the **application layer**: run
+`symbolic_forecast(...)`, take its **`prediction_record`** (canonical, always **LEVEL-space**,
+certified), and pass each forecast number into a verified decision platform as a **fact**. On
+the verified profile that fact is certified through the fact gate like any ground fact, so the
+forecast becomes part of the machine-checked proof — not an opaque side input.
+
+| Script | What it shows |
+|--------|---------------|
+| `35_credit_forecast_to_loan_decision.py` | **Single** forecast → decision. One credit-spread forecast feeds one verified lending decision; the same marginal borrower APPROVES when the forecast is benign and is REFERRED when it signals tightening credit — a counterfactual proving the forecast is *material* |
+| `36_multi_forecast_policy_decision.py` | **Multiple** forecasts → one decision. Three independent forecasters (inflation, GDP growth, credit spread) fan into ONE verified "monetary policy stance" decision (hike / cut / hold); `facts` has no arity limit so each forecast is its own certified fact in the one proof |
+
+**The pattern (the seam, today).** There is no native "prediction inside a query" call —
+`query()` takes `facts` / `relations` — so the composition is application-layer:
+
+```python
+# Stage A — forecast. Read the canonical, always-LEVEL-space prediction_record.
+sf = api.predictions.symbolic_forecast(fc_pid, prediction_config_id=cfg_id, verified=True,
+                                       prediction_name="ig_spread", as_of="2026-06-30")
+spread = sf["prediction_record"]["value"]        # the reconstructed LEVEL (e.g. 0.58)
+
+# Stage B — the forecast enters the decision as a CERTIFIED FACT (on a verified platform it
+# becomes part of the machine-checked proof).
+report = api.platforms.query(
+    decision_pid, query="What is the lending decision?",
+    facts={"credit_score": 700, "debt_to_income_ratio": 0.30, "loan_type": "unsecured",
+           "loan_amount": 18000, "collateral_value": 0,
+           "forecast_credit_spread": spread},     # <- the prediction, as a fact
+)
+report["decision"]        # 'approve' | 'refer' | 'deny', with report["proof_checked"] == True
+```
+
+For **N** forecasts, attach N fact fields in the SAME `query` call and let the policy rules
+combine them (the multi-forecast demo does exactly this with three).
+
+**Four gotchas each demo preserves** (each was hit and fixed while building — keep them or the
+examples break):
+
+1. **Declared + in-domain certifying fact.** The forecast field must be a DECLARED schema
+   column in the decision domain's dataset, and the queried value must be IN-DOMAIN (within
+   the column's observed range) — otherwise the verified fact gate rejects it. The demos ship
+   a small seeded synthetic dataset that *declares* the forecast field(s) spanning a realistic
+   range, and clamp live forecasts into that range defensively.
+2. **Build-time stratification — never "otherwise approve/hold".** Phrasing the default
+   outcome as "otherwise approve" gets induced as "approve if NOT (deny OR refer)", making the
+   outcome depend on the negation of *itself* → the verified build is rejected as
+   **non-stratifiable**. Fix: route the decision through intermediate *classification* atoms
+   (`blocked`, `needs manual review`, `rate hike is warranted`, …) and define each outcome over
+   those, so negation is only ever over a lower-stratum atom, never the outcome.
+3. **Query-time reachability — intermediate atoms must use POSITIVE conditions** (distinct from
+   #2). An intermediate atom defined with *internal* negation (e.g. "tightening is warranted
+   when inflation is hot and growth is **not** weak") builds fine but the verified engine
+   **abstains at query time** — *"a declared restrictive outcome has no reachable certifying
+   path"* — because the negated intermediate never derives. Fix: define intermediate warrant
+   atoms with only positive classifications ("… and growth **is strong**"), and keep negation
+   solely at the FINAL outcome layer ("cut when a cut is warranted and a hike is **not**
+   warranted"). Final-layer negation over already-derived intermediate atoms is fine; it is
+   negation *inside* an intermediate atom that breaks reachability.
+4. **Read the LEVEL, not the transform.** Read `symbolic_forecast(...)["prediction_record"]
+   ["value"]` — the canonical Stage-A output, always LEVEL space and always present. A raw
+   `predict(...)["prediction"]["value"]` is LEVEL by default in 1.0.0 but can be a raw change on
+   the no-history path (`value_space == "transformed_unreconstructed"`); prefer the record.
+
+**This is the ship-now, manual-scalar-fact pattern.** The decision certifies against the
+forecast's *value*; the forecast's own certificate (`why_certification` / `proof_ref`, both on
+the `prediction_record`) is available but not yet re-checked at the seam. A first-class,
+proof-carrying `PredictionRecord` handoff — where a decision fans in named prediction records
+by role and chains each one's proof multi-parent, fail-closed — is a roadmap item; when it
+lands, these same two demos become the before/after that shows why it matters.
 
 `26_neurosymbolic_bond_yield.py` is the headline forecasting walkthrough: it
 trains a model, **discovers explainable correction rules** from its residuals

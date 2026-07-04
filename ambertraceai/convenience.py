@@ -1341,8 +1341,8 @@ class PredictionResource(_Resource):
         ``"calibration_out_of_regime: ..."``). A downstream decision reading an
         uncertified probability fails closed.
 
-        Addressing the record (WS1 handles)
-        -----------------------------------
+        Addressing the record
+        ----------------------
         The optional keyword args address/name the emitted ``prediction_record`` so a
         Prediction→Decision consumer can fan several models in by role at a shared
         period. All are additive — omit them and the record still assembles:
@@ -1378,7 +1378,7 @@ class PredictionResource(_Resource):
         }
         if feature_overrides is not None:
             body["feature_overrides"] = feature_overrides
-        # WS1 addressing handles — thread a semantic name/role + the as_of
+        # addressing handles — thread a semantic name/role + the as_of
         # alignment key + join keys into the emitted prediction_record. All
         # optional / back-compatible; omit and the record still assembles (name
         # defaults to the config's target_field, as_of to None).
