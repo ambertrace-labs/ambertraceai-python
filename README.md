@@ -470,6 +470,37 @@ Full API reference: [app.ambertrace.ai/openapi/redoc](https://app.ambertrace.ai/
 
 ## Changelog
 
+### 1.0.3
+
+Additive client-typing + two new examples. No breaking changes, no default flips.
+
+**Additive (client code) — the query explanation contract is now typed.**
+`platforms.query(..., explain=True)` returns a **documented, versioned**
+`explanation` trace, now typed as `ambertraceai.QueryExplanation` with its
+sub-shapes `SymbolicTrace`, `RuleFiring`, and `CertifiedFact` (all in
+`ambertraceai.responses`). An IDE now autocompletes
+`explanation["symbolic_trace"]["rules"][i]["fired"]`,
+`explanation["certified_facts"]`, `explanation["schema_version"]`, etc., and a
+type-checker catches a typo — WITHOUT any runtime change: `explanation` is still
+a plain dict the server may extend, so every existing access keeps working
+byte-for-byte. `QueryResult["explanation"]` is now annotated `QueryExplanation`.
+
+**New example — symmetric N-class classification (`38_symmetric_multiclass_classifier.py`).**
+Classify an observation into ONE of N mutually-exclusive labels (the 2×2
+macro-regime grid: reflation / goldilocks / stagflation / deflation), each answer
+proof-carrying. A **"Multi-class (N-class) classification"** section in
+`examples/README.md` spells out the design fork and the English-phrasing recipe.
+The point the docs now make explicit: an N-class classifier is a **verified
+domain platform** authored via `domains` → `build_ontology` → `platforms` (its
+class labels ARE the platform's decision verbs). It is **not** the `author()`
+permit/deny gate, and there is no `multiclass` model_type or new SDK method — the
+capability was already there; this release signposts it. Query with
+`platforms.query(...)` and read `report["decision"]` + `report["proof_checked"]`.
+
+**New example — federal ethics gift gate (`39_federal_ethics_gift_gate.py`).**
+An `author()` permit/deny gate over a US federal-employee gift-acceptance policy,
+each decision proof-carrying — a worked policy-gate authoring walkthrough.
+
 ### 1.0.2
 
 Examples-only release (no client-code change). Adds the geopolitical-risk

@@ -225,12 +225,121 @@ class ForecastOut(TypedDict, total=False):
 
 # --- Query / decision returns (documented only in docstrings) --------------
 
+# --- explanation sub-shapes (the dense-reward / audit contract) ------------
+# These pin the documented ``explanation`` sub-blocks a verified-platform query
+# returns. They are ADDITIVE typing
+# only — at runtime ``explanation`` is still a plain dict the server may extend
+# (hence ``total=False`` throughout and an open ``JsonDict`` fall-through for
+# unmodelled keys); annotating them lets a consumer read
+# ``explanation["symbolic_trace"]["rules"][i]["fired"]`` with autocomplete +
+# type-checking instead of guessing at an ``Any``.
+
+
+class RuleFiring(TypedDict, total=False):
+    """One rule's evaluation in ``symbolic_trace.rules[]``. BOTH fired and
+    unfired rules are listed (the dense-reward "which fired vs. which existed"
+    signal). On a VERIFIED platform ``fired`` reflects the KERNEL-CERTIFIED
+    firing set (reconciled against ``proof.firings``), not the engine
+    self-report."""
+
+    rule_id: int | None
+    rule_name: Required[str]  # stable identifier
+    rule_type: str  # e.g. "derive" | "constraint"
+    action_type: str | None
+    fired: Required[bool]
+    required: bool  # hard obligation (a `require` leaf or a deny-family verdict)?
+    explanation: str
+
+
+class SymbolicTrace(TypedDict, total=False):
+    """``explanation.symbolic_trace`` — the per-criterion firing breakdown."""
+
+    description: str
+    rules_evaluated: int
+    rules_fired: int
+    rules: list[RuleFiring]
+
+
+class CertifiedFact(TypedDict, total=False):
+    """One accepted fact in ``explanation.certified_facts`` (verified platform):
+    its value, fused confidence, and its provenance certificate."""
+
+    field: Required[str]
+    value: Any
+    confidence: float
+    schema_ok: bool
+    witness_invalid: bool
+    reasons: list[str]
+    source: str
+    certificate: JsonDict
+
+
+class CertifiedFactSummary(TypedDict, total=False):
+    """``explanation.certified_fact_summary`` — per-query fact-gate counts."""
+
+    accepted: int
+    emitted: int
+    rejected: int
+    witness_invalid: int
+
+
+class RejectedFact(TypedDict, total=False):
+    """One fact rejected at the certified-fact gate
+    (``explanation.rejected_facts``)."""
+
+    field: Required[str]
+    value: Any
+    reasons: list[str]
+
+
+class Confidence(TypedDict, total=False):
+    """``explanation.confidence`` — fused neural+symbolic confidence."""
+
+    overall: float
+    neural_confidence: float
+    symbolic_confidence: float
+    neural_weight: float
+    symbolic_weight: float
+    symbolic_normaliser: int
+
+
+class Proof(TypedDict, total=False):
+    """``explanation.proof`` — the machine-checked derivation certificate
+    (verified platform)."""
+
+    inputs: JsonDict
+    derived: list[JsonDict]  # [{field, value, by, stratum}]
+    firings: list[JsonDict]  # [{rule, action, stratum}]
+    facts: JsonDict
+
+
+class QueryExplanation(TypedDict, total=False):
+    """``QueryResult.explanation`` (present with ``explain=True``) — a DOCUMENTED,
+    VERSIONED trace. ``schema_version`` pins the shape; ``symbolic_trace`` /
+    ``certified_facts`` / ``certified_fact_summary`` / ``confidence`` / ``proof``
+    are the dense-reward / audit substrate. Additional platform-shaped keys
+    (``neural_trace`` / ``graph_trace`` / ``relation_provenance`` / …) may be
+    present; the ``TypedDict`` is ``total=False`` and the server may extend it."""
+
+    schema_version: int
+    symbolic_trace: SymbolicTrace
+    certified_facts: list[CertifiedFact]
+    certified_fact_summary: CertifiedFactSummary
+    rejected_facts: list[RejectedFact]
+    confidence: Confidence
+    proof: Proof
+    decision: JsonDict  # {decision, deciding_rules: [{rule, reason}]}
+    proof_checked: bool
+    proof_summary: str
+    vocabulary_declared: bool
+
+
 class QueryResult(TypedDict, total=False):
     """The shape ``platforms.query`` returns. ``answer`` / ``decision`` are the
-    verdict; ``explanation`` (present with ``explain=True``) is an OPEN block
-    (``confidence`` / ``symbolic_trace`` / ``neural_trace`` /
-    ``relation_provenance``) whose keys vary by platform, so it is typed as an
-    open :data:`JsonDict`."""
+    verdict; ``explanation`` (present with ``explain=True``) is the documented,
+    versioned :class:`QueryExplanation` trace — pin ``explanation["schema_version"]``
+    and read the dense-reward substrate (``symbolic_trace.rules[]``,
+    ``certified_facts``, ``confidence``, ``proof``) from typed sub-shapes."""
 
     answer: Required[str]
     platform_id: Required[int]
@@ -239,7 +348,7 @@ class QueryResult(TypedDict, total=False):
     proof_checked: bool | None
     proof_summary: str | None
     vocabulary_declared: bool | None
-    explanation: JsonDict
+    explanation: QueryExplanation
 
 
 class AuthorizeActionResult(TypedDict, total=False):

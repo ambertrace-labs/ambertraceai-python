@@ -91,6 +91,15 @@ def sync_detailed(
     deciding_rule, rejected_facts, and stalled_stage — so callers need not parse the prose message. For
     non-verified platforms proof_checked is null.
 
+    When explain=true the explanation is a documented, versioned contract for dense-reward / audit
+    consumers: explanation.schema_version (int) pins the shape, and explanation.symbolic_trace.rules[]
+    lists EVERY rule evaluated (both fired and unfired) as {rule_id, rule_name, rule_type, action_type,
+    fired, required, explanation}. On a verified platform each rule's fired reflects the KERNEL-
+    CERTIFIED firing set (reconciled against proof.firings), and required marks a hard obligation (a
+    require leaf or a deny-family verdict). Verified platforms also carry certified_facts,
+    certified_fact_summary, confidence, proof and decision — all documented in the explanation field
+    schema. These are additive; they change no decision.
+
     Args:
         id (int): Resource ID
         body (QueryRequest):
@@ -137,6 +146,15 @@ def sync(
     deciding_rule, rejected_facts, and stalled_stage — so callers need not parse the prose message. For
     non-verified platforms proof_checked is null.
 
+    When explain=true the explanation is a documented, versioned contract for dense-reward / audit
+    consumers: explanation.schema_version (int) pins the shape, and explanation.symbolic_trace.rules[]
+    lists EVERY rule evaluated (both fired and unfired) as {rule_id, rule_name, rule_type, action_type,
+    fired, required, explanation}. On a verified platform each rule's fired reflects the KERNEL-
+    CERTIFIED firing set (reconciled against proof.firings), and required marks a hard obligation (a
+    require leaf or a deny-family verdict). Verified platforms also carry certified_facts,
+    certified_fact_summary, confidence, proof and decision — all documented in the explanation field
+    schema. These are additive; they change no decision.
+
     Args:
         id (int): Resource ID
         body (QueryRequest):
@@ -177,6 +195,15 @@ async def asyncio_detailed(
     missing_atoms (declared atom(s) the decision chain needed but were neither supplied nor derived),
     deciding_rule, rejected_facts, and stalled_stage — so callers need not parse the prose message. For
     non-verified platforms proof_checked is null.
+
+    When explain=true the explanation is a documented, versioned contract for dense-reward / audit
+    consumers: explanation.schema_version (int) pins the shape, and explanation.symbolic_trace.rules[]
+    lists EVERY rule evaluated (both fired and unfired) as {rule_id, rule_name, rule_type, action_type,
+    fired, required, explanation}. On a verified platform each rule's fired reflects the KERNEL-
+    CERTIFIED firing set (reconciled against proof.firings), and required marks a hard obligation (a
+    require leaf or a deny-family verdict). Verified platforms also carry certified_facts,
+    certified_fact_summary, confidence, proof and decision — all documented in the explanation field
+    schema. These are additive; they change no decision.
 
     Args:
         id (int): Resource ID
@@ -221,6 +248,15 @@ async def asyncio(
     missing_atoms (declared atom(s) the decision chain needed but were neither supplied nor derived),
     deciding_rule, rejected_facts, and stalled_stage — so callers need not parse the prose message. For
     non-verified platforms proof_checked is null.
+
+    When explain=true the explanation is a documented, versioned contract for dense-reward / audit
+    consumers: explanation.schema_version (int) pins the shape, and explanation.symbolic_trace.rules[]
+    lists EVERY rule evaluated (both fired and unfired) as {rule_id, rule_name, rule_type, action_type,
+    fired, required, explanation}. On a verified platform each rule's fired reflects the KERNEL-
+    CERTIFIED firing set (reconciled against proof.firings), and required marks a hard obligation (a
+    require leaf or a deny-family verdict). Verified platforms also carry certified_facts,
+    certified_fact_summary, confidence, proof and decision — all documented in the explanation field
+    schema. These are additive; they change no decision.
 
     Args:
         id (int): Resource ID

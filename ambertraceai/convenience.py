@@ -750,6 +750,43 @@ class PlatformResource(_Resource):
             # related maritime_track in the same grid_square whose zone_status is
             # exclusion_breach and ais_corroborated is true") derives the cue from
             # the attached rows — no pre-joined boolean in `facts`.
+
+        Dense-reward / audit consumers (e.g. ``ambertrace-rlvr``): when
+        ``explain`` is True the ``explanation`` is a DOCUMENTED, VERSIONED trace
+        (typed as :class:`~ambertraceai.QueryExplanation`) you can compute a
+        partial-credit reward from without reverse-engineering the response:
+
+        * ``explanation["schema_version"]`` (int) — pin/validate against it
+          (currently 1; bumped on any breaking shape change).
+        * ``explanation["symbolic_trace"]["rules"]`` — the per-criterion firing
+          list (typed :class:`~ambertraceai.RuleFiring`). BOTH fired and unfired
+          rules are listed. Per rule: ``rule_name`` (stable id), ``fired`` (on a
+          VERIFIED platform this reflects the trusted kernel's CERTIFIED firing
+          set, reconciled against ``proof.firings``, not a self-report),
+          ``rule_type``, ``action_type``, ``required`` (True for a hard
+          obligation — a ``require`` leaf or a deny-family verdict — vs a
+          supporting/informational rule), and ``explanation``.
+        * ``explanation["certified_facts"]`` / ``["certified_fact_summary"]`` —
+          the accepted-fact records + counts (fact provenance for a
+          rejected-fact penalty); ``["rejected_facts"]`` for what was bounced.
+        * ``explanation["confidence"]`` / ``["proof"]`` — fused confidence and the
+          machine-checked derivation certificate.
+
+        ``proof_checked`` guarantee: on a VERIFIED platform a 200 always carries
+        ``proof_checked`` True (an uncertifiable verified query fails closed with
+        HTTP 503 — it never returns ``proof_checked`` False); on a NON-verified
+        platform ``proof_checked`` is ``None``. Treat absent/``None``/``False`` as
+        "not certified" (fail-closed).
+
+        Example (dense reward)::
+
+            res = api.platforms.query(pid, query="Classify this variant: ...",
+                                      facts={"pvs1": True, "pm2": True},
+                                      explain=True)
+            for r in res["explanation"]["symbolic_trace"]["rules"]:
+                # r == {"rule_name": "pvs1_rule", "fired": True,
+                #       "required": True, "rule_type": "constraint", ...}
+                ...
         """
         body: dict[str, Any] = {"query": query, "explain": explain, **kwargs}
         if facts is not None:
@@ -1341,8 +1378,8 @@ class PredictionResource(_Resource):
         ``"calibration_out_of_regime: ..."``). A downstream decision reading an
         uncertified probability fails closed.
 
-        Addressing the record
-        ----------------------
+        Addressing the record (naming handles)
+        --------------------------------------
         The optional keyword args address/name the emitted ``prediction_record`` so a
         Prediction→Decision consumer can fan several models in by role at a shared
         period. All are additive — omit them and the record still assembles:
@@ -1378,7 +1415,7 @@ class PredictionResource(_Resource):
         }
         if feature_overrides is not None:
             body["feature_overrides"] = feature_overrides
-        # addressing handles — thread a semantic name/role + the as_of
+        # Addressing handles — thread a semantic name/role + the as_of
         # alignment key + join keys into the emitted prediction_record. All
         # optional / back-compatible; omit and the record still assembles (name
         # defaults to the config's target_field, as_of to None).

@@ -26,7 +26,29 @@ class QueryResponse:
             ``deny``, ``refer``, ``escalate``). Derived from the fired verdict rules using the platform's declared decision
             vocabulary. ``null`` when no verdict rules fire or the platform has no decision layer. Also available inside
             ``explanation.decision.decision``.
-        explanation (None | QueryResponseExplanationType0 | Unset):
+        explanation (None | QueryResponseExplanationType0 | Unset): Full explainability trace (present only when
+            ``explain=True``). A DOCUMENTED, VERSIONED contract for dense-reward / audit consumers. Pinned keys:
+            * ``schema_version`` (int) — the trace schema version; pin/validate against it (currently 1). Bumped on any
+            breaking shape change.
+            * ``symbolic_trace`` — ``{description, rules_evaluated, rules_fired, rules: [...]}``. Each ``rules[]`` item:
+            ``rule_id`` (int|null), ``rule_name`` (str, stable identifier), ``rule_type`` (str, e.g.
+            ``derive``/``constraint``), ``action_type`` (str|null), ``fired`` (bool — on a VERIFIED platform this reflects
+            the KERNEL-CERTIFIED firing set, reconciled against ``proof.firings``, not the engine self-report), ``required``
+            (bool — True for a hard obligation: a ``require`` leaf or a deny-family verdict; False for a
+            supporting/informational rule), ``explanation`` (str). BOTH fired and unfired rules are listed (the 'which fired
+            vs. which existed' dense-reward signal).
+            * ``certified_facts`` — list of accepted-fact records ``{field, value, confidence, schema_ok, witness_invalid,
+            reasons, source, certificate}`` (verified platforms).
+            * ``certified_fact_summary`` — ``{accepted, emitted, rejected, witness_invalid}`` counts (verified platforms).
+            * ``rejected_facts`` — list of ``{field, value?, reasons: [...]}`` for facts rejected at the certified-fact
+            gate.
+            * ``confidence`` — ``{overall, neural_confidence, symbolic_confidence, neural_weight, symbolic_weight,
+            symbolic_normaliser}`` (fused confidence + methodology).
+            * ``proof`` — the machine-checked derivation ``{inputs, derived: [{field, value, by, stratum}], firings: [{rule,
+            action, stratum}], facts}`` (verified platforms).
+            * ``decision`` — the certified verdict ``{decision, deciding_rules: [{rule, reason}]}`` (decision platforms).
+            ``rules[].required`` and the verified ``fired`` reconciliation are purely additive — they change no decision. On
+            any internal error the rules are left exactly as produced (fail-closed).
         proof_checked (bool | None | Unset): Verified profile only. ``True`` when the decision was independently re-
             derived and verified (the active rule set satisfies the platform's invariant manifest and the proof certificate
             is valid). ``null`` for non-verified platforms (no proof is generated). A verified query that cannot be

@@ -68,6 +68,32 @@ symbolic trace.
 | `19_air_track_triage.py` | Air track C2 triage (escalate/monitor/clear) | `data/air_tracks.csv` |
 | `24_air_track_isr_hispec.py` | High-spec ISR air track triage (ASTERIX/MISB schema) | `data/air_tracks_hispec.csv` |
 | `25_cross_domain_cueing.py` | Cross-domain cueing — unified air+maritime `fused_track` triage with a top-precedence cross-cue rule, a separate human-review obligation, and a derived position-trust flag (Tier 0). The two cross-domain cue booleans are **pre-joined by the fusion layer outside the proof** — the certified claim is conditional on them (Tier 1 brings the join inside) | `data/fused_tracks.csv` (regenerate via `python gen_fused_tracks.py`) |
+| `38_symmetric_multiclass_classifier.py` | **Symmetric N-class / multiclass classification** — classify an observation into ONE of N mutually-exclusive labels (the 2×2 macro-regime grid: reflation / goldilocks / stagflation / deflation), each answer proof-carrying. The class labels ARE the platform's decision verbs — a verified DOMAIN platform, NOT the `author()` permit/deny gate | `data/macro_regime_panel.csv` (seeded features-only on first run) |
+| `39_federal_ethics_gift_gate.py` | **Federal gift-acceptance ethics gate (5 CFR 2635 Subpart B)** — encodes the executive-branch Gifts From Outside Sources rules as a **classify-then-conclude** permit/decline/**escalate** domain: the codifiable core (bribery + cash-equivalent overrides, the $20-per-source-per-occasion and $50-annual thresholds, excluded items) is proved; the open-textured reasonable-person appearance test is **not forced into logic** — it *escalates* to a human. First-matching-rule precedence (bribe-decline beats the $20 exception; escalate beats permit), `decline` as the fail-closed default. 14/14 CFR worked examples decide as the regulation requires, each proof-carrying. Illustrative encoding — not legal advice, not affiliated with any agency | `data/gift_acceptance_cases.csv` |
+
+### Multi-class (N-class) classification
+
+Need to classify into one of **N labels** rather than permit/deny? That is a
+verified **domain platform** whose decision verbs *are* the class labels — you
+author it through the ordinary `domains` → `build_ontology` → `platforms` surface.
+There is **no `multiclass` model_type and no new SDK method**, and it does **not**
+use the `author()` permit/deny gate (that gate's only outcomes are
+permit/deny/indeterminate/unavailable — a different shape entirely).
+
+See **`38_symmetric_multiclass_classifier.py`** for the copy-me template and the
+English-phrasing recipe that makes every class resolve:
+
+1. Define each **axis** with an explicit threshold **and** an `otherwise` clause
+   ("growth is firm when real GDP growth is at least 2.0 percent, otherwise soft").
+2. Define each **label** as a **conjunction of axis states** ("reflation is firm
+   growth with elevated inflation") — one label per cell of the grid.
+3. State completeness: "Every observation must be classified into exactly one
+   regime." — a total, mutually-exclusive partition, not overlapping flags.
+
+Query it with `platforms.query(...)` and read `report["decision"]` (the winning
+label) plus `report["proof_checked"]`. It scales to flat N≈6–8 labels and small
+`k`-axis grids — author grids **compositionally** (`k` axis-classifiers plus one
+label-per-cell layer), not by enumerating `mᵏ` cells.
 
 ### Agent Policy Gate demos (preview)
 

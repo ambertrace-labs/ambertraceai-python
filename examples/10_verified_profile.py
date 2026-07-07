@@ -92,6 +92,19 @@ def main() -> None:
     if result.get("proof_summary"):
         step(f"proof_summary: {result['proof_summary'][:200]}")
 
+    # Documented, versioned dense-reward / audit trace (for consumers like
+    # ambertrace-rlvr). explanation.symbolic_trace.rules[] lists EVERY rule
+    # evaluated (both fired and unfired) as {rule_id, rule_name, rule_type,
+    # action_type, fired, required, explanation}; on a verified platform `fired`
+    # reflects the trusted kernel's CERTIFIED firing set. Pin
+    # explanation.schema_version to validate the shape.
+    explanation = result.get("explanation") or {}
+    step(f"trace schema_version: {explanation.get('schema_version')}")
+    rules = (explanation.get("symbolic_trace") or {}).get("rules", [])
+    for r in rules:
+        step(f"  rule {r['rule_name']}: fired={r['fired']} "
+             f"required={r.get('required')} type={r.get('rule_type')}")
+
     # ── 4. Rules CRUD ───────────────────────────────────────────────────
 
     step("Listing rules...")
