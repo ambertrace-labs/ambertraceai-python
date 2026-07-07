@@ -27,17 +27,27 @@ prod deploys wrongly denied; that enforcement bug is fixed.) The gate proves the
 inequality directly — there is no ``*_check_passed`` discharge fact to supply, and the
 policy now compiles finding-free.
 
-THE HONEST LIMITATION (temporal / sequencing is not yet a gate primitive)
--------------------------------------------------------------------------
+TEMPORAL / SEQUENCING — a NATIVE gate primitive (see example 40)
+----------------------------------------------------------------
 Two classic supply-chain rules are inherently *temporal / sequencing*:
 
-  - "no release outside the approved change window"   (a time-window obligation)
   - "review must happen BEFORE merge / deploy"        (an ordering obligation)
+  - "no more than N deploys within a window"          (a rate obligation)
 
-The gate's obligation classes today are per-action, cumulative count/sum,
-exposure, and interval/band — there is NO native temporal-window or happens-before
-operator yet (a roadmap / Sprint-1 target). So this example encodes those
-requirements as CALLER-SUPPLIED boolean preconditions:
+These are now a NATIVE part of the verified fragment — an ordering/precedence leaf,
+a bounded-window rate leaf, and a request/response pairing leaf that fold over the
+session's ORDERED ledger of prior executed actions. So a policy like *"permit a
+deploy for a service only when it is preceded by an approval for the same service
+in the same session"* authors a real happens-before obligation the kernel proves
+over the accumulated order — see ``40_agent_policy_gate_temporal.py`` for a runnable
+review-before-deploy gate. Temporal obligations need a ``create_session`` + ``step``
+loop (the ledger records only executed actions, in order); a single
+``authorize_action`` gates an empty ledger.
+
+THIS example stays PER-ACTION on purpose (single-shot ``authorize_action``, no
+session), so it expresses the two time-flavoured requirements as CALLER-SUPPLIED
+boolean preconditions instead — a valid, simpler pattern when you already hold the
+booleans and don't need the gate to reason about order itself:
 
   - ``within_change_window`` — the mediating harness computes "is now inside the
     approved window?" and supplies the boolean; the gate proves the deploy is
@@ -45,12 +55,10 @@ requirements as CALLER-SUPPLIED boolean preconditions:
   - ``code_review_approved`` — set true only once review has completed; the gate
     proves "not merged without an approved review".
 
-This is a faithful *enforcement* of the rule at decision time, but the gate checks
-a precondition fact rather than reasoning about time/order itself — the harness is
-trusted to compute those two booleans truthfully. A native "approved_at must
-precede deploy_at" / "within [window_open, window_close]" obligation would let the
-gate prove the temporal part too; until then, the boolean-precondition pattern is
-the recommended way to express CI/CD windows and review-before-merge ordering.
+Trade-off: the boolean-precondition pattern trusts the harness to compute those
+booleans truthfully; the native precedence obligation (example 40) proves the
+ordering from the ledger itself. Use precondition booleans for a one-shot gate; the
+temporal leaf + a session when you want the ORDER proven.
 
 This is a verified GATE, not a dataset-trained platform — the policy is authored
 from English, so there is no domain/data upload step. Authoring REPLACES the org's
@@ -244,10 +252,11 @@ def run_cicd_gate_demo(api, args: argparse.Namespace) -> None:
           "certified the action satisfies every policy requirement; a deny means it "
           "could NOT, fail-closed, naming the requirement that failed. Separation of "
           "duties (approver != author) is proved as a cross-field inequality — no "
-          "discharge fact to supply. The two temporal/sequencing rules (change "
-          "window, review-before-merge) are enforced today as caller-supplied "
-          "booleans — a native temporal/happens-before obligation is a roadmap item "
-          "(see the module docstring).")
+          "discharge fact to supply. This PER-ACTION gate expresses the two "
+          "time-flavoured rules (change window, review-before-merge) as "
+          "caller-supplied booleans; for a NATIVE happens-before obligation proved "
+          "from the session's ordered ledger, see "
+          "40_agent_policy_gate_temporal.py (and the module docstring).")
 
 
 def main() -> None:

@@ -125,9 +125,10 @@ denial — supply the missing field(s) and retry rather than giving up. Only `de
 | Script | What it shows |
 |--------|---------------|
 | `27_agent_policy_gate.py` | Single-action gate — author a per-action policy, permit one action and deny another, print the proof certificate |
-| `28_agent_policy_gate_cicd.py` | CI/CD deploy gate — a software-supply-chain policy (enum allowlist + boolean preconditions + canary-rollout cap + **separation of duties: approver ≠ author**, a cross-field inequality); gates a compliant deploy (permit) and several single-fact-flipped cases including the SoD violation (deny). Temporal/ordering rules (change window, review-before-merge) are enforced as caller-supplied booleans — native temporal/happens-before is a roadmap item |
+| `28_agent_policy_gate_cicd.py` | CI/CD deploy gate — a software-supply-chain policy (enum allowlist + boolean preconditions + canary-rollout cap + **separation of duties: approver ≠ author**, a cross-field inequality); gates a compliant deploy (permit) and several single-fact-flipped cases including the SoD violation (deny). This one stays PER-ACTION and expresses change-window / review-before-merge as caller-supplied booleans; for a NATIVE happens-before obligation proved from the ordered ledger, see `40_agent_policy_gate_temporal.py` |
 | `30_investment_decision_gate.py` | Investment decision-process gate — proves an AI execution agent followed a fiduciary decision process before any trade stands. **Tier-partitioned conditional permits** (`trade_tier` standard/material as the mutually-exclusive partition) + cross-field suitability comparison + concentration caps + restricted-list block + **separation of duties on material trades: approver ≠ recommender**. Synthetic/illustrative CFA Code & Standards encoding — not investment advice, not affiliated with CFA Institute |
 | `25_agent_spend_budget.py` | Cumulative spend budget — mediate a session so the obligation is proven over the accumulated ledger (with a `--band` interval variant) |
+| `40_agent_policy_gate_temporal.py` | **Temporal precedence (review-before-deploy)** — a NATIVE happens-before obligation authored in English (`precededBy`): a deploy permits only when an approval for the SAME service preceded it in the session's ORDERED ledger. Mediates sessions to show the order-sensitivity payoff (approve-then-deploy permits; deploy-then-approve and un-preceded deploy both deny) — the thing a caller-supplied boolean cannot do |
 
 ### Forecasting demos
 
@@ -156,39 +157,54 @@ signal (on infrequent, freely-available macro series nobody beats a last-value b
 
 Feed a verified **forecast** into a verified **decision** so the whole chain — *data →
 forecast → decision* — is one auditable artifact. Forecasting and decisioning are separate,
-independently-governed platforms, so today you compose them at the **application layer**: run
-`symbolic_forecast(...)`, take its **`prediction_record`** (canonical, always **LEVEL-space**,
-certified), and pass each forecast number into a verified decision platform as a **fact**. On
-the verified profile that fact is certified through the fact gate like any ground fact, so the
-forecast becomes part of the machine-checked proof — not an opaque side input.
+independently-governed platforms. There are **two** ways to bridge them; **prefer the native
+by-reference path.**
 
 | Script | What it shows |
 |--------|---------------|
 | `36_credit_forecast_to_loan_decision.py` | **Single** forecast → decision. One credit-spread forecast feeds one verified lending decision; the same marginal borrower APPROVES when the forecast is benign and is REFERRED when it signals tightening credit — a counterfactual proving the forecast is *material* |
-| `37_multi_forecast_policy_decision.py` | **Multiple** forecasts → one decision. Three independent forecasters (inflation, GDP growth, credit spread) fan into ONE verified "monetary policy stance" decision (hike / cut / hold); `facts` has no arity limit so each forecast is its own certified fact in the one proof |
+| `37_multi_forecast_policy_decision.py` | **Multiple** forecasts → one decision. Three independent forecasters (inflation, GDP growth, credit spread) fan into ONE verified "monetary policy stance" decision (hike / cut / hold) |
 
-**The pattern (the seam, today).** There is no native "prediction inside a query" call —
-`query()` takes `facts` / `relations` — so the composition is application-layer:
+**NATIVE path (recommended) — `query(predictions=…)`, fail-closed by reference.** Every
+`symbolic_forecast(verified=True, …)` call PERSISTS its `prediction_record` server-side
+(org+owner-scoped), addressable by `model_id` + `as_of`. The decision references it by handle
+and the platform fetches the TRUSTED record and folds its certified `<role>.value` into the
+proof — **the caller never re-supplies the forecast value** (the safety property: the
+forecast's certificate certifies its input row, not that a caller-typed number followed):
 
 ```python
-# Stage A — forecast. Read the canonical, always-LEVEL-space prediction_record.
-sf = api.predictions.symbolic_forecast(fc_pid, prediction_config_id=cfg_id, verified=True,
-                                       prediction_name="ig_spread", as_of="2026-06-30")
-spread = sf["prediction_record"]["value"]        # the reconstructed LEVEL (e.g. 0.58)
+# Stage A — produce + persist a verified, ADDRESSABLE forecast.
+api.predictions.symbolic_forecast(fc_pid, prediction_config_id=cfg_id, verified=True,
+                                  prediction_name="ig_spread", as_of="2026-06-30")
 
-# Stage B — the forecast enters the decision as a CERTIFIED FACT (on a verified platform it
-# becomes part of the machine-checked proof).
+# Stage B — reference it. A decision rule reads `ig_spread.value` (declared in the
+# decision domain). Missing / uncertified / mis-aligned → the fact is absent → the
+# decision ABSTAINS (fail-closed), it does not approve on an unproven number.
 report = api.platforms.query(
     decision_pid, query="What is the lending decision?",
-    facts={"credit_score": 700, "debt_to_income_ratio": 0.30, "loan_type": "unsecured",
-           "loan_amount": 18000, "collateral_value": 0,
-           "forecast_credit_spread": spread},     # <- the prediction, as a fact
-)
+    facts={"credit_score": 700, "debt_to_income_ratio": 0.30},
+    predictions={"ig_spread": {"model_id": "ig_spread", "as_of": "2026-06-30"}})
 report["decision"]        # 'approve' | 'refer' | 'deny', with report["proof_checked"] == True
 ```
 
-For **N** forecasts, attach N fact fields in the SAME `query` call and let the policy rules
-combine them (the multi-forecast demo does exactly this with three).
+For **N** forecasts, reference N roles in the SAME `predictions=` map (fail-closed over a
+partial fan-in). The same map is accepted by `agent_policy.authorize_action(predictions=…)`
+to fan a certified forecast into the Agent Policy Gate.
+
+**MANUAL path (what demos 36/37 currently RUN, for illustration) — `facts=` value-passing.**
+Read `prediction_record["value"]` yourself and pass it as a plain `facts` scalar. It is
+certified through the fact gate like any ground fact, but the CALLER supplies the number, so
+you own the trust that it came from the certified forecast. Use it for counterfactuals (the
+`--*-value` flags) or when the native path does not fit:
+
+```python
+sf = api.predictions.symbolic_forecast(fc_pid, prediction_config_id=cfg_id, verified=True,
+                                       prediction_name="ig_spread", as_of="2026-06-30")
+spread = sf["prediction_record"]["value"]        # the reconstructed LEVEL (e.g. 0.58)
+report = api.platforms.query(
+    decision_pid, query="What is the lending decision?",
+    facts={"credit_score": 700, "forecast_credit_spread": spread})   # caller-supplied
+```
 
 **Four gotchas each demo preserves** (each was hit and fixed while building — keep them or the
 examples break):

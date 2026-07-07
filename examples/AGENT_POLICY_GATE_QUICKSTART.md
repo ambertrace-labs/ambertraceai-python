@@ -68,8 +68,14 @@ and leaves any existing gate unchanged.
 | **Cumulative count / sum** | "No more than 3 actions of this kind." / "Total quantity summed across all rows must stay at or below 1000." |
 | **Cumulative exposure** (`Σ qty×price ≤ limit`) | "The sum of quantity × price across every row must stay at or below 100000." |
 | **Interval / band binding** | "For an order whose fill price is unknown but guaranteed between 100 and 500, exposure must stay ≤ 100000 for *every* price in that range." |
+| **Temporal / sequencing** | "Permit a deploy for a service only when it is preceded by an approval for the same service in the same session." (precedence) / "No more than 3 deploys within any 5 of that service's actions." (rate) — needs a session (example 40) |
+| **Distinct-actor quorum** | "Permit a production deploy only when at least two DIFFERENT approvers have signed off." — supply the sign-offs via `authorize_action(relations={"approvals": […]})` |
+| **Separation of duties** | "The approver must not be the author." (cross-field inequality, example 28) |
 
-Anything outside these classes is rejected-and-surfaced, never approximated.
+Anything outside these classes is rejected-and-surfaced, never approximated. The
+cumulative and **temporal** classes read the accumulated ORDERED ledger, so they need
+a `create_session` + `step` loop (example 40); the distinct-actor quorum reads a
+per-request set supplied via `authorize_action(relations=…)`.
 
 ---
 

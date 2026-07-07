@@ -147,6 +147,36 @@ class TestPlatformResource:
         assert result["answer"] == "yes"
         assert result["explanation"] == "because"
 
+    @respx.mock
+    def test_query_sends_predictions_and_top_k(self, api):
+        import json as _json
+        route = respx.post("https://test.ambertrace.ai/api/v1/platforms/1/query").mock(
+            return_value=httpx.Response(200, json=_envelope({"answer": "ok"}))
+        )
+        api.platforms.query(
+            1, query="decide",
+            facts={"credit_score": 700},
+            predictions={"ig_spread": {"model_id": "ig_spread", "as_of": "2026-06-30"}},
+            top_k=5,
+        )
+        payload = _json.loads(route.calls.last.request.content)
+        # The native by-reference fan-in + top_k must reach the wire.
+        assert payload["predictions"] == {
+            "ig_spread": {"model_id": "ig_spread", "as_of": "2026-06-30"}}
+        assert payload["top_k"] == 5
+        assert payload["facts"] == {"credit_score": 700}
+
+    @respx.mock
+    def test_query_omits_predictions_when_none(self, api):
+        import json as _json
+        route = respx.post("https://test.ambertrace.ai/api/v1/platforms/1/query").mock(
+            return_value=httpx.Response(200, json=_envelope({"answer": "ok"}))
+        )
+        api.platforms.query(1, query="decide")
+        payload = _json.loads(route.calls.last.request.content)
+        assert "predictions" not in payload  # absent unless supplied
+        assert payload["top_k"] == 10         # default rides through
+
 
 class TestConnectorResource:
     @respx.mock

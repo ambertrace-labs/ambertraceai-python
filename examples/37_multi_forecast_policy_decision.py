@@ -14,17 +14,29 @@ forecaster's output is attached as its OWN certified fact and the policy rules c
   2. DECIDE (one verified Query/Decision platform). Build a "monetary policy stance" platform
      whose classify-then-conclude policy references all three forecast fields and concludes
      hike / hold / cut.
-  3. BRIDGE. Pass all three forecasts together in a single ``platforms.query`` call; each is
-     certified through the fact gate and enters the ONE machine-checked proof (a fan-in of
-     three certified scalar facts into one certified decision).
+  3. BRIDGE. Fan all three forecasts into ONE machine-checked proof. Two paths (see below).
 
 A nice teaching case: when inflation is hot but growth is too soft to be "strong", neither a
 hike nor a cut is warranted → HOLD. The forecasts genuinely drive it.
 
-This is the ship-now, application-layer form of the Prediction→Decision bridge — see the
-"Predictions → Decision bridge" section of the examples README for the end-to-end pattern
-and the four gotchas. All four are exercised here; GOTCHA 3 (reachability) is the one this
-demo specifically hit — see the ``POLICY_DOMAIN_DESCRIPTION`` comment.
+TWO BRIDGE PATHS — prefer the NATIVE by-reference one
+-----------------------------------------------------
+* **NATIVE, fail-closed (recommended):** ``platforms.query(predictions={role:
+  {"model_id": ..., "as_of": ...}, ...})`` — reference ALL THREE verified forecasts
+  by role; the decision platform fetches each org-persisted, trusted record and
+  folds its certified ``<role>.value`` into the ONE proof. The caller supplies no
+  numbers. FAIL-CLOSED: if ANY referenced forecast is missing / uncertified /
+  mis-aligned, its fact is absent and the decision abstains (fails closed over a
+  partial fan-in). The decision domain must declare each fact as ``<role>.value``.
+  See the ``query(predictions=...)`` docstring + the README bridge section.
+* **MANUAL / application-layer (what THIS demo runs, for illustration):** read each
+  ``prediction_record["value"]`` and pass all three as plain ``facts`` scalars —
+  each certified through the fact gate, but the CALLER supplies the numbers. Use it
+  for counterfactuals (the ``--*-value`` flags) or when the native path does not fit.
+
+This demo exercises all four bridge gotchas; GOTCHA 3 (reachability) is the one it
+specifically hit — see the ``POLICY_DOMAIN_DESCRIPTION`` comment. See the
+"Predictions → Decision bridge" section of the examples README for both paths.
 
 DATA: the three macro panels are FRED (US-government public domain, bundled); the policy
 dataset is a small SEEDED SYNTHETIC features-only table generated on first run (labels-free —
@@ -219,6 +231,12 @@ def _forecast_one(api, args, key: str) -> float:
 
 
 def _decide(api, pid, facts, expected=None) -> str:
+    # MANUAL bridge path (see the module docstring): the three forecast values are
+    # passed as plain `facts` scalars the CALLER supplies. The NATIVE, fail-closed
+    # path is `query(predictions={role: {"model_id": ..., "as_of": ...}, ...})`,
+    # which references the platform-persisted verified forecasts by role so the
+    # caller never supplies the numbers — prefer it when the decision domain
+    # declares `<role>.value` fields.
     try:
         report = api.platforms.query(pid, query="What is the monetary policy stance?", facts=facts)
     except Exception as exc:  # a verified fail-safe refusal is an outcome, not a crash

@@ -1,9 +1,8 @@
 """36 — Prediction → Decision: a credit-spread FORECAST feeding a verified lending DECISION.
 
-The first example that wires an AmberTrace **Prediction** into an AmberTrace verified
-**Query/Decision**. There is no single native call for this — forecasting and decisioning
-are separate, independently-governed platforms — so the composition happens at the
-APPLICATION layer, and the forecast enters the decision as a *certified fact*:
+Wires an AmberTrace **Prediction** into an AmberTrace verified **Query/Decision**.
+Forecasting and decisioning are separate, independently-governed platforms; the
+forecast reaches the decision as a *certified fact*:
 
   1. FORECAST (Prediction platform). Build the credit-spread macro forecaster (same panel
      as ``33_credit_spread_macro_forecast.py``) and read ONE number: the one-month-ahead
@@ -12,11 +11,32 @@ APPLICATION layer, and the forecast enters the decision as a *certified fact*:
      readable WHEN→THEN driver rules and a persistence baseline. It is not "neural AGI";
      the value is the explained fit, not a market-beating signal.
   2. DECIDE (verified Query/Decision platform). Build a verified lending platform whose
-     classify-then-conclude policy references a ``forecast_credit_spread`` field alongside
-     the applicant's own fields.
-  3. BRIDGE. Pass the forecast value as one of the ``facts`` in ``platforms.query``. On the
-     verified platform it is certified through the fact gate like any other ground fact, so
-     the macro forecast becomes part of the machine-checked proof — not an opaque side input.
+     classify-then-conclude policy references a forecast field alongside the applicant's
+     own fields.
+  3. BRIDGE. See the two paths below.
+
+TWO BRIDGE PATHS — prefer the NATIVE by-reference one
+-----------------------------------------------------
+* **NATIVE, fail-closed (recommended):** ``platforms.query(predictions={role:
+  {"model_id": ..., "as_of": ...}})``. You reference the VERIFIED forecast this org
+  already produced + persisted (every ``symbolic_forecast(verified=True)`` call
+  persists its ``prediction_record`` server-side, addressable by ``model_id`` +
+  ``as_of``); the decision platform fetches the TRUSTED record and folds its
+  certified ``<role>.value`` into the proof for you. The caller never supplies the
+  forecast number — the platform is the source of it. FAIL-CLOSED: a missing /
+  uncertified / mis-aligned reference admits no fact, so the decision abstains
+  (routes to ``refer``) rather than approving on an unproven number. To use it, the
+  decision domain must DECLARE the fact as ``<role>.value`` (e.g. a column /
+  ontology property ``forecast_credit_spread.value``) so a rule can read it. See the
+  ``query(predictions=...)`` docstring and the README "Predictions → Decision
+  bridge" section for the end-to-end recipe.
+* **MANUAL / application-layer (what THIS demo runs, for illustration):** read
+  ``symbolic_forecast(...)["prediction_record"]["value"]`` yourself and pass it as a
+  plain ``facts={forecast_field: value}`` scalar. It is certified through the fact
+  gate like any ground fact — but the CALLER supplies the number, so you own the
+  trust that the value came from the certified forecast. Use this only when the
+  native by-reference path does not fit (e.g. a counterfactual/forced value, as the
+  ``--forecast-value`` flag below does).
 
 The showcase proves the forecast is *material*: a marginal borrower who APPROVES when the
 forecast spread is benign is REFERRED to manual review when the forecast says credit
@@ -24,9 +44,8 @@ conditions are tightening — same applicant, different macro forecast, differen
 outcome.
 
 This is the SINGLE-forecast case; ``37_multi_forecast_policy_decision.py`` fans THREE
-forecasts into one decision. Both are the ship-now, application-layer form of the
-Prediction→Decision bridge — see the "Predictions → Decision bridge" section of the
-examples README for the end-to-end pattern and the four gotchas each demo preserves.
+forecasts into one decision. See the "Predictions → Decision bridge" section of the
+examples README for both paths and the four gotchas each demo preserves.
 
 DATA: the credit-spread panel is FRED (US-government public domain); the lending dataset
 is a small SEEDED SYNTHETIC features-only table generated on first run (it only has to
@@ -221,6 +240,11 @@ def _forecast_credit_spread(api, args: argparse.Namespace) -> float:
 
 
 def _decide(api, pid: int, label: str, expected: str, facts: dict) -> str:
+    # MANUAL bridge path (see the module docstring): the forecast value is passed as
+    # a plain `facts` scalar the CALLER supplies. The NATIVE, fail-closed path is
+    # `query(predictions={role: {"model_id": ..., "as_of": ...}})`, which references
+    # the platform-persisted verified forecast so the caller never supplies the
+    # number — prefer it when the decision domain declares a `<role>.value` field.
     try:
         report = api.platforms.query(pid, query="What is the lending decision?", facts=facts)
     except Exception as exc:  # a verified fail-safe refusal is an outcome, not a crash

@@ -476,6 +476,24 @@ class DomainResource(_Resource):
         schema. Attached rows are then supplied per query via
         ``platforms.query(..., relations={name: [row, ...]})`` and folded in the
         proof; matched rows surface in ``explanation.relation_provenance``.
+
+        N-class / multi-class classifier. A description that defines N
+        MUTUALLY-EXCLUSIVE labels (see example 38) builds a verified **N-class /
+        multi-class classifier** -- one derived-outcome rule per label; the built
+        platform's ``query`` ``decision`` is the WINNING label. This is the ordinary
+        ``domains`` -> ``build_ontology`` -> ``platforms.create(verified_profile=
+        True)`` -> ``platforms.query`` path -- there is NO ``multiclass``
+        ``model_type`` and it is NOT ``author()`` (that is the permit/deny Agent
+        Policy Gate). Phrase each axis with a threshold + an ``otherwise`` clause,
+        each label as a conjunction of axis states, and state "classified into
+        exactly one" for completeness.
+
+        Decision vocabulary (custom decision verbs). The terminal decision VERBS are
+        inferred from your description's language -- a description that decides with
+        domain-specific verbs (e.g. "clear / monitor / escalate", or the N class
+        labels above) DECLARES those as the platform's decision vocabulary, with a
+        restrictiveness rank. Read them back on ``query().decision`` /
+        ``status().decision_vocabulary``; you are not limited to permit/deny.
         """
         body = {"relations": relations} if relations is not None else None
         return _normalise_envelope(self._request(
@@ -485,29 +503,76 @@ class DomainResource(_Resource):
     # -- Evaluation config --
 
     def eval_config(self, domain_id: int) -> dict:
+        """The domain's evaluation config (or ``None`` if unset).
+
+        An eval config names the SINGLE domain-level outcome metric a rule
+        suggestion / discovery is scored against — so a suggested rule earns its
+        place by moving THIS metric, not a generic accuracy proxy. Fields:
+        ``target_metric`` (machine-name, e.g. ``"readmission_30d"``), ``direction``
+        (``"minimize"`` | ``"maximize"``), ``unit``, ``description``,
+        ``significance_threshold_pp`` (min improvement in percentage points to
+        count), ``min_positive_fraction``, and an optional ``calculation`` block."""
         return self._request("GET", f"/api/v1/domains/{domain_id}/eval-config")
 
-    def set_eval_config(self, domain_id: int, **kwargs) -> dict:
-        return self._request("PUT", f"/api/v1/domains/{domain_id}/eval-config", json=kwargs)
+    def set_eval_config(self, domain_id: int, *, target_metric: str,
+                        direction: str, description: str = "", unit: str = "other",
+                        significance_threshold_pp: float | None = None,
+                        min_positive_fraction: float | None = None,
+                        calculation: dict | None = None, **kwargs) -> dict:
+        """Set the domain's evaluation config (see :meth:`eval_config`).
+
+        ``target_metric`` (required) is the outcome metric name; ``direction``
+        (required) is ``"minimize"`` or ``"maximize"``. ``significance_threshold_pp``
+        is the minimum improvement (percentage points) a suggested rule must show to
+        be worth adopting; ``min_positive_fraction`` bounds how often the metric's
+        positive case must occur; ``calculation`` optionally specifies how the metric
+        is computed from columns. Returns the stored config."""
+        body: dict[str, Any] = {"target_metric": target_metric,
+                                "direction": direction, "description": description,
+                                "unit": unit, **kwargs}
+        if significance_threshold_pp is not None:
+            body["significance_threshold_pp"] = significance_threshold_pp
+        if min_positive_fraction is not None:
+            body["min_positive_fraction"] = min_positive_fraction
+        if calculation is not None:
+            body["calculation"] = calculation
+        return self._request("PUT", f"/api/v1/domains/{domain_id}/eval-config", json=body)
 
     def delete_eval_config(self, domain_id: int) -> dict:
+        """Remove the domain's evaluation config."""
         return self._request("DELETE", f"/api/v1/domains/{domain_id}/eval-config")
 
     def suggest_eval_config(self, domain_id: int) -> dict:
+        """Ask the platform to SUGGEST candidate eval configs from the domain's data
+        + description. Returns ``{"options": [{target_metric, direction, unit,
+        description, ...}, ...]}`` — review one and pass it to
+        :meth:`set_eval_config`. A convenience for bootstrapping the metric rather
+        than hand-naming it."""
         return self._request("POST", f"/api/v1/domains/{domain_id}/eval-config/suggest")
 
     # -- Rule templates --
 
     def list_templates(self, domain_id: int) -> list[dict]:
+        """List the domain's reusable rule TEMPLATES (parameterised rule shapes a
+        suggestor can instantiate). Each is a ``{template_id, name, category,
+        condition_field, condition_operator, action_type, ...}`` dict."""
         return self._request("GET", f"/api/v1/domains/{domain_id}/templates")
 
-    def create_template(self, domain_id: int, **kwargs) -> dict:
-        return self._request("POST", f"/api/v1/domains/{domain_id}/templates", json=kwargs)
+    def create_template(self, domain_id: int, *, template_id: str, name: str,
+                        **kwargs) -> dict:
+        """Create a reusable rule template on the domain. ``template_id`` (stable id)
+        and ``name`` are required; optional ``category``, ``condition_field``,
+        ``condition_operator``, ``action_type`` describe the rule shape."""
+        body: dict[str, Any] = {"template_id": template_id, "name": name, **kwargs}
+        return self._request("POST", f"/api/v1/domains/{domain_id}/templates", json=body)
 
     def update_template(self, domain_id: int, template_id: int, **kwargs) -> dict:
+        """Update a rule template (pass the fields to change; see
+        :meth:`create_template` for the shape)."""
         return self._request("PUT", f"/api/v1/domains/{domain_id}/templates/{template_id}", json=kwargs)
 
     def delete_template(self, domain_id: int, template_id: int) -> dict:
+        """Delete a rule template."""
         return self._request("DELETE", f"/api/v1/domains/{domain_id}/templates/{template_id}")
 
     def feedback_stats(self, domain_id: int) -> dict:
@@ -659,6 +724,29 @@ class PlatformResource(_Resource):
 
         without unwrapping ``build_job.job.id`` / ``platform.id`` by hand
         (feature-sdk-dx item 4).
+
+        Verified-profile build kwargs (ride through ``**kwargs``). This is THE way
+        to build a VERIFIED platform (a machine-checked proof per query). Pass:
+
+        * ``verified_profile: bool`` -- build with the verified profile ON (every
+          answer carries a checked proof; uncertifiable queries fail closed).
+        * ``verified_min_confidence: float`` -- the fact-gate confidence threshold τ
+          (e.g. ``0.85``); a fact below τ is not certified.
+        * ``invariant_manifest: list[dict]`` -- named invariants the build must
+          satisfy (each ``{"name": str, "kind": ..., ...}``); a violated invariant
+          fails the build rather than shipping an unsound platform.
+        * ``override_verification_gate: bool`` -- explicitly build even if the
+          verification gate flags a concern (use sparingly; audited).
+
+        Example::
+
+            api.platforms.create(domain_id=1, dataset_id=2, verified_profile=True,
+                                  verified_min_confidence=0.85)
+
+        (These are also settable post-hoc via :meth:`update`; see examples 10/11/14.)
+        For an N-class / MULTI-CLASS classifier, build a verified platform this way
+        over a domain whose description declares N mutually-exclusive labels -- see
+        :meth:`DomainResource.build_ontology` and example 38 (it is NOT ``author()``).
         """
         body: dict[str, Any] = {"domain_id": domain_id, "dataset_id": dataset_id, **kwargs}
         if name:
@@ -711,7 +799,9 @@ class PlatformResource(_Resource):
 
     def query(self, platform_id: int, *, query: str, explain: bool = True,
               facts: dict | None = None,
+              predictions: dict[str, dict[str, str | None]] | None = None,
               relations: dict[str, list[dict]] | None = None,
+              top_k: int = 10,
               **kwargs) -> QueryResult:
         """Query a platform; returns ``{answer, decision, explanation, ...}``.
 
@@ -720,6 +810,63 @@ class PlatformResource(_Resource):
         (declared in the domain schema, in-domain, ground); neural retrieval is
         not consulted for the fact base, so a fully-specified request decides
         deterministically.
+
+        ``predictions`` (``{role: {"model_id": str, "as_of": str|None}}``) is the
+        native, FAIL-CLOSED Prediction -> Decision fan-in: reference one or more
+        VERIFIED forecasts this org (org+owner-scoped) already produced +
+        persisted, by ``model_id`` + alignment ``as_of`` — and the platform folds
+        each referenced forecast's CERTIFIED fields into the decision's certified
+        EDB for you. PREFER this over passing a forecast number in ``facts`` (see
+        the by-reference contract below).
+
+        BY REFERENCE, never by value. You supply only the reference
+        (``model_id``/``as_of``); the platform fetches the stored
+        ``prediction_record`` and admits ONLY its certified fields keyed
+        ``<role>.<field>``: ``<role>.value`` (the LEVEL-space point forecast),
+        ``<role>.probability`` (ONLY if the record's probability certified), and a
+        ``<role>.fired.<signal>`` boolean per fired driver signal. A rule reading
+        ``<role>.value`` / ``<role>.probability`` then decides over TRUSTED facts.
+        The caller never supplies the forecast value — that is the safety property:
+        the forecast's certificate certifies its INPUT ROW, not that the emitted
+        value follows, so the platform (not the caller) is the source of the number.
+
+        FAIL-CLOSED (the escalate-safe contract). A reference that is (a) missing /
+        out-of-scope, (b) whose forecast is not ``proof_checked``, (c) whose stored
+        ``as_of`` != the requested ``as_of``, or (d — for the probability fact only)
+        whose probability was not certified, admits NO affected fact. A forecast is
+        ``proof_checked`` / ``probability_certified`` only when it was produced with
+        a certified in-domain input and an in-regime calibration
+        (``symbolic_forecast(verified=True)``) — so a forecast whose input row or
+        probability did not clear the model's confidence gate is stamped
+        NOT-certified AT PRODUCTION TIME and therefore admits no fact here. With the
+        fact absent, a rule reading ``<role>.<field>`` cannot fire a certified
+        permit, so the decision ABSTAINS — a policy that has an ``escalate`` /
+        ``refer`` fallback routes there rather than approving on an uncertified or
+        low-confidence forecast. The response's ``proof_checked`` is True IFF the
+        decision certifies AND every referenced prediction was found + aligned +
+        certified. Verified platforms only. The PRODUCING method is
+        :meth:`PredictionResource.symbolic_forecast` — name + ``as_of``-stamp the
+        record there (``prediction_name`` / ``prediction_model_id`` / ``as_of``) so
+        it is addressable here.
+
+        Example (native by-reference fan-in — no caller-supplied forecast value)::
+
+            api.platforms.query(
+                loan_pid,
+                query="What is the lending decision?",
+                facts={"credit_score": 700, "debt_to_income_ratio": 0.30},
+                predictions={"forecast_credit_spread":
+                             {"model_id": "ig_spread", "as_of": "2026-06-30"}},
+            )
+            # a rule reading `forecast_credit_spread.value` decides over the
+            # platform-produced, certified forecast — if that forecast is missing /
+            # uncertified / mis-aligned the fact is absent and the decision abstains.
+
+        ``top_k`` (default 10, 1..50) bounds how many neural-evidence items the
+        retrieval layer returns for the answer narrative. It does NOT affect the
+        certified fact base on a fully-specified verified query (``facts`` /
+        ``predictions`` are the EDB); tune it only for the narrative / non-verified
+        retrieval breadth.
 
         ``relations`` (``{relation_name: [ {column: scalar}, ... ]}``) attaches
         RELATED FACTS alongside ``facts`` so the verified kernel can bring a
@@ -788,9 +935,12 @@ class PlatformResource(_Resource):
                 #       "required": True, "rule_type": "constraint", ...}
                 ...
         """
-        body: dict[str, Any] = {"query": query, "explain": explain, **kwargs}
+        body: dict[str, Any] = {"query": query, "explain": explain,
+                                "top_k": top_k, **kwargs}
         if facts is not None:
             body["facts"] = facts
+        if predictions is not None:
+            body["predictions"] = predictions
         if relations is not None:
             body["relations"] = relations
         return self._request("POST", f"/api/v1/platforms/{platform_id}/query", json=body)
@@ -1378,8 +1528,19 @@ class PredictionResource(_Resource):
         ``"calibration_out_of_regime: ..."``). A downstream decision reading an
         uncertified probability fails closed.
 
-        Addressing the record (naming handles)
-        --------------------------------------
+        Addressing the record (naming handles) — and its CONSUMERS
+        ----------------------------------------------------------
+        The emitted ``prediction_record`` is PERSISTED server-side (org+owner-scoped)
+        on every call, so a downstream VERIFIED decision can reference it BY
+        (``model_id``, ``as_of``) and the platform folds its certified fields in —
+        the caller never re-supplies the value. The CONSUMING methods are
+        ``platforms.query(predictions={role: {"model_id": ..., "as_of": ...}})``
+        (a verified query/decision) and
+        ``agent_policy.authorize_action(predictions={role: {...}})`` (the Agent
+        Policy Gate). Reference it with ``verified=True`` so ``proof_ref.proof_checked``
+        is True — an unverified / out-of-domain forecast persists NOT-certified and a
+        consumer's fail-closed gate then admits no fact (the decision abstains).
+
         The optional keyword args address/name the emitted ``prediction_record`` so a
         Prediction→Decision consumer can fan several models in by role at a shared
         period. All are additive — omit them and the record still assembles:
@@ -1562,10 +1723,11 @@ class AgentPolicyResource(_Resource):
       ``permitted`` False, ``proof_checked`` False - again, no verdict was reached.
 
     For a CUMULATIVE control (a running count / sum / exposure over a history of
-    prior actions), open a *session* instead of gating one action: the harness is
-    the sole executor and accumulates the executed-action ledger, so the gate can
-    prove the obligation over the *resulting* history (see :meth:`create_session`
-    / :meth:`step`).
+    prior actions) OR a TEMPORAL / sequencing control (precedence, bounded-window
+    rate, request/response pairing over the ORDERED history), open a *session*
+    instead of gating one action: the harness is the sole executor and accumulates
+    the ordered executed-action ledger, so the gate can prove the obligation over
+    the *resulting* history (see :meth:`create_session` / :meth:`step`).
 
     -- Supported obligation classes (what you can express in English) ----------
 
@@ -1601,6 +1763,43 @@ class AgentPolicyResource(_Resource):
        *English:* "For a proposed order whose fill price is not yet known but is
        guaranteed to be between 100 and 500, the cumulative exposure must stay at
        or below 100000 for every possible fill price in that range."
+
+    5. **Temporal / sequencing** - an ORDER-carrying obligation over the session's
+       ordered ledger of prior EXECUTED actions. Three decidable folds are
+       supported:
+
+       * **Precedence** (``precededBy``) - an action must be PRECEDED BY an earlier
+         action on the same key. *English:* "Permit a deploy for a service only
+         when it is preceded by an approval for the same service in the same
+         session." (trigger idioms: "preceded by" / "before" / "prior to")
+       * **Bounded window / rate** (``boundedWindow``) - at most N matching actions
+         on a key within any sliding window of W of that key's actions. *English:*
+         "No more than 3 deploys to a service within any 5 of that service's
+         actions."
+       * **Request/response pairing** (``noUnmatchedResponse``) - every response on
+         a key must be matched by a DISTINCT earlier request. *English:* "Every
+         reply must be paired with an earlier distinct request in the same session."
+
+       Temporal obligations fold over the ACCUMULATED ORDERED LEDGER, so they need a
+       :meth:`create_session` + :meth:`step` loop (the ledger records only executed
+       actions in order) - a single :meth:`authorize_action` gates an EMPTY ledger,
+       so e.g. the first deploy has nothing to be preceded by and is denied. The
+       antecedent action (e.g. the approval) must itself reach a permit under the
+       policy or it never enters the ledger. See example 40.
+
+    6. **Distinct-actor quorum** (``distinct_count``) - at least N DIFFERENT actors
+       must appear across a per-request set of prior sign-offs. The kernel computes
+       the distinct count over CERTIFIED rows - a caller cannot self-attest a count,
+       and two sign-offs from the same actor fold to one. *English:* "Permit a
+       production deploy only when at least two DIFFERENT approvers have signed off."
+       Supply the sign-offs via :meth:`authorize_action`'s ``relations`` (the
+       per-request set), e.g. ``relations={"approvals": [{"approver_id": "bob"},
+       {"approver_id": "carol"}]}``.
+
+    7. **Separation of duties** (cross-field inequality / ``not_member``) - two
+       named fields must differ, or an actor must not be a member of a set.
+       *English:* "The approver must not be the author." Enforced INLINE by the
+       kernel with no discharge fact. See example 28 (``approver`` != ``author``).
 
     Author the requirement in English, then ALWAYS confirm it admitted as you
     intended by reading ``result["admitted"]`` (the rules in plain English) and
@@ -1727,13 +1926,46 @@ class AgentPolicyResource(_Resource):
     def authorize_action(self, platform_id: int, *, tool: str,
                          args: dict | None = None,
                          context: dict | None = None,
-                         relations: dict | None = None) -> AuthorizeActionResult:
+                         relations: dict | None = None,
+                         predictions: dict[str, dict[str, str | None]] | None = None,
+                         ) -> AuthorizeActionResult:
         """Gate ONE proposed tool-call against the verified policy - permit/deny
         WITH PROOF.
 
         ``args`` are the action's intrinsic fields; ``context`` carries ambient
         facts the policy reasons over (``args`` wins on a key collision). Supply a
         value for each of :meth:`status`'s ``input_fields``.
+
+        ``predictions`` (``{role: {"model_id": str, "as_of": str|None}}``) is the
+        native, FAIL-CLOSED Prediction -> Decision fan-in INTO the gate — gate an
+        agent action against a VERIFIED forecast this org already produced +
+        persisted (via :meth:`PredictionResource.symbolic_forecast`), referenced by
+        ``model_id`` + alignment ``as_of``. The gate fetches the org+owner-scoped
+        stored ``prediction_record`` and admits ONLY its certified fields to the
+        decision's certified EDB keyed ``<role>.<field>`` (``<role>.value``,
+        ``<role>.probability`` iff the record's probability certified,
+        ``<role>.fired.<signal>``); the caller NEVER supplies the forecast value.
+        A policy rule reading ``<role>.value`` / ``<role>.probability`` then gates
+        the action over that trusted forecast. FAIL-CLOSED: a reference that is
+        missing / not ``proof_checked`` / ``as_of``-mismatched / (for probability)
+        not certified admits NO fact, so the rule cannot fire a certified permit and
+        the action is DENIED rather than permitted on an uncertified / low-confidence
+        forecast. (A forecast is only ``proof_checked`` when produced with a certified
+        in-domain input + in-regime calibration, i.e. ``symbolic_forecast(verified=
+        True)``.) Verified gate platforms only.
+
+        Example (gate a spend/deploy action against a certified forecast)::
+
+            api.agent_policy.authorize_action(
+                pid, tool="place_order", args={"qty": 100},
+                predictions={"vol_forecast":
+                             {"model_id": "vol_1d", "as_of": "2026-06-30"}})
+            # a policy rule reading `vol_forecast.value` decides over the
+            # platform-produced, certified forecast — never a caller-asserted number.
+
+        (NOTE: :meth:`step` does NOT accept ``predictions`` — the session ledger
+        path is for CUMULATIVE obligations; fan a certified forecast in via this
+        single-action method.)
 
         ``relations`` supplies caller-provided multi-row SETS for a policy that
         reasons over a declared relation as a PER-REQUEST set rather than an
@@ -1798,9 +2030,10 @@ class AgentPolicyResource(_Resource):
         a permit (don't execute): it means the gate lacked an input it needed. Fill
         in ``missing_inputs`` (under ``args`` or ``context``) and call again.
 
-        For a CUMULATIVE obligation (class 2-4) this gates the action against an
-        EMPTY history - use a :meth:`create_session` + :meth:`step` loop so the
-        obligation is proven over the accumulated executed-action ledger.
+        For a CUMULATIVE or TEMPORAL obligation (classes 2-5) this gates the action
+        against an EMPTY history - use a :meth:`create_session` + :meth:`step` loop
+        so the obligation is proven over the accumulated ordered executed-action
+        ledger.
         """
         action: dict = {"tool": tool, "args": args or {}}
         body: dict = {"action": action}
@@ -1808,6 +2041,8 @@ class AgentPolicyResource(_Resource):
             body["context"] = context
         if relations is not None:
             body["relations"] = relations
+        if predictions is not None:
+            body["predictions"] = predictions
         return self._request(
             "POST", f"/api/v1/platforms/{platform_id}/authorize-action", json=body)
 
@@ -1816,10 +2051,11 @@ class AgentPolicyResource(_Resource):
         """Open a mediated agent session bound to a verified agent-policy gate.
 
         Every action proposed via :meth:`step` is gated; the harness is the SOLE
-        executor (no bypass) and accumulates the executed-action ledger, so a
-        CUMULATIVE obligation (count / sum / exposure / band) is proven over the
-        *resulting* history. Returns the session (``{"id", "platform_id", "goal",
-        "trace": [...]}``)."""
+        executor (no bypass) and accumulates the ORDERED executed-action ledger, so a
+        CUMULATIVE obligation (count / sum / exposure / band) OR a TEMPORAL /
+        sequencing obligation (precedence / bounded-window rate / request-response
+        pairing) is proven over the *resulting* ordered history. Returns the session
+        (``{"id", "platform_id", "goal", "trace": [...]}``)."""
         body: dict = {"platform_id": platform_id}
         if goal is not None:
             body["goal"] = goal

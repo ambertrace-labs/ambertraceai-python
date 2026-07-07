@@ -2,6 +2,29 @@
 
 Python client for the [Ambertrace](https://ambertrace.ai) neurosymbolic AI platform API.
 
+## Capability index — what can I do, and which method produces it?
+
+The one authoritative map from a CAPABILITY to the method that reaches it (and the
+example that shows it). If you're unsure whether something is `author()`,
+`build_ontology`, or `query`, read this first.
+
+| Capability | Reach it via | Example |
+|------------|--------------|---------|
+| Verified query / decision (proof-carrying answer) | `platforms.query(pid, query=..., facts=...)` | 30, 38 |
+| N-class / multi-class classifier (decision = winning label) | `domains.build_ontology` → `platforms.create(verified_profile=True)` → `platforms.query` — **NOT `author()`** | 38 |
+| Custom decision vocabulary (verbs beyond permit/deny) | phrase the `build_ontology` / `author` description with your verbs; read `query().decision` | 19, 24, 38 |
+| Build a VERIFIED platform | `platforms.create(verified_profile=True, verified_min_confidence=…, invariant_manifest=…)` | 10, 11, 14 |
+| Cross-domain cueing / relational join inside the proof | `build_ontology(relations=…)` + `platforms.query(relations=…)` (`existsRelated`) | 31 |
+| Prediction → Decision (verified forecast feeds a decision, by reference) | `predictions.symbolic_forecast(verified=True, …)` → `platforms.query(predictions={role: {model_id, as_of}})` | 36, 37 |
+| Prediction → Decision INTO the Agent Policy Gate | `predictions.symbolic_forecast(verified=True)` → `agent_policy.authorize_action(predictions={role: {…}})` | 25, 28 |
+| Agent Policy Gate — permit/deny an agent action (English policy) | `agent_policy.author(text)` → `authorize_action` / session `step` | 25, 27, 28 |
+| APG temporal / sequencing (precedence, rate, pairing) | `agent_policy.author("… preceded by …")` + `create_session` + `step` | 40 |
+| APG distinct-actor quorum + separation-of-duties | `agent_policy.author("… two DIFFERENT approvers, none the author …")` + `authorize_action(relations=…)` | 28 |
+| Explainable symbolic forecasting + WHY | `predictions.symbolic_forecast(...)` (`why` / `prediction_record`) | 23, 26 |
+| Neural-evidence retrieval breadth on a query | `platforms.query(..., top_k=N)` | — |
+
+Full method surface is in **Resources** below; the runnable demos are in `examples/`.
+
 ## Install
 
 ```bash
@@ -155,7 +178,7 @@ reachable at `api.agent_policy.*`:
 | `author(policy_text)` | Compile an English policy into a verified gate; returns `{platform, admitted, rejected, policy_text}` |
 | `status()` | The live gate: active policy, admitted controls (English), and the declared `input_fields` an action must supply |
 | `examples()` | The built-in example-policy library (`[{id, domain_label, title, policy_text, try_hint}, ...]`) — ready-to-author policies |
-| `authorize_action(platform_id, *, tool, args, context)` | Gate ONE proposed tool-call — permit/deny **with proof** |
+| `authorize_action(platform_id, *, tool, args, context, relations, predictions)` | Gate ONE proposed tool-call — permit/deny **with proof**. `relations` supplies a per-request set (e.g. quorum sign-offs); `predictions={role: {model_id, as_of}}` fans a verified forecast in (fail-closed) |
 | `create_session(*, platform_id, goal)` | Open a mediated session (the gate is the sole executor) for a cumulative obligation |
 | `step(session_id, *, tool, args, context)` | Mediate one action in a session: gate → execute-on-permit / block-on-deny |
 | `get_session(session_id)` | Fetch a session and its full mediated step trace |
@@ -224,11 +247,15 @@ a within-limit action (expect permit) and a breaching action (expect deny).
 | **Cumulative count / sum limit** | A cap on a running `count` or `sum` over a declared ledger of prior actions (only count/sum — never average/min/max) | "Each order writes a row to an order_log with a quantity column. The total quantity summed across all rows must stay at or below 1000." / "No more than 3 actions of this kind may be executed." |
 | **Cumulative exposure** | A cap on the running value `Σ qty × price` over a declared ledger; the limit is a numeric constant | "Each order writes a row to an open_positions ledger with a quantity column and a price column. The cumulative exposure — the sum of quantity times price across every row — must stay at or below 100000." |
 | **Interval / band binding** | An exposure cap proven for **every** value of one as-yet-unknown factor confined to a closed interval `[lo, hi]` (e.g. a fill price known only to lie in a band) | "For a proposed order whose fill price is not yet known but is guaranteed to be between 100 and 500, the cumulative exposure must stay at or below 100000 for every possible fill price in that range." |
+| **Temporal / sequencing** | An ORDER-carrying obligation over the session's ordered ledger: precedence (happens-before), bounded-window rate, or request/response pairing | "Permit a deploy for a service only when it is preceded by an approval for the same service in the same session." / "No more than 3 deploys to a service within any 5 of that service's actions." (example 40) |
+| **Distinct-actor quorum** | At least N DIFFERENT actors across a per-request set of sign-offs — the kernel computes the distinct count over certified rows (no self-attestation) | "Permit a production deploy only when at least two DIFFERENT approvers have signed off." — supply the sign-offs via `authorize_action(relations={"approvals": [{"approver_id": …}, …]})` |
+| **Separation of duties** | Two named fields must differ (cross-field inequality); enforced inline, no discharge fact | "The approver must not be the author." (example 28) |
 
-The cumulative / exposure / band classes operate over a **ledger** (a named
-relation of prior actions): name the ledger and its numeric column(s) in your
-policy, then mediate a session (`create_session` + `step`) so the gate proves the
-obligation over the resulting history. Browse `api.agent_policy.examples()` for
+The cumulative / exposure / band / **temporal** classes operate over a **ledger** (a
+named relation of prior actions): name the ledger and its column(s) in your policy,
+then mediate a session (`create_session` + `step`) so the gate proves the obligation
+over the resulting ORDERED history. The distinct-actor quorum reads a PER-REQUEST set
+supplied via `authorize_action(relations=…)`. Browse `api.agent_policy.examples()` for
 more ready-to-author policies across domains (healthcare triage, grid dispatch,
 automation safety, access control, supply-chain).
 
@@ -301,6 +328,45 @@ by default the SDK polls the background job to completion and returns its result
 yourself via `api.wait_for_job(job_id)`. Discovery is a **write** operation, so it
 needs a user-scoped (`at_...`) key. A runnable end-to-end demo is in
 [`examples/26_neurosymbolic_bond_yield.py`](examples/26_neurosymbolic_bond_yield.py).
+
+### Predictions → Decision bridge — a verified forecast feeds a verified decision
+
+A `symbolic_forecast(verified=True, …)` call PERSISTS its `prediction_record`
+server-side (org+owner-scoped), addressable by `model_id` + `as_of`. A verified
+decision then references it **by handle** — the platform fetches the trusted record
+and folds its certified fields into the proof, so **the caller never re-supplies the
+forecast value** (the forecast's certificate certifies its input row, not that a
+caller-typed number followed):
+
+```python
+# 1. Produce + persist a verified forecast, named + as_of-stamped so it's addressable
+api.predictions.symbolic_forecast(
+    forecast_pid, prediction_config_id=cfg_id, verified=True,
+    prediction_name="ig_spread", as_of="2026-06-30")
+
+# 2a. Fan it into a verified QUERY/DECISION by reference (a rule reads `ig_spread.value`)
+api.platforms.query(
+    loan_pid, query="What is the lending decision?",
+    facts={"credit_score": 700},
+    predictions={"ig_spread": {"model_id": "ig_spread", "as_of": "2026-06-30"}})
+
+# 2b. …or fan it into the Agent Policy Gate (a policy rule reads `ig_spread.value`)
+api.agent_policy.authorize_action(
+    gate_pid, tool="place_order", args={"qty": 100},
+    predictions={"ig_spread": {"model_id": "ig_spread", "as_of": "2026-06-30"}})
+```
+
+The admitted facts are keyed `<role>.<field>`: `<role>.value`, `<role>.probability`
+(only if the record's probability certified), and `<role>.fired.<signal>` per fired
+signal. **FAIL-CLOSED:** a reference that is missing / not `proof_checked` /
+`as_of`-mismatched / (for probability) uncertified admits **no** fact — a rule
+reading it cannot fire a certified permit, so the decision **abstains** (a policy
+with an `escalate`/`refer` fallback routes there rather than approving on an
+uncertified or low-confidence forecast). To read a `<role>.value` fact, the decision
+domain must DECLARE it (e.g. an ontology property / column `ig_spread.value`). Demos:
+[`36_credit_forecast_to_loan_decision.py`](examples/36_credit_forecast_to_loan_decision.py)
+(single) and [`37_multi_forecast_policy_decision.py`](examples/37_multi_forecast_policy_decision.py)
+(three forecasts, one decision).
 
 ## Connectors
 
@@ -470,54 +536,39 @@ Full API reference: [app.ambertrace.ai/openapi/redoc](https://app.ambertrace.ai/
 
 ## Changelog
 
-### 1.0.3
+### 1.0.4
 
-Additive client-typing + two new examples. No breaking changes, no default flips.
+**Discoverability wave (additive — no behaviour change).** Several shipped backend
+capabilities were reachable but not signposted in the SDK surface a customer reads
+first; this release names them and adds a gate so it can't recur.
 
-**Additive (client code) — the query explanation contract is now typed.**
-`platforms.query(..., explain=True)` returns a **documented, versioned**
-`explanation` trace, now typed as `ambertraceai.QueryExplanation` with its
-sub-shapes `SymbolicTrace`, `RuleFiring`, and `CertifiedFact` (all in
-`ambertraceai.responses`). An IDE now autocompletes
-`explanation["symbolic_trace"]["rules"][i]["fired"]`,
-`explanation["certified_facts"]`, `explanation["schema_version"]`, etc., and a
-type-checker catches a typo — WITHOUT any runtime change: `explanation` is still
-a plain dict the server may extend, so every existing access keeps working
-byte-for-byte. `QueryResult["explanation"]` is now annotated `QueryExplanation`.
-
-**New example — symmetric N-class classification (`38_symmetric_multiclass_classifier.py`).**
-Classify an observation into ONE of N mutually-exclusive labels (the 2×2
-macro-regime grid: reflation / goldilocks / stagflation / deflation), each answer
-proof-carrying. A **"Multi-class (N-class) classification"** section in
-`examples/README.md` spells out the design fork and the English-phrasing recipe.
-The point the docs now make explicit: an N-class classifier is a **verified
-domain platform** authored via `domains` → `build_ontology` → `platforms` (its
-class labels ARE the platform's decision verbs). It is **not** the `author()`
-permit/deny gate, and there is no `multiclass` model_type or new SDK method — the
-capability was already there; this release signposts it. Query with
-`platforms.query(...)` and read `report["decision"]` + `report["proof_checked"]`.
-
-**New example — federal ethics gift gate (`39_federal_ethics_gift_gate.py`).**
-An `author()` permit/deny gate over a US federal-employee gift-acceptance policy,
-each decision proof-carrying — a worked policy-gate authoring walkthrough.
-
-### 1.0.2
-
-Examples-only release (no client-code change). Adds the geopolitical-risk
-forecast example (`35_geopolitical_risk_macro_forecast.py`, with a bundled
-`geopol_macro_panel.csv` panel) and renumbers the decision-bridge examples to
-`36_credit_forecast_to_loan_decision.py` and
-`37_multi_forecast_policy_decision.py`. No API surface, client, or default
-changes.
-
-### 1.0.1
-
-Examples-only release (no client-code change). Adds the **Predictions → Decision
-bridge** examples — `35_credit_forecast_to_loan_decision.py` (single-forecast) and
-`36_multi_forecast_policy_decision.py` (multi-forecast) — plus a "Predictions →
-Decision bridge" section in `examples/README.md`. These demonstrate feeding
-proof-carrying forecasts into a verified decision. No API surface, client, or
-default changes.
+- **`platforms.query(predictions=…)` — the native Prediction → Decision fan-in.**
+  `query()` now documents (and takes explicit) `predictions={role: {"model_id",
+  "as_of"}}`: reference a verified forecast this org already produced + persisted and
+  the platform folds its certified `<role>.value` into the proof — BY REFERENCE,
+  never by value. **Fail-closed:** a missing / uncertified / mis-aligned reference
+  admits no fact, so the decision abstains rather than approving on an unproven (or
+  low-confidence) forecast. `top_k` is now an explicit `query()` param too.
+- **`agent_policy.authorize_action(predictions=…)`.** The same fail-closed bridge,
+  now callable — the method previously had a fixed signature with no `predictions`
+  param, so the backend fan-in was unreachable from the SDK.
+- **Agent Policy Gate temporal / sequencing obligations are documented + demoed.**
+  The `author()` obligation-class list now includes precedence (`precededBy`),
+  bounded-window rate, and request/response pairing (a NATIVE happens-before
+  obligation over the session's ordered ledger), plus distinct-actor quorum and
+  separation-of-duties. New runnable demo **`40_agent_policy_gate_temporal.py`**
+  (review-before-deploy). Example 28's stale "temporal is not yet a gate primitive"
+  note is corrected.
+- **N-class / multi-class classifier + custom decision vocabulary** are now named in
+  `build_ontology` / `platforms.create` docstrings (the grep-a-method path), not only
+  example 38. **Verified-profile build kwargs** (`verified_profile`,
+  `verified_min_confidence`, `invariant_manifest`, `override_verification_gate`) are
+  documented on `platforms.create`. **Eval-config / rule-template** methods gained
+  docstrings naming their fields. `symbolic_forecast`'s `prediction_record` now
+  cross-links its consuming methods.
+- **New capability index** (README top) mapping each capability → the method that
+  produces it, and a machine-enforced discoverability gate in the pre-PR run: a
+  shipped request field with no SDK docstring/example/doc signpost now fails the gate.
 
 ### 1.0.0
 

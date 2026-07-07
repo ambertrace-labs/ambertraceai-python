@@ -122,6 +122,36 @@ def test_examples_gets_library(api):
 
 
 @respx.mock
+def test_authorize_action_sends_predictions(api):
+    """The Prediction->Decision fan-in INTO the gate must reach the wire — the
+    method previously had no `predictions` param so the backend fan-in was
+    uncallable from the SDK (audit G2)."""
+    route = respx.post(f"{BASE}/api/v1/platforms/7/authorize-action").mock(
+        return_value=httpx.Response(200, json=_env({
+            "decision": "permit", "proof_checked": True})),
+    )
+    api.agent_policy.authorize_action(
+        7, tool="place_order", args={"qty": 100},
+        predictions={"vol": {"model_id": "vol_1d", "as_of": "2026-06-30"}})
+    import json
+    sent = json.loads(route.calls.last.request.read())
+    assert sent["predictions"] == {
+        "vol": {"model_id": "vol_1d", "as_of": "2026-06-30"}}
+    assert sent["action"] == {"tool": "place_order", "args": {"qty": 100}}
+
+
+@respx.mock
+def test_authorize_action_omits_predictions_when_none(api):
+    route = respx.post(f"{BASE}/api/v1/platforms/7/authorize-action").mock(
+        return_value=httpx.Response(200, json=_env({"decision": "permit"})),
+    )
+    api.agent_policy.authorize_action(7, tool="t", args={"a": 1})
+    import json
+    sent = json.loads(route.calls.last.request.read())
+    assert "predictions" not in sent  # byte-identical body when omitted
+
+
+@respx.mock
 def test_authorize_action_posts_action_and_context(api):
     route = respx.post(f"{BASE}/api/v1/platforms/7/authorize-action").mock(
         return_value=httpx.Response(200, json=_env({
