@@ -737,6 +737,35 @@ class PlatformResource(_Resource):
           fails the build rather than shipping an unsound platform.
         * ``override_verification_gate: bool`` -- explicitly build even if the
           verification gate flags a concern (use sparingly; audited).
+        * ``scored_determinations: dict`` -- OPEN-TEXTURED SCORED DETERMINATIONS
+          (flag-gated, default OFF). For an OPEN-TEXTURED predicate that bright-line
+          rules cannot decide (compatibility / reasonableness / materiality /
+          good-faith), the platform's OWN runtime LLM is given rich doctrine + the
+          situation TEXT and returns a *calibrated probability* the predicate holds,
+          admitted as a confidence-carrying fact subject to τ
+          (``verified_min_confidence``): ``p >= τ`` supports a permit;
+          ``p < τ`` OR an abstain / out-of-distribution / high self-consistency
+          dispersion determination admits NO fact and routes to ``escalate`` (never
+          a permit -- deductive-first, fail-closed). The score is SERVER-COMPUTED
+          from the text (a caller cannot hand-set it). Shape::
+
+              scored_determinations={
+                "enabled": True,
+                "determinations": [{
+                  "head": "compatibility_established",   # the derived-head field
+                  "question": "Is the PROPOSED USE compatible with ...?",
+                  "doctrine": "<the legal / domain doctrine -- the tuning surface>",
+                  "situation_fields": {                  # prompt label -> request field
+                    "ORIGINAL COLLECTION PURPOSE": "collection_purpose",
+                    "PROPOSED USE": "stated_purpose"},
+                  "dispersion_escalate": 0.15            # optional escalate threshold
+                }]}
+
+          The head fact then feeds your ordinary rules (e.g.
+          ``permit when compatibility_established``; an ``escalate`` rule keyed on
+          its absence catches the sub-τ / uncertified case). See example 41. Its
+          guarantee is EMPIRICAL (calibration-in-regime + coherent-input +
+          fail-closed-OOD) -- honestly WEAKER than the deductive kernel proofs.
 
         Example::
 
@@ -799,6 +828,7 @@ class PlatformResource(_Resource):
 
     def query(self, platform_id: int, *, query: str, explain: bool = True,
               facts: dict | None = None,
+              # {role: {"model_id", "as_of", "mode": "fatal"|"non_fatal"}}
               predictions: dict[str, dict[str, str | None]] | None = None,
               relations: dict[str, list[dict]] | None = None,
               top_k: int = 10,
@@ -811,8 +841,9 @@ class PlatformResource(_Resource):
         not consulted for the fact base, so a fully-specified request decides
         deterministically.
 
-        ``predictions`` (``{role: {"model_id": str, "as_of": str|None}}``) is the
-        native, FAIL-CLOSED Prediction -> Decision fan-in: reference one or more
+        ``predictions`` (``{role: {"model_id": str, "as_of": str|None,
+        "mode": "fatal"|"non_fatal"}}``) is the native, FAIL-CLOSED
+        Prediction -> Decision fan-in: reference one or more
         VERIFIED forecasts this org (org+owner-scoped) already produced +
         persisted, by ``model_id`` + alignment ``as_of`` — and the platform folds
         each referenced forecast's CERTIFIED fields into the decision's certified
@@ -848,6 +879,46 @@ class PlatformResource(_Resource):
         :meth:`PredictionResource.symbolic_forecast` — name + ``as_of``-stamp the
         record there (``prediction_name`` / ``prediction_model_id`` / ``as_of``) so
         it is addressable here.
+
+        PER-REFERENCE ``mode`` — graceful escalate vs. hard fail-closed. Each
+        reference may carry ``"mode"``:
+
+        * ``"fatal"`` (the DEFAULT — omit ``mode`` to get it) — a reference that
+          fails the gate fails the WHOLE query closed (HTTP 503, no decision). This
+          is the strict fail-closed composition above; every existing caller keeps it.
+        * ``"non_fatal"`` — a reference that fails the gate admits NO fact (as
+          always) but the query PROCEEDS and decides over what remains, so a
+          lower-precedence ``escalate`` / ``deny`` rule can fire on the ABSENCE of
+          the basis and return a certified ``200`` (e.g. "if the referenced
+          determination isn't certified, escalate to a human" instead of 503-ing).
+
+        ``non_fatal`` does NOT relax the safety guarantee. A permit still can never
+        rest on the absence of an uncertified reference: the verified kernel's
+        permit-guard DROPS any permit whose firing depends — directly or
+        through a derive chain — on a negation-as-failure over an uncertified key
+        (e.g. ``permit when compatibility ne "incompatible"`` over an uncertified
+        ``compatibility`` can NOT certify). A missing basis is BLOCKING for any
+        permit but AVAILABLE-AS-ABSENCE for an explicit escalate/deny fallback. The
+        uncertified reference and any guarded-out permit are surfaced in
+        ``explanation["rejected_facts"]`` and ``explanation["graceful_escalate"]``
+        (``{uncertified_roles, permits_dropped}``) so the escalate is explainable.
+        The only thing ``non_fatal`` buys is "route the absence to my escalate/deny
+        rule instead of 503."
+
+        Example (graceful escalate on an uncertified reference)::
+
+            api.platforms.query(
+                records_pid,
+                query="Decide the records disclosure.",
+                facts={"routine_use_claimed": True},
+                predictions={"compatibility":
+                             {"model_id": "compat_score", "as_of": "2026-06-30",
+                              "mode": "non_fatal"}},
+            )
+            # if `compatibility` is missing / uncertified / mis-aligned, the query
+            # does NOT 503: the permit that would rest on its absence is guarded out
+            # and the `escalate when routine_use_unverified` fallback certifies a
+            # 200 escalate; the uncertified reference is in explanation.rejected_facts.
 
         Example (native by-reference fan-in — no caller-supplied forecast value)::
 

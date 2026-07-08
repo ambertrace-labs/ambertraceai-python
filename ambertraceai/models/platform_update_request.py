@@ -10,6 +10,9 @@ from ..types import UNSET, Unset
 
 if TYPE_CHECKING:
     from ..models.invariant import Invariant
+    from ..models.platform_update_request_scored_determinations_type_0 import (
+        PlatformUpdateRequestScoredDeterminationsType0,
+    )
 
 
 T = TypeVar("T", bound="PlatformUpdateRequest")
@@ -26,6 +29,11 @@ class PlatformUpdateRequest:
         Attributes:
             invariant_manifest (list[Invariant] | None | Unset): Replace the platform's required-invariant manifest (see the
                 Invariant schema).
+            scored_determinations (None | PlatformUpdateRequestScoredDeterminationsType0 | Unset): Set or replace the open-
+                textured scored determinations (verified profile only). See the same field on the build request for the shape
+                and semantics — a server-computed calibrated probability for a judgment predicate, admitted as a confidence-
+                carrying fact subject to τ; at or above τ it can support a permit, otherwise the request routes to escalate
+                (deductive-first, fail-closed).
             team_id (int | None | Unset): Required when visibility='team'; the caller must be a member.
             verified_min_confidence (float | None | Unset): Update the certified-fact confidence threshold τ in [0,1].
             verified_profile (bool | None | Unset): Enable/disable the verified profile on an existing platform. Enabling
@@ -36,6 +44,9 @@ class PlatformUpdateRequest:
     """
 
     invariant_manifest: list[Invariant] | None | Unset = UNSET
+    scored_determinations: (
+        None | PlatformUpdateRequestScoredDeterminationsType0 | Unset
+    ) = UNSET
     team_id: int | None | Unset = UNSET
     verified_min_confidence: float | None | Unset = UNSET
     verified_profile: bool | None | Unset = UNSET
@@ -43,6 +54,10 @@ class PlatformUpdateRequest:
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        from ..models.platform_update_request_scored_determinations_type_0 import (
+            PlatformUpdateRequestScoredDeterminationsType0,
+        )
+
         invariant_manifest: list[dict[str, Any]] | None | Unset
         if isinstance(self.invariant_manifest, Unset):
             invariant_manifest = UNSET
@@ -56,6 +71,16 @@ class PlatformUpdateRequest:
 
         else:
             invariant_manifest = self.invariant_manifest
+
+        scored_determinations: dict[str, Any] | None | Unset
+        if isinstance(self.scored_determinations, Unset):
+            scored_determinations = UNSET
+        elif isinstance(
+            self.scored_determinations, PlatformUpdateRequestScoredDeterminationsType0
+        ):
+            scored_determinations = self.scored_determinations.to_dict()
+        else:
+            scored_determinations = self.scored_determinations
 
         team_id: int | None | Unset
         if isinstance(self.team_id, Unset):
@@ -86,6 +111,8 @@ class PlatformUpdateRequest:
         field_dict.update({})
         if invariant_manifest is not UNSET:
             field_dict["invariant_manifest"] = invariant_manifest
+        if scored_determinations is not UNSET:
+            field_dict["scored_determinations"] = scored_determinations
         if team_id is not UNSET:
             field_dict["team_id"] = team_id
         if verified_min_confidence is not UNSET:
@@ -100,6 +127,9 @@ class PlatformUpdateRequest:
     @classmethod
     def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
         from ..models.invariant import Invariant
+        from ..models.platform_update_request_scored_determinations_type_0 import (
+            PlatformUpdateRequestScoredDeterminationsType0,
+        )
 
         d = dict(src_dict)
 
@@ -127,6 +157,31 @@ class PlatformUpdateRequest:
 
         invariant_manifest = _parse_invariant_manifest(
             d.pop("invariant_manifest", UNSET)
+        )
+
+        def _parse_scored_determinations(
+            data: object,
+        ) -> None | PlatformUpdateRequestScoredDeterminationsType0 | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            try:
+                if not isinstance(data, dict):
+                    raise TypeError()
+                scored_determinations_type_0 = (
+                    PlatformUpdateRequestScoredDeterminationsType0.from_dict(data)
+                )
+
+                return scored_determinations_type_0
+            except (TypeError, ValueError, AttributeError, KeyError):
+                pass
+            return cast(
+                None | PlatformUpdateRequestScoredDeterminationsType0 | Unset, data
+            )
+
+        scored_determinations = _parse_scored_determinations(
+            d.pop("scored_determinations", UNSET)
         )
 
         def _parse_team_id(data: object) -> int | None | Unset:
@@ -169,6 +224,7 @@ class PlatformUpdateRequest:
 
         platform_update_request = cls(
             invariant_manifest=invariant_manifest,
+            scored_determinations=scored_determinations,
             team_id=team_id,
             verified_min_confidence=verified_min_confidence,
             verified_profile=verified_profile,

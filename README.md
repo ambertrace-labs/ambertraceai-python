@@ -14,6 +14,7 @@ example that shows it). If you're unsure whether something is `author()`,
 | N-class / multi-class classifier (decision = winning label) | `domains.build_ontology` → `platforms.create(verified_profile=True)` → `platforms.query` — **NOT `author()`** | 38 |
 | Custom decision vocabulary (verbs beyond permit/deny) | phrase the `build_ontology` / `author` description with your verbs; read `query().decision` | 19, 24, 38 |
 | Build a VERIFIED platform | `platforms.create(verified_profile=True, verified_min_confidence=…, invariant_manifest=…)` | 10, 11, 14 |
+| Open-textured SCORED determination (an LLM-τ score for a judgment predicate deduction can't decide) | `platforms.create(scored_determinations={…})` — the platform's own runtime LLM scores the predicate; admitted as a τ-gated fact (≥τ supports a permit; sub-τ / abstain / OOD → escalate). SERVER-computed, deductive-first, fail-closed | 41 |
 | Cross-domain cueing / relational join inside the proof | `build_ontology(relations=…)` + `platforms.query(relations=…)` (`existsRelated`) | 31 |
 | Prediction → Decision (verified forecast feeds a decision, by reference) | `predictions.symbolic_forecast(verified=True, …)` → `platforms.query(predictions={role: {model_id, as_of}})` | 36, 37 |
 | Prediction → Decision INTO the Agent Policy Gate | `predictions.symbolic_forecast(verified=True)` → `agent_policy.authorize_action(predictions={role: {…}})` | 25, 28 |
@@ -362,7 +363,21 @@ signal. **FAIL-CLOSED:** a reference that is missing / not `proof_checked` /
 `as_of`-mismatched / (for probability) uncertified admits **no** fact — a rule
 reading it cannot fire a certified permit, so the decision **abstains** (a policy
 with an `escalate`/`refer` fallback routes there rather than approving on an
-uncertified or low-confidence forecast). To read a `<role>.value` fact, the decision
+uncertified or low-confidence forecast).
+
+**Graceful escalate — `predictions={role: {…, "mode": "non_fatal"}}`.** By default a
+failed reference fails the WHOLE query closed (503). Add `"mode": "non_fatal"` to a
+reference to instead let the query PROCEED on that reference's absence, so a
+lower-precedence `escalate`/`deny` rule can fire and return a certified `200` ("if
+the referenced determination isn't certified, escalate to a human" instead of 503).
+This does **not** relax safety: a permit can never rest on the absence of an
+uncertified reference — the verified kernel's permit-guard drops any permit whose
+firing depends on a negation-as-failure over an uncertified key (a missing basis is
+blocking for a permit, available-as-absence for an escalate/deny). The uncertified
+reference + any guarded-out permit appear in `explanation["rejected_facts"]` and
+`explanation["graceful_escalate"]`.
+
+To read a `<role>.value` fact, the decision
 domain must DECLARE it (e.g. an ontology property / column `ig_spread.value`). Demos:
 [`36_credit_forecast_to_loan_decision.py`](examples/36_credit_forecast_to_loan_decision.py)
 (single) and [`37_multi_forecast_policy_decision.py`](examples/37_multi_forecast_policy_decision.py)
@@ -535,6 +550,53 @@ This brings the query failure path to parity with
 Full API reference: [app.ambertrace.ai/openapi/redoc](https://app.ambertrace.ai/openapi/redoc)
 
 ## Changelog
+
+### 1.0.5 (unreleased)
+
+**Graceful escalate on an uncertified prediction reference (additive, backward-
+compatible).** `platforms.query(predictions=…)` references gain an optional
+per-reference `"mode"`:
+
+- **`"mode": "fatal"` (default)** — unchanged: a failed reference fails the whole
+  query closed (503). Every existing caller keeps the strict fail-closed composition.
+- **`"mode": "non_fatal"`** — a failed reference admits no fact but the query PROCEEDS
+  and decides over what remains, so a lower-precedence `escalate` / `deny` rule can
+  fire on the ABSENCE of the basis and return a certified `200` (the "escalate to a
+  human if the referenced determination isn't certified" pattern) instead of 503-ing.
+
+`non_fatal` does NOT relax the safety guarantee: a permit can never rest
+on the absence of an uncertified reference — the verified kernel's permit-guard drops
+any permit whose firing depends on a negation-as-failure over an uncertified key. A
+missing basis is BLOCKING for a permit but AVAILABLE-AS-ABSENCE for an escalate/deny
+fallback. The uncertified reference and any guarded-out permit are surfaced in
+`explanation["rejected_facts"]` and `explanation["graceful_escalate"]`
+(`{uncertified_roles, permits_dropped}`). Documented on `platforms.query()` + the
+README predictions section; the producing/consuming method is unchanged
+(`platforms.query`). Verified platforms only.
+
+**Open-textured SCORED determinations (new capability, additive, flag-gated default OFF).**
+Where a decision turns on an OPEN-TEXTURED predicate that bright-line rules cannot decide
+— *compatibility*, *reasonableness*, *materiality*, *good-faith* — you can now have the
+platform's OWN runtime LLM score it. `platforms.create(scored_determinations={…})` (or
+`platforms.update`) declares a determination: a `head` field, the `question`, the legal /
+domain `doctrine` (the tuning surface), and the `situation_fields` (request text fields).
+At query time the platform scores the predicate with self-consistency, calibrates it, and
+admits the result as a **confidence-carrying fact subject to τ** (`verified_min_confidence`):
+
+- `p ≥ τ` → the head fact is admitted and can support a **permit** (with an honest
+  certificate: LLM model + prompt version, K, self-consistency dispersion, calibrator);
+- `p < τ` **OR** an abstain / out-of-distribution / high self-consistency dispersion
+  determination admits **no fact** → the request routes to **escalate**, never a permit.
+
+**DEDUCTIVE-FIRST + fail-closed.** The LLM-τ score fills ONLY the open-textured joint;
+everywhere else, ordinary deduction governs. The score is **SERVER-computed** from the
+text — a caller cannot hand-set it. Its guarantee is **EMPIRICAL** (calibration-in-regime
++ coherent-input + fail-closed-OOD) — honestly **weaker than the deductive kernel proofs**;
+use it exactly where deduction is silent. New runnable demo
+**`41_records_gate_scored_determination.py`** (Privacy Act routine-use compatibility gate):
+the same request shape PERMITS or ESCALATES purely on whether the compatibility score
+clears τ. Composes with the graceful-escalate posture: an uncertified determination can
+never back a permit.
 
 ### 1.0.4
 

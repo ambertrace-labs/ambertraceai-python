@@ -3,6 +3,9 @@
 from .approve_request import ApproveRequest
 from .build_request import BuildRequest
 from .build_request_config import BuildRequestConfig
+from .build_request_scored_determinations_type_0 import (
+    BuildRequestScoredDeterminationsType0,
+)
 from .connector_out import ConnectorOut
 from .connector_test_request import ConnectorTestRequest
 from .connector_test_request_config import ConnectorTestRequestConfig
@@ -75,6 +78,9 @@ from .platform_out_config_type_0 import PlatformOutConfigType0
 from .platform_out_neural_config_type_0 import PlatformOutNeuralConfigType0
 from .platform_status_out import PlatformStatusOut
 from .platform_update_request import PlatformUpdateRequest
+from .platform_update_request_scored_determinations_type_0 import (
+    PlatformUpdateRequestScoredDeterminationsType0,
+)
 from .predict_request import PredictRequest
 from .predict_request_feature_overrides_type_0 import (
     PredictRequestFeatureOverridesType0,
@@ -161,6 +167,7 @@ __all__ = (
     "ApproveRequest",
     "BuildRequest",
     "BuildRequestConfig",
+    "BuildRequestScoredDeterminationsType0",
     "ConnectorOut",
     "ConnectorTestRequest",
     "ConnectorTestRequestConfig",
@@ -231,6 +238,7 @@ __all__ = (
     "PlatformOutNeuralConfigType0",
     "PlatformStatusOut",
     "PlatformUpdateRequest",
+    "PlatformUpdateRequestScoredDeterminationsType0",
     "PredictionConfigCreate",
     "PredictionConfigCreateBacktestConfigType0",
     "PredictionConfigCreateEvalMetricConfigType0",

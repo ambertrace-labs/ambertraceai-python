@@ -39,8 +39,12 @@ class QueryRequest:
             decides over trusted facts. FAIL-CLOSED: a reference that is missing / not proof_checked / whose as_of != the
             requested as_of / (for probability) not probability_certified admits NO fact, so a rule reading it cannot fire a
             certified permit and the decision abstains. `proof_checked=True` iff the decision certifies AND every referenced
-            prediction was found+aligned+certified. Verified platforms only. Example: {"ust_10y": {"model_id": "ust_10y",
-            "as_of": "2026-06-30"}}.
+            prediction was found+aligned+certified. Each reference may carry an optional `mode`: `"fatal"` (default) fails
+            the WHOLE query closed (503) on that reference's failure; `"non_fatal"` instead PROCEEDS (admitting no fact) so
+            a lower-precedence escalate/deny rule can fire on the absence and certify a 200 — but a permit can NEVER rest on
+            the absence of an uncertified reference (the permit-guard drops any permit resting on a negation-as-failure over
+            an uncertified key; surfaced in explanation.rejected_facts + explanation.graceful_escalate). Verified platforms
+            only. Example: {"ust_10y": {"model_id": "ust_10y", "as_of": "2026-06-30"}}.
         relations (None | QueryRequestRelationsType0 | Unset): Optional ATTACHED RELATED FACTS as a {relation_name:
             [row, ...]} map, where each row is a {column: scalar} dict. These ride alongside the focal `facts` (the scalar
             row, including any join-key column) and let a rule bring a relational join INSIDE the verified decision: an

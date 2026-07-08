@@ -10,6 +10,9 @@ from ..types import UNSET, Unset
 
 if TYPE_CHECKING:
     from ..models.build_request_config import BuildRequestConfig
+    from ..models.build_request_scored_determinations_type_0 import (
+        BuildRequestScoredDeterminationsType0,
+    )
     from ..models.invariant import Invariant
 
 
@@ -29,6 +32,17 @@ class BuildRequest:
             platform and the violations are recorded in ``config.verification_gate_violations``. The verified label is
             reserved for rule sets that pass the gate. The query-time proof is never overridable, so this can never produce
             an unsound ``proof_checked`` certificate. Default: False.
+        scored_determinations (BuildRequestScoredDeterminationsType0 | None | Unset): Verified profile only. Score an
+            OPEN-TEXTURED predicate that bright-line rules cannot decide (e.g. compatibility, reasonableness, materiality,
+            good-faith). When enabled, at query time the platform's own language model is given the predicate's doctrine
+            plus the named request text fields and returns a calibrated probability that the predicate holds; that
+            probability is admitted as a confidence-carrying fact subject to τ (``verified_min_confidence``) — at or above τ
+            it can support a permit, below τ (or if the model abstains, is out of distribution, or disagrees with itself) it
+            admits no fact and the request routes to an escalate rule instead. The score is computed on the server from the
+            text (a caller cannot set it). Shape: ``{"enabled": bool, "determinations": [{"head": str, "question": str,
+            "doctrine": str, "situation_fields": {label: request_field}}]}``. Its guarantee is empirical (calibration-in-
+            regime + coherent input + fail-closed on out-of-distribution input) — weaker than the exact deductive proofs;
+            use it only where deduction is silent.
         team_id (int | None | Unset): Required when visibility='team'; the caller must be a member.
         verified_min_confidence (float | None | Unset): Verified profile only. τ — the certified-fact confidence
             threshold in [0,1]. Facts (from retrieval or extracted from the query text) below τ are rejected at the
@@ -43,6 +57,7 @@ class BuildRequest:
     config: BuildRequestConfig | Unset = UNSET
     invariant_manifest: list[Invariant] | None | Unset = UNSET
     override_verification_gate: bool | Unset = False
+    scored_determinations: BuildRequestScoredDeterminationsType0 | None | Unset = UNSET
     team_id: int | None | Unset = UNSET
     verified_min_confidence: float | None | Unset = UNSET
     verified_profile: bool | Unset = False
@@ -50,6 +65,10 @@ class BuildRequest:
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        from ..models.build_request_scored_determinations_type_0 import (
+            BuildRequestScoredDeterminationsType0,
+        )
+
         domain_id = self.domain_id
 
         config: dict[str, Any] | Unset = UNSET
@@ -71,6 +90,16 @@ class BuildRequest:
             invariant_manifest = self.invariant_manifest
 
         override_verification_gate = self.override_verification_gate
+
+        scored_determinations: dict[str, Any] | None | Unset
+        if isinstance(self.scored_determinations, Unset):
+            scored_determinations = UNSET
+        elif isinstance(
+            self.scored_determinations, BuildRequestScoredDeterminationsType0
+        ):
+            scored_determinations = self.scored_determinations.to_dict()
+        else:
+            scored_determinations = self.scored_determinations
 
         team_id: int | None | Unset
         if isinstance(self.team_id, Unset):
@@ -105,6 +134,8 @@ class BuildRequest:
             field_dict["invariant_manifest"] = invariant_manifest
         if override_verification_gate is not UNSET:
             field_dict["override_verification_gate"] = override_verification_gate
+        if scored_determinations is not UNSET:
+            field_dict["scored_determinations"] = scored_determinations
         if team_id is not UNSET:
             field_dict["team_id"] = team_id
         if verified_min_confidence is not UNSET:
@@ -119,6 +150,9 @@ class BuildRequest:
     @classmethod
     def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
         from ..models.build_request_config import BuildRequestConfig
+        from ..models.build_request_scored_determinations_type_0 import (
+            BuildRequestScoredDeterminationsType0,
+        )
         from ..models.invariant import Invariant
 
         d = dict(src_dict)
@@ -159,6 +193,29 @@ class BuildRequest:
 
         override_verification_gate = d.pop("override_verification_gate", UNSET)
 
+        def _parse_scored_determinations(
+            data: object,
+        ) -> BuildRequestScoredDeterminationsType0 | None | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            try:
+                if not isinstance(data, dict):
+                    raise TypeError()
+                scored_determinations_type_0 = (
+                    BuildRequestScoredDeterminationsType0.from_dict(data)
+                )
+
+                return scored_determinations_type_0
+            except (TypeError, ValueError, AttributeError, KeyError):
+                pass
+            return cast(BuildRequestScoredDeterminationsType0 | None | Unset, data)
+
+        scored_determinations = _parse_scored_determinations(
+            d.pop("scored_determinations", UNSET)
+        )
+
         def _parse_team_id(data: object) -> int | None | Unset:
             if data is None:
                 return data
@@ -195,6 +252,7 @@ class BuildRequest:
             config=config,
             invariant_manifest=invariant_manifest,
             override_verification_gate=override_verification_gate,
+            scored_determinations=scored_determinations,
             team_id=team_id,
             verified_min_confidence=verified_min_confidence,
             verified_profile=verified_profile,
