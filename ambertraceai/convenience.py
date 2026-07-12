@@ -254,9 +254,12 @@ class AmbertraceError(Exception):
     def rejected_facts(self) -> list:
         """The facts the verified engine rejected (may be empty).
 
-        Prefers an explicit ``rejected_facts`` list off the error body (the
-        structured fail-closed query error — item 3); falls back to the
-        ``field`` names carried in ``details`` for back-compatibility.
+        Prefers the explicit ``rejected_facts`` list off the error body — the
+        structured :class:`~ambertraceai.responses.RejectedFact` shape
+        (``{field, value, reasons}``) the platform emits on a fail-closed 503
+        (#652). Falls back to the bare ``field`` names carried in ``details``
+        for back-compatibility with a pre-#652 deployment (which surfaced only
+        the ``details`` FieldError block).
         """
         if self._rejected_facts_explicit is not None:
             return self._rejected_facts_explicit
@@ -1700,17 +1703,57 @@ class PredictionResource(_Resource):
 
 
 class ApiKeyResource(_Resource):
+    """Manage API keys — create, list, revoke, and zero-downtime **rotate**.
+
+    Keys optionally carry an **expiry** (`expires_at`, ISO-8601; naive values
+    are treated as UTC; must be in the future) and can be **rotated** ahead of
+    expiry via :meth:`rotate`, which mints a replacement and puts the old key
+    into a bounded **grace** window so callers can cut over without downtime.
+    Listings surface `expires_at`, `grace_until`, and `rotated_from_id`.
+    """
+
     def list(self) -> list[dict]:
+        """List API keys visible to the caller (includes `expires_at`,
+        `grace_until`, `rotated_from_id` for rotation/expiry lineage)."""
         return self._request("GET", "/api/v1/api-keys")
 
-    def create(self, *, scope: str = "platform", platform_id: int | None = None, name: str = "Default") -> dict:
+    def create(self, *, scope: str = "platform", platform_id: int | None = None,
+               name: str = "Default", expires_at: str | None = None) -> dict:
+        """Create an API key. The plaintext key is returned exactly once.
+
+        ``expires_at``: optional ISO-8601 datetime after which the key stops
+        validating (naive values are treated as UTC; must be in the future,
+        else the server returns 422).
+        """
         body: dict[str, Any] = {"scope": scope, "name": name}
         if platform_id is not None:
             body["platform_id"] = platform_id
+        if expires_at is not None:
+            body["expires_at"] = expires_at
         return self._request("POST", "/api/v1/api-keys", json=body)
 
     def revoke(self, key_id: int) -> dict:
         return self._request("DELETE", f"/api/v1/api-keys/{key_id}")
+
+    def rotate(self, key_id: int, *, grace_seconds: int | None = None,
+               expires_at: str | None = None) -> dict:
+        """Rotate an API key with zero downtime: mint a replacement and put the
+        old key into a bounded **grace** window (default 300s, max 86400s /
+        24h; `grace_seconds=0` = immediate cut-over) after which it stops
+        validating like a revoked key. The replacement inherits the old key's
+        org, owner, platform binding, scope, name, rate limit, token budget,
+        IP allowlist, and expiry (override the new key's expiry via
+        ``expires_at``). Returns 201 with the new key secret exactly once,
+        under ``key``, plus ``rotated_from_id`` and ``old_key`` (its id +
+        `grace_until`). Raises on 409 if the key is already revoked, expired,
+        or already rotated — create a new key instead.
+        """
+        body: dict[str, Any] = {}
+        if grace_seconds is not None:
+            body["grace_seconds"] = grace_seconds
+        if expires_at is not None:
+            body["expires_at"] = expires_at
+        return self._request("POST", f"/api/v1/api-keys/{key_id}/rotate", json=body)
 
 
 class ConnectorResource(_Resource):

@@ -284,8 +284,14 @@ class CertifiedFactSummary(TypedDict, total=False):
 
 
 class RejectedFact(TypedDict, total=False):
-    """One fact rejected at the certified-fact gate
-    (``explanation.rejected_facts``)."""
+    """One fact rejected at the certified-fact gate.
+
+    Carried on BOTH surfaces (#652): the 200 ``explanation.rejected_facts`` and
+    the fail-closed 503 error body's ``rejected_facts`` (read via
+    ``AmbertraceError.rejected_facts``). ``field`` is the rejected field name,
+    ``value`` the offending value (``None`` when the reject carries none, e.g. a
+    grace/absence reject), and ``reasons`` the machine-readable rejection
+    reasons (e.g. out-of-domain, below-threshold)."""
 
     field: Required[str]
     value: Any

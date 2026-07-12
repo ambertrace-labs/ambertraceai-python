@@ -130,7 +130,7 @@ print(answer["explanation"])
 | `api.connectors` | `list`, `test` |
 | `api.usage` | `get` |
 | `api.jobs` | `get` |
-| `api.api_keys` | `list`, `create`, `revoke` |
+| `api.api_keys` | `list`, `create` (optional `expires_at`), `revoke`, `rotate` (grace-window rotation) |
 | `api.agent_policy` (preview) | `author`, `status`, `examples`, `authorize_action`, `create_session`, `step`, `get_session` |
 
 ## Verified relational queries — cross-domain cueing (preview)
@@ -423,14 +423,16 @@ api.datasets.fetch(domain_id=1, connector_type="rest",
 AI agents authenticate with **user-scoped API keys** that give full lifecycle access (domains, datasets, platforms, rules, predictions). A human creates the key from the dashboard; the agent can then create narrower platform-scoped keys for its integrations.
 
 ```python
-# Agent creates a platform-scoped key for a specific integration
+# Agent creates a platform-scoped key for a specific integration, optionally
+# with an expiry (ISO-8601; naive = UTC; must be in the future)
 platform_key = api.api_keys.create(
     scope="platform",
     platform_id=42,
     name="Slack Integration",
+    expires_at="2026-12-31T00:00:00Z",
 )
 
-# List keys visible to this agent
+# List keys visible to this agent (includes expires_at / grace_until / rotated_from_id)
 keys = api.api_keys.list()
 
 # Revoke a platform key the agent created
@@ -438,6 +440,28 @@ api.api_keys.revoke(platform_key["id"])
 ```
 
 User-scoped keys cannot create other user-scoped keys (no self-replication). Chat, conversations, and billing remain human-only.
+
+### Rotation — zero-downtime key replacement
+
+Ahead of expiry (or on a routine rotation schedule), `rotate()` mints a
+replacement key and puts the old key into a bounded **grace** window so
+in-flight callers keep working while you cut over — no window with two
+un-graced keys:
+
+```python
+rotated = api.api_keys.rotate(platform_key["id"], grace_seconds=300)
+new_key = rotated["key"]              # returned exactly once — store it now
+rotated["rotated_from_id"]            # -> platform_key["id"]
+rotated["old_key"]["grace_until"]     # old key keeps validating until this instant
+```
+
+The new key inherits the old key's org, owner, platform binding, scope, name,
+rate limit, token budget, IP allowlist, and expiry (pass `expires_at=` to set
+the new key's own expiry instead). `grace_seconds` is 0–86400 (default from
+`API_KEY_ROTATION_GRACE_SECONDS`, else 300s); `0` cuts over immediately. Rotating
+an already-revoked, already-expired, or already-rotated key raises
+`AmbertraceError` (409) — create a new key instead. A runnable demo is in
+[`examples/04_api_keys.py`](examples/04_api_keys.py).
 
 ## Async operations
 
@@ -536,9 +560,15 @@ try:
 except AmbertraceError as e:
     e.missing_atoms    # atoms a decision rule needed but were neither supplied nor derived
     e.deciding_rule    # the rule that stalled, if named
-    e.rejected_facts   # facts the engine rejected
+    e.rejected_facts   # list[RejectedFact] = {field, value, reasons} — the facts the engine rejected
     e.stalled_stage    # where the chain stopped (e.g. "decision")
 ```
+
+`e.rejected_facts` is a list of the typed `RejectedFact` — `{field, value, reasons}`
+(the same shape as `explanation["rejected_facts"]` on a `200`), so you can attribute a
+rejection to the specific field, its offending value, and the machine-readable reasons
+(e.g. out-of-domain, below-threshold). Against a pre-1.0.6 deployment that supplied only
+the prose `details`, `rejected_facts` falls back to the bare field-name strings.
 
 Each defaults to `[]` / `None` when the deployment doesn't supply it (back-compatible).
 This brings the query failure path to parity with
@@ -551,7 +581,31 @@ Full API reference: [app.ambertrace.ai/openapi/redoc](https://app.ambertrace.ai/
 
 ## Changelog
 
-### 1.0.5 (unreleased)
+### 1.0.7 — 2026-07-12
+
+**API-key rotation + customer-settable expiry (#667/#793).** `api.api_keys.create`
+gains an optional `expires_at` (ISO-8601; naive = UTC; must be in the future, else
+422). New `api.api_keys.rotate(key_id, *, grace_seconds=None, expires_at=None)`
+atomically mints a replacement key (inheriting org/owner/platform/scope/name/rate
+limit/token budget/IP allowlist/expiry) and puts the old key into a bounded grace
+window (0–86400s, default 300s) so callers rotate with zero downtime; returns 201
+with the new key secret exactly once. Rotating a revoked, expired, or
+already-rotated key raises `AmbertraceError` (409). Key listings now also carry
+`expires_at`, `grace_until`, `rotated_from_id`. See [`examples/04_api_keys.py`](examples/04_api_keys.py).
+
+### 1.0.6 (shipped within 1.0.7 — never released standalone)
+
+**Structured `rejected_facts` on the fail-closed error body (#652).** A verified
+`platforms.query` that fails closed (503) now carries a top-level, machine-readable
+`rejected_facts` list — the typed `RejectedFact` = `{field, value, reasons}` — read via
+`AmbertraceError.rejected_facts`. Previously the 503 surfaced only the prose `details`
+block, so `AmbertraceError.rejected_facts` fell back to bare field-name strings, losing
+the offending value and the per-fact reasons. The shape now matches the `200`
+`explanation.rejected_facts` contract, so a rejection can be attributed to the specific
+field, its value, and why (out-of-domain, below-threshold, …). Back-compatible: against a
+pre-1.0.6 deployment the property still falls back to the `details` field names.
+
+### 1.0.5
 
 **Graceful escalate on an uncertified prediction reference (additive, backward-
 compatible).** `platforms.query(predictions=…)` references gain an optional
