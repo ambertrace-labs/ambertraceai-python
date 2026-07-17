@@ -23,6 +23,7 @@ example that shows it). If you're unsure whether something is `author()`,
 | APG distinct-actor quorum + separation-of-duties | `agent_policy.author("… two DIFFERENT approvers, none the author …")` + `authorize_action(relations=…)` | 28 |
 | Explainable symbolic forecasting + WHY | `predictions.symbolic_forecast(...)` (`why` / `prediction_record`) | 23, 26 |
 | Neural-evidence retrieval breadth on a query | `platforms.query(..., top_k=N)` | — |
+| Org-capability discovery + 403 handling | `GET /api/v1/capabilities` (user-scoped key) + branch on `AmbertraceError.code == "capability_disabled"` | 42 |
 
 Full method surface is in **Resources** below; the runnable demos are in `examples/`.
 
@@ -537,6 +538,56 @@ if not diag.get("can_decide_adversely", True):
 
 Fields: `rule_count`, `classifier_count`, `verdict_conclusion_count`, `connected_restrictive_count` (ints); `can_decide_adversely` (bool); `decision_coverage_warnings`, `non_discriminating_rules`, `orphan_derived` (list[str]), `unbound_references` (list).
 
+## Org-Capability Gating
+
+Organisations can have individual capabilities (`chat`, `query`, `predictions`)
+enabled or disabled by an administrator. All three are **enabled by default** --
+the gate can never silently lock out an org that has not been explicitly
+configured. When a capability is disabled, every endpoint tagged with that
+capability returns HTTP 403 with a structured error:
+
+```python
+# Response body when a capability is disabled:
+# {
+#   "error": {
+#     "code": "capability_disabled",
+#     "message": "This capability is not enabled for your organisation. ..."
+#   },
+#   "capability": "query"       # the gated capability name
+# }
+
+from ambertraceai import AmbertraceError
+
+try:
+    api.platforms.query(platform_id, query="...", facts={...})
+except AmbertraceError as e:
+    if e.code == "capability_disabled":
+        print(f"Capability '{e.capability}' is disabled for this org.")
+```
+
+**Discovery.** `GET /api/v1/capabilities` returns the caller's org effective set
+(user-scoped and session callers only). Platform-scoped API keys receive 403
+`forbidden` on the discovery endpoint (scope-context precedent — they are bound
+to a single platform with no org-wide visibility). A platform-key caller should
+either use a user-scoped key for discovery, or have an org administrator
+communicate the enabled set out of band.
+
+```python
+caps = api._request("GET", "/api/v1/capabilities")
+if caps["capabilities"].get("predictions") is False:
+    print("Predictions disabled — skip the call.")
+```
+
+**Capabilities and their gated endpoints:**
+
+| Capability | Gated endpoints |
+|------------|-----------------|
+| `chat` | `POST /api/v1/chat` |
+| `query` | `POST /platforms/{id}/query`, `/export-report`, `/authorize-action`, agent sessions |
+| `predictions` | All `/predictions*`, `/prediction-configs*`, `/predict`, `/symbolic-forecast`, `/residual-diagnosis` endpoints |
+
+A runnable demo is in [`examples/42_capability_gating.py`](examples/42_capability_gating.py).
+
 ## Error Handling
 
 ```python
@@ -580,6 +631,31 @@ This brings the query failure path to parity with
 Full API reference: [app.ambertrace.ai/openapi/redoc](https://app.ambertrace.ai/openapi/redoc)
 
 ## Changelog
+
+### 1.0.8 — 2026-07-17
+
+**Org-capability gating — the `capability_disabled` 403 contract (#1005).**
+Organisations can now have individual capabilities (`chat`, `query`,
+`predictions`) enabled or disabled by an administrator. All three default to
+ENABLED (the gate never silently locks out an existing org). When a capability
+is disabled, every gated endpoint returns HTTP 403 with error code
+`capability_disabled` and a top-level `capability` field naming the denied
+capability, so SDK callers can branch programmatically. A new
+`GET /api/v1/capabilities` endpoint (user-scoped / session callers only; part
+of the public OpenAPI spec) returns the caller's org effective capability set.
+Platform-scoped API keys get 403 `forbidden` on the discovery endpoint
+(scope-context precedent). New example `42_capability_gating.py` demonstrates
+discovery, 403 handling, and pre-flight checks. `platforms.query()`,
+`predictions.predict()`, and `predictions.symbolic_forecast()` docstrings now
+name the capability gate and the 403 code. See the new
+[Org-Capability Gating](#org-capability-gating) section.
+
+**Public-spec promotion (#868, docs-only — no SDK behaviour change).** The Agent
+Policy Gate and the `symbolic_forecast` / `residual_diagnosis` "why" layer were
+already reachable from this SDK but omitted from the public v1 OpenAPI spec, so a
+fresh agent reading ReDoc/the spec as the contract could not discover them. Both
+are now in `openapi/ambertrace-v1.json` (58 -> 69 public paths); no method
+signature changed.
 
 ### 1.0.7 — 2026-07-12
 

@@ -1008,6 +1008,16 @@ class PlatformResource(_Resource):
                 # r == {"rule_name": "pvs1_rule", "fired": True,
                 #       "required": True, "rule_type": "constraint", ...}
                 ...
+
+        **Org-capability gating.** This endpoint requires the ``query``
+        capability to be enabled for the caller's organisation. If the
+        capability is disabled, the endpoint returns HTTP 403 with error code
+        ``capability_disabled`` and a top-level ``capability`` field naming the
+        gated capability (``"query"``). Discover your org's effective set via
+        ``GET /api/v1/capabilities`` (user-scoped / session callers only;
+        platform-scoped keys receive 403 ``forbidden`` on that endpoint --
+        have an org administrator communicate the capability set, or use a
+        user-scoped key for discovery).
         """
         body: dict[str, Any] = {"query": query, "explain": explain,
                                 "top_k": top_k, **kwargs}
@@ -1149,6 +1159,10 @@ class PredictionResource(_Resource):
         .. versionchanged:: 1.0.0
             ``value`` is now the reconstructed LEVEL by default for a differenced
             target (was the raw change); the change moved to ``value_change``.
+
+        **Org-capability gating.** Requires the ``predictions`` capability.
+        Returns 403 ``capability_disabled`` when disabled for the org (see
+        ``GET /api/v1/capabilities``).
         """
         body: dict[str, Any] = {"prediction_config_id": prediction_config_id, "explain": explain}
         if feature_overrides is not None:
@@ -1641,6 +1655,10 @@ class PredictionResource(_Resource):
         ``prediction_record.why_certification`` ALWAYS carries the compact handle
         (it is a proof-carrying handle re-checked by the decision layer, never a
         second copy of the fact list) regardless of the flag.
+
+        **Org-capability gating.** Requires the ``predictions`` capability.
+        Returns 403 ``capability_disabled`` when disabled for the org (see
+        ``GET /api/v1/capabilities``).
         """
         body: dict[str, Any] = {
             "prediction_config_id": prediction_config_id,
