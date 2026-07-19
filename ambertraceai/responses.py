@@ -136,6 +136,30 @@ class BuildQuality(TypedDict, total=False):
     checks: list[BuildQualityCheck]
 
 
+class StatedConstraintFinding(TypedDict, total=False):
+    """A single finding from the stated-constraint faithfulness diagnostic
+    (``domains.get(id)["ontology"]["stated_constraint_diagnostics"]``).
+
+    Each finding reports a constraint the domain description STATES (e.g.
+    "debt must not exceed 40% of income") that no rule in the built program
+    encodes. Advisory only -- it never gates the build. Fields:
+
+    - ``type``: always ``"stated_constraint_not_encoded"``.
+    - ``comparison_field`` / ``coefficient_field``: the two data columns in
+      the stated relation (from the customer's own description + data).
+    - ``coefficient``: the numeric multiplier (e.g. 0.4 for "40%").
+    - ``direction``: the comparison direction (e.g. ``"lte"``).
+    - ``sentence``: the source sentence from the domain description.
+    """
+
+    type: str
+    comparison_field: str
+    coefficient_field: str
+    coefficient: float | None
+    direction: str | None
+    sentence: str | None
+
+
 class GenerationDiagnostics(TypedDict, total=False):
     """The build-generation diagnostics behind :class:`BuildQuality`
     (``wait_for_job(...)["result"]["generation_diagnostics"]``)."""

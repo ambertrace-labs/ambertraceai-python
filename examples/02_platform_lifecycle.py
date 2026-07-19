@@ -109,6 +109,19 @@ def main() -> None:
                 for w in diag.get("decision_coverage_warnings", []):
                     step(f"  coverage warning: {w}")
 
+        # STATED-CONSTRAINT DIAGNOSTIC — after the ontology build, the domain
+        # detail carries an advisory diagnostic listing constraints the description
+        # states but no rule encodes (e.g. "debt <= 40% of income" with no
+        # cross-field coefficient rule). Absent when all constraints are encoded.
+        domain_detail = api.domains.get(domain_id)
+        sc_diag = (domain_detail.get("ontology") or {}).get(
+            "stated_constraint_diagnostics")
+        if sc_diag:
+            step(f"Stated-constraint diagnostic: {len(sc_diag)} unencoded constraint(s)")
+            for f in sc_diag:
+                step(f"  {f['comparison_field']} {f.get('direction')} "
+                     f"{f.get('coefficient')}*{f['coefficient_field']}")
+
         platform = api.platforms.get(platform_id)
         if platform.get("status") in ("active", "ready"):
             step("Querying the platform…")

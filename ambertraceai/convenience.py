@@ -447,6 +447,15 @@ class DomainResource(_Resource):
         return self._request("POST", "/api/v1/domains", json={"name": name, "description": description, **kwargs})
 
     def get(self, domain_id: int) -> DomainOut:
+        """Return the full domain detail including the ontology.
+
+        The ``ontology`` dict on the response carries the built rule set and,
+        when a stated constraint from the domain description is not encoded by
+        any rule, a ``stated_constraint_diagnostics`` list of
+        :class:`~ambertraceai.responses.StatedConstraintFinding` dicts.
+        This diagnostic is advisory (it never gates the build) and only appears
+        when there are unencoded constraints to report.
+        """
         return self._request("GET", f"/api/v1/domains/{domain_id}")
 
     def update(self, domain_id: int, **kwargs) -> DomainOut:
@@ -633,10 +642,22 @@ class DatasetResource(_Resource):
             return _wrap(self._request("POST", "/api/v1/datasets/upload", files=files, data=data))
 
     def fetch(self, *, domain_id: int, connector_type: str, config: dict | None = None) -> DatasetOut:
-        """Ingest a dataset from a registered connector (e.g. 'fred', 'yahoo',
-        'coinbase', 'rest'). ``config`` carries connector-specific options and any
-        bring-your-own-key credentials (e.g. {'api_key': ...} for FRED). See
-        api.connectors.list() for available connectors and their requirements.
+        """Ingest a dataset from a registered connector.
+
+        Connector types (``connector_type``):
+
+        * **Keyless (public data):** ``yahoo``, ``coinbase``, ``boe``, ``ecb``,
+          ``oecd``, ``eurostat``, ``fiscaldata``, ``edgar``, ``worldbank``,
+          ``gdelt``, ``sentiment``.
+        * **Bring-your-own-key:** ``fred`` / ``fred_sentiment`` (free FRED key,
+          ``config["api_key"]``), ``imf`` (IMF iData subscription key,
+          ``config["api_key"]`` = ``Ocp-Apim-Subscription-Key``; set
+          ``IMF_API_KEY`` in the env), ``rest`` (custom auth via
+          ``config["headers"]``).
+
+        ``config`` carries connector-specific options and any bring-your-own-key
+        credentials. See ``api.connectors.list()`` for the full list with
+        descriptions and required fields.
 
         ASYNC (like :meth:`fetch_multi`): the network fetch runs in the
         background, so this returns the dataset record (HTTP 202) with
@@ -1775,11 +1796,26 @@ class ApiKeyResource(_Resource):
 
 
 class ConnectorResource(_Resource):
-    """Data-source connectors (e.g. FRED, Yahoo Finance).
+    """Data-source connectors for external economic and financial data.
 
-    Connectors that pull from third-party providers may require *your own*
-    credentials for that provider (e.g. a FRED API key). Pass them in the
-    ``config`` dict — Ambertrace does not supply third-party keys on your behalf.
+    Available connectors (call ``list()`` for the full catalogue):
+
+    * **Market data (keyless):** ``yahoo`` (stocks/ETFs), ``coinbase`` (crypto).
+    * **Central banks (keyless):** ``boe`` (BoE gilt yields, SONIA), ``ecb``
+      (ECB euro-area yield curves).
+    * **Government/statistical (keyless):** ``eurostat`` (EU SDMX macro/prices),
+      ``fiscaldata`` (US Treasury debt/rates/FX), ``edgar`` (SEC XBRL company
+      fundamentals), ``worldbank`` (World Bank development indicators),
+      ``oecd`` (OECD SDMX macro).
+    * **BYO-key:** ``fred`` / ``fred_sentiment`` (free FRED key -- also supports
+      ALFRED point-in-time vintage via ``as_of_date`` / ``vintage``), ``imf``
+      (IMF iData SDMX, ``Ocp-Apim-Subscription-Key``).
+    * **Other:** ``rest`` (generic REST/CSV, BYO auth via headers), ``gdelt``
+      (news tone), ``sentiment`` (LLM-scored RSS sentiment).
+
+    Connectors that hit a credentialed provider require *your own* key, passed in
+    the ``config`` dict -- Ambertrace does not supply third-party keys on your
+    behalf.
     """
 
     def list(self) -> list[dict]:

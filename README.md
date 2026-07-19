@@ -22,7 +22,7 @@ example that shows it). If you're unsure whether something is `author()`,
 | APG temporal / sequencing (precedence, rate, pairing) | `agent_policy.author("… preceded by …")` + `create_session` + `step` | 40 |
 | APG distinct-actor quorum + separation-of-duties | `agent_policy.author("… two DIFFERENT approvers, none the author …")` + `authorize_action(relations=…)` | 28 |
 | Explainable symbolic forecasting + WHY | `predictions.symbolic_forecast(...)` (`why` / `prediction_record`) | 23, 26 |
-| Neural-evidence retrieval breadth on a query | `platforms.query(..., top_k=N)` | — |
+| Neural-evidence retrieval breadth on a query | `platforms.query(..., top_k=N)` | -- |
 | Org-capability discovery + 403 handling | `GET /api/v1/capabilities` (user-scoped key) + branch on `AmbertraceError.code == "capability_disabled"` | 42 |
 
 Full method surface is in **Resources** below; the runnable demos are in `examples/`.
@@ -264,7 +264,10 @@ automation safety, access control, supply-chain).
 **Availability.** The Agent Policy Gate is a preview capability; its endpoints
 raise `AmbertraceError` (404) when not enabled on your deployment. The cumulative
 / exposure / band classes additionally require the platform's numeric obligation
-checker to be enabled.
+checker to be enabled. Its endpoints (`/agent-policy-gate*`, `/agent-sessions*`,
+`/example-policies`, `authorize-action`) are part of the public v1 OpenAPI spec
+(`openapi/ambertrace-v1.json`) — the contract is documented there and in the
+generated client, not just this SDK.
 
 **`author()` 404 — feature-off vs not-authorised.** A 404 from `author()` has
 *two* possible meanings: (a) the feature isn't enabled (above), or (b) an org
@@ -283,10 +286,13 @@ Train a forecasting model, then **discover explainable correction rules** from i
 residuals and check — honestly — whether they earn their place against the neural
 model alone.
 
-> **Preview.** `symbolic_forecast` is a preview capability behind the
-> `AMBERTRACE_SYMBOLIC_FORECAST` server flag — it raises `AmbertraceError` (404)
-> when the feature is not enabled on your deployment. `discover_prediction_rules`
-> / `neurosymbolic_comparison` are generally available.
+> **Preview.** `symbolic_forecast` / `residual_diagnosis` are preview capabilities
+> behind the `AMBERTRACE_SYMBOLIC_FORECAST` server flag — they raise
+> `AmbertraceError` (404) when the feature is not enabled on your deployment.
+> Both are part of the public v1 OpenAPI spec (`/platforms/{id}/symbolic-forecast`,
+> `/platforms/{id}/residual-diagnosis` in `openapi/ambertrace-v1.json`) — the
+> contract is documented there and in the generated client, not just this SDK.
+> `discover_prediction_rules` / `neurosymbolic_comparison` are generally available.
 
 ```python
 # Train a Time-Series config (target = GS10, the 10y Treasury yield). `mode`
@@ -437,7 +443,7 @@ api.datasets.fetch(domain_id=1, connector_type="worldbank",
                    config={"indicators": ["NY.GDP.MKTP.CD"],
                            "countries": ["GBR", "USA"]})
 
-# Generic REST/CSV -- bring your own auth via headers:
+# Generic REST/CSV — bring your own auth via headers:
 api.datasets.fetch(domain_id=1, connector_type="rest",
                    config={"url": "https://api.example.com/series",
                            "headers": {"Authorization": "Bearer ..."}})
@@ -584,6 +590,23 @@ if not diag.get("can_decide_adversely", True):
 
 Fields: `rule_count`, `classifier_count`, `verdict_conclusion_count`, `connected_restrictive_count` (ints); `can_decide_adversely` (bool); `decision_coverage_warnings`, `non_discriminating_rules`, `orphan_derived` (list[str]), `unbound_references` (list).
 
+### Stated-constraint diagnostics
+
+After an ontology build, `domains.get(domain_id)["ontology"]["stated_constraint_diagnostics"]` reports constraints the domain description **states** but no built rule **encodes** -- for example, "debt must not exceed 40% of income" when no cross-field coefficient rule exists. This is an advisory diagnostic only (it never gates the build) and the key is absent when all stated constraints are encoded.
+
+```python
+domain = api.domains.get(domain_id)
+diag = (domain.get("ontology") or {}).get("stated_constraint_diagnostics")
+if diag:
+    for finding in diag:
+        print(f"Unencoded: {finding['comparison_field']} "
+              f"{finding['direction']} {finding['coefficient']}*"
+              f"{finding['coefficient_field']} "
+              f"(from: \"{finding['sentence']}\")")
+```
+
+Each finding is a dict with: `type` (always `"stated_constraint_not_encoded"`), `comparison_field`, `coefficient_field` (the two data columns), `coefficient` (numeric multiplier), `direction` (e.g. `"lte"`), `sentence` (the source text from the domain description).
+
 ## Org-Capability Gating
 
 Organisations can have individual capabilities (`chat`, `query`, `predictions`)
@@ -613,7 +636,7 @@ except AmbertraceError as e:
 
 **Discovery.** `GET /api/v1/capabilities` returns the caller's org effective set
 (user-scoped and session callers only). Platform-scoped API keys receive 403
-`forbidden` on the discovery endpoint (scope-context precedent — they are bound
+`forbidden` on the discovery endpoint (scope-context precedent -- they are bound
 to a single platform with no org-wide visibility). A platform-key caller should
 either use a user-scoped key for discovery, or have an org administrator
 communicate the enabled set out of band.
@@ -621,7 +644,7 @@ communicate the enabled set out of band.
 ```python
 caps = api._request("GET", "/api/v1/capabilities")
 if caps["capabilities"].get("predictions") is False:
-    print("Predictions disabled — skip the call.")
+    print("Predictions disabled -- skip the call.")
 ```
 
 **Capabilities and their gated endpoints:**
@@ -678,6 +701,14 @@ Full API reference: [app.ambertrace.ai/openapi/redoc](https://app.ambertrace.ai/
 
 ## Changelog
 
+### 1.0.10
+
+**Stated-constraint diagnostics (#1051 Leg D).** The domain detail response
+(`domains.get()`) now documents the `ontology.stated_constraint_diagnostics`
+key -- an advisory list of constraints the domain description states but no
+built rule encodes. New `StatedConstraintFinding` TypedDict in `responses.py`.
+See "Stated-constraint diagnostics" under "Build diagnostics" above.
+
 ### 1.0.9
 
 **Public-data connector catalog (#955).** Six new connectors for public macro,
@@ -710,9 +741,9 @@ HTTP 202 with `status="processing"`; poll `datasets.get(id)` until
 `status="ready"`. New example `44_public_data_connectors.py` covers all six
 plus a `fetch_multi` merge.
 
-### 1.0.8 — 2026-07-17
+### Unreleased
 
-**Org-capability gating — the `capability_disabled` 403 contract (#1005).**
+**Org-capability gating -- the `capability_disabled` 403 contract (#1005).**
 Organisations can now have individual capabilities (`chat`, `query`,
 `predictions`) enabled or disabled by an administrator. All three default to
 ENABLED (the gate never silently locks out an existing org). When a capability
@@ -728,7 +759,7 @@ discovery, 403 handling, and pre-flight checks. `platforms.query()`,
 name the capability gate and the 403 code. See the new
 [Org-Capability Gating](#org-capability-gating) section.
 
-**Public-spec promotion (#868, docs-only — no SDK behaviour change).** The Agent
+**Public-spec promotion (#868, docs-only -- no SDK behaviour change).** The Agent
 Policy Gate and the `symbolic_forecast` / `residual_diagnosis` "why" layer were
 already reachable from this SDK but omitted from the public v1 OpenAPI spec, so a
 fresh agent reading ReDoc/the spec as the contract could not discover them. Both
