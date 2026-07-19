@@ -403,7 +403,41 @@ api.datasets.fetch(domain_id=1, connector_type="fred",
                    config={"api_key": "<your FRED key>",
                            "series_ids": ["GS10", "FEDFUNDS"], "frequency": "monthly"})
 
-# Generic REST/CSV — bring your own auth via headers:
+# FRED ALFRED vintage -- point-in-time snapshot for honest backtests:
+api.datasets.fetch(domain_id=1, connector_type="fred",
+                   config={"api_key": "<your FRED key>",
+                           "series_ids": ["GS10"], "as_of_date": "2024-06-30"})
+
+# Eurostat SDMX -- EU macro/prices (no API key):
+api.datasets.fetch(domain_id=1, connector_type="eurostat",
+                   config={"dataset": "prc_hicp_midx",
+                           "key": "M.I15.CP00.EU27_2020", "label": "HICP"})
+
+# US Treasury FiscalData -- debt, rates, FX (no API key):
+api.datasets.fetch(domain_id=1, connector_type="fiscaldata",
+                   config={"endpoint": "v2/accounting/od/avg_interest_rates",
+                           "fields": ["record_date", "security_desc",
+                                      "avg_interest_rate_amt"],
+                           "pivot_column": "security_desc",
+                           "value_column": "avg_interest_rate_amt"})
+
+# SEC EDGAR XBRL -- US company fundamentals (no API key):
+api.datasets.fetch(domain_id=1, connector_type="edgar",
+                   config={"tickers": ["AAPL"], "concepts": ["Assets"],
+                           "period": "annual"})
+
+# IMF iData SDMX -- global macro (BYO subscription key):
+api.datasets.fetch(domain_id=1, connector_type="imf",
+                   config={"dataflow": "IMF.STA,CPI",
+                           "key": "USA.CPI._T.IX.M",
+                           "api_key": "<your IMF_API_KEY>"})
+
+# World Bank -- global development indicators (no API key):
+api.datasets.fetch(domain_id=1, connector_type="worldbank",
+                   config={"indicators": ["NY.GDP.MKTP.CD"],
+                           "countries": ["GBR", "USA"]})
+
+# Generic REST/CSV -- bring your own auth via headers:
 api.datasets.fetch(domain_id=1, connector_type="rest",
                    config={"url": "https://api.example.com/series",
                            "headers": {"Authorization": "Bearer ..."}})
@@ -413,11 +447,23 @@ api.datasets.fetch(domain_id=1, connector_type="rest",
 |-----------|--------|------|
 | `yahoo` | `symbols`, `interval`, `range` | none |
 | `coinbase` | `product_ids`, `granularity` | none |
-| `fred` / `fred_sentiment` | `series_ids`, `frequency`, **`api_key`** | bring your own |
+| `fred` / `fred_sentiment` | `series_ids`, `frequency`, **`api_key`**; ALFRED: `as_of_date` or `vintage` | bring your own (free) |
+| `eurostat` | `dataset`, `key`, `label` | none |
+| `fiscaldata` | `endpoint`, `fields`, `pivot_column`, `value_column`, `label` | none |
+| `edgar` | `tickers`, `concepts`, `period` (`annual`/`quarterly`), `taxonomy` | none |
+| `imf` | `dataflow`, `key`, **`api_key`** (set `IMF_API_KEY` env var) | bring your own |
+| `worldbank` | `indicators`, `countries` | none |
+| `boe` | `series_codes` | none |
+| `ecb` | `series_keys` | none |
+| `oecd` | `dataflow` | none |
 | `rest` | `url`, `format`, `records_path`, `headers`, `params` | bring your own (via headers) |
+| `gdelt` | *(none)* | none |
+| `sentiment` | *(none)* | none |
 
 **Bring your own provider keys.** Connectors that hit a credentialed provider require
-*your own* key, passed in `config` — Ambertrace never uses a shared key on your behalf.
+*your own* key, passed in `config` -- Ambertrace never uses a shared key on your behalf.
+For the IMF connector, set `IMF_API_KEY` in your environment (the `Ocp-Apim-Subscription-Key`
+header value from [idata.imf.org](https://idata.imf.org)).
 
 ## Agent Keys
 
@@ -631,6 +677,38 @@ This brings the query failure path to parity with
 Full API reference: [app.ambertrace.ai/openapi/redoc](https://app.ambertrace.ai/openapi/redoc)
 
 ## Changelog
+
+### 1.0.9
+
+**Public-data connector catalog (#955).** Six new connectors for public macro,
+fiscal, and company-fundamentals data, plus ALFRED vintage support on the
+existing FRED connector:
+
+* **`eurostat`** -- Eurostat SDMX (EU HICP, unemployment, GDP; no API key;
+  reuse under Decision 2011/833/EU). Config: `dataset`, `key`, optional `label`.
+* **`fiscaldata`** -- US Treasury FiscalData (debt-to-penny, avg interest rates,
+  exchange rates; no API key; US public domain). Config: `endpoint`, plus
+  optional `fields`, `pivot_column`, `value_column`, `label`. Multi-entity
+  presets auto-pivot to wide format.
+* **`edgar`** -- SEC EDGAR XBRL (revenue, net income, assets by ticker; no API
+  key; US public domain; SEC fair-access rate limit enforced). Config: `tickers`,
+  `concepts`, optional `period` (`annual`/`quarterly`), `taxonomy`.
+* **`imf`** -- IMF iData SDMX (CPI, exchange rates, BOP; **BYO API key** --
+  set `IMF_API_KEY` env var, the `Ocp-Apim-Subscription-Key`). Config:
+  `dataflow` (agency-qualified, e.g. `IMF.STA,CPI`), `key`, `api_key`, optional
+  `label`. Bounded retry on transient 5xx.
+* **`worldbank`** -- World Bank Open Data (GDP, CPI, development indicators by
+  country; no API key; CC BY 4.0). Config: `indicators`, `countries`
+  (ISO-3166 alpha-3, or `["all"]`).
+* **`fred` ALFRED vintage** -- point-in-time snapshots for honest backtests
+  (`as_of_date`: fetch each series as known on that date; `vintage:
+  "all_releases"`: full revision history for one series). Mutually exclusive
+  with each other. Existing `fred` usage is unchanged.
+
+All new connectors are async (`is_async = True`) -- `datasets.fetch` returns
+HTTP 202 with `status="processing"`; poll `datasets.get(id)` until
+`status="ready"`. New example `44_public_data_connectors.py` covers all six
+plus a `fetch_multi` merge.
 
 ### 1.0.8 — 2026-07-17
 

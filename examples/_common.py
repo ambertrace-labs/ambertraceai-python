@@ -153,6 +153,15 @@ def fred_api_key() -> str | None:
     return os.environ.get("FRED_API_KEY")
 
 
+def imf_api_key() -> str | None:
+    """The user-supplied IMF iData subscription key (from IMF_API_KEY / .env).
+
+    This is the ``Ocp-Apim-Subscription-Key`` header value for the IMF iData
+    SDMX API. Sign up at https://idata.imf.org to obtain one.
+    """
+    return os.environ.get("IMF_API_KEY")
+
+
 def fetch_dataset(
     api: AmbertraceAPI,
     domain_id: int,
@@ -161,7 +170,9 @@ def fetch_dataset(
 ) -> dict[str, Any]:
     """Ingest a dataset into a domain from a built-in connector.
 
-    Connector types include ``fred``, ``yahoo``, ``coinbase`` (see
+    Connector types include ``fred``, ``yahoo``, ``coinbase``, ``eurostat``,
+    ``fiscaldata``, ``edgar``, ``imf``, ``worldbank``, ``boe``, ``ecb``,
+    ``oecd``, ``rest``, ``gdelt``, ``sentiment`` (see
     ``api.connectors.list()``).
     """
     return api.datasets.fetch(domain_id=domain_id, connector_type=connector_type, config=config)

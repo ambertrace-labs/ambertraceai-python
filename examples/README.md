@@ -37,6 +37,7 @@ Run them in order — each is independent, but they build conceptually.
 | `08_fred_forecast.py` | Ingest FRED macro series → explainable forecast of the 10y yield | Yes (self-cleans) · needs `FRED_API_KEY` |
 | `09_fred_analysis.py` | Ingest FRED series → explainable macro Q&A | Yes (self-cleans) · needs `FRED_API_KEY` |
 | `10_verified_profile.py` | Verified platform: proof-carrying queries, rules CRUD, drift monitoring | Yes (self-cleans) |
+| `44_public_data_connectors.py` | Ingest from six public-data connectors (Eurostat, FiscalData, EDGAR, IMF, World Bank, FRED ALFRED vintage) + multi-source merge | Yes (self-cleans) · `FRED_API_KEY` + `IMF_API_KEY` for keyed connectors |
 
 ### Domain demos
 
