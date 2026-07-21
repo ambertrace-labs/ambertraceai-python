@@ -1,3 +1,14 @@
+# Copyright (c) 2026 Ambertrace Labs Ltd.
+# All rights reserved.
+#
+# This source code is the proprietary and confidential property of
+# Ambertrace Labs Ltd. No part of this file may be reproduced, stored,
+# transmitted, or used in any form or by any means without the prior
+# written permission of Ambertrace Labs Ltd. No license, express or
+# implied, is granted herein.
+#
+# Contact: legal@ambertrace.ai
+
 """AmbertraceAI Python SDK — convenience layer over the generated client."""
 
 from __future__ import annotations
@@ -1074,6 +1085,59 @@ class PlatformResource(_Resource):
     def graph(self, platform_id: int) -> dict:
         return self._request("GET", f"/api/v1/platforms/{platform_id}/graph")
 
+    def rule_impact(self, platform_id: int, *, rule_name: str) -> dict:
+        """Impact analysis: which live decisions depend on this rule?
+
+        The rule is identified by **name** (not by numeric rule ID). This
+        matches the ``rule_edit_gate`` convention used by the verified rule
+        engine, where rules are keyed by name within a platform. Note that
+        :meth:`update_rule` and :meth:`delete_rule` take a numeric
+        ``rule_id`` -- the ``rule_name`` here is the ``name`` field of the
+        rule object those methods operate on.
+
+        Returns a dict with ``rule_name``, ``decisions`` (list of decision
+        nodes with properties including ``audit_log_id``, ``proof_checked``,
+        ``query``), and ``total`` (count).
+
+        Decision nodes are materialized incrementally as queries are made
+        against the platform. A newly built platform will have no decision
+        nodes until its first query.
+
+        .. code-block:: python
+
+            impact = api.platforms.rule_impact(pid, rule_name="income_check")
+            print(f"{impact['total']} decisions depend on this rule")
+            for d in impact["decisions"]:
+                print(f"  - {d['label']} (proof_checked={d['properties']['proof_checked']})")
+        """
+        return self._request(
+            "GET", f"/api/v1/platforms/{platform_id}/graph/rule-impact",
+            params={"rule_name": rule_name},
+        )
+
+    def decision_provenance(self, platform_id: int, decision_node_uuid: str) -> dict:
+        """Audit navigation: provenance subtree for a decision.
+
+        Returns the decision node and all nodes it derived from (rules,
+        datasets, forecasts) via ``derived_from`` edges. Used for compliance
+        review and audit navigation.
+
+        The ``decision_node_uuid`` is the ``node_uuid`` of a decision node
+        in the platform's knowledge graph. Decision nodes are created
+        automatically when queries are made; use :meth:`graph` with
+        ``node_type='decision'`` to list them.
+
+        .. code-block:: python
+
+            prov = api.platforms.decision_provenance(pid, "abc-uuid-123")
+            print(f"Decision: {prov['decision']['label']}")
+            for item in prov["provenance"]:
+                print(f"  <- {item['relation_type']}: {item['node']['label']}")
+        """
+        return self._request(
+            "GET", f"/api/v1/platforms/{platform_id}/graph/provenance/{decision_node_uuid}",
+        )
+
     # -- Rules CRUD --
 
     def list_rules(self, platform_id: int, *, include_inactive: bool = False) -> list[dict]:
@@ -1816,6 +1880,13 @@ class ConnectorResource(_Resource):
     Connectors that hit a credentialed provider require *your own* key, passed in
     the ``config`` dict -- Ambertrace does not supply third-party keys on your
     behalf.
+
+    **Search** (``search()``): resolve natural-language data requests to concrete
+    connector and series entries.  Supports structured filters (``asset_class``,
+    ``country``, ``region``, ``currency``, ``tenor``) and free-text search.
+    Region groups (``asia``, ``europe``, ``developed-markets``, ``G7``, etc.)
+    expand to country sets.  A connector tagged ``country='global'`` matches
+    every region (e.g. Yahoo Finance under ``region='asia'``).
     """
 
     def list(self) -> list[dict]:
@@ -1833,6 +1904,98 @@ class ConnectorResource(_Resource):
             "/api/v1/connectors/test",
             json={"connector_type": connector_type, "config": config},
         )
+
+    def search(
+        self,
+        *,
+        q: str | None = None,
+        asset_class: str | None = None,
+        country: str | None = None,
+        region: str | None = None,
+        currency: str | None = None,
+        tenor: str | None = None,
+        offset: int = 0,
+        limit: int = 50,
+    ) -> dict:
+        """Search connectors and series by structured filters and/or free text.
+
+        Resolves natural-language data requests (e.g. ``'5y german rate'``,
+        ``'asian equities'``, ``'developed-market FX'``) to concrete connector
+        and series entries suitable for building a model.
+
+        All filters are AND-ed.  Results include both **connector-level**
+        entries (all registered connectors) and **series-level** entries
+        (statically-enumerable series — ECB yield-curve keys, BoE known series,
+        FRED DGS rates and common macro indicators).  Series search covers
+        the statically-enumerable set; dynamic dataflow enumeration (arbitrary
+        FRED/Yahoo/SDMX series) is follow-up.
+
+        Parameters
+        ----------
+        q : str, optional
+            Free-text search term — lexical, case-insensitive substring match
+            on connector/series names and descriptions.
+        asset_class : str, optional
+            Filter by asset class (e.g. ``'rates'``, ``'fx'``,
+            ``'economics/macro'``, ``'equities'``, ``'crypto'``).
+        country : str, optional
+            Filter by country tag (ISO-3166 alpha-2 or aggregate code like
+            ``'EA'`` for euro area).  Note: euro-area sovereign yield curves
+            are tagged ``country='EA'``, not ``'DE'`` — for German rates, use
+            ``region='eurozone'`` instead of ``country='DE'``.
+        region : str, optional
+            Filter by named region group.  Expands to the constituent country
+            codes before filtering.  Available groups: ``'asia'``,
+            ``'europe'``, ``'americas'``, ``'developed-markets'``,
+            ``'emerging-markets'``, ``'G7'``, ``'G10'``, ``'eurozone'``.
+            A connector tagged ``country='global'`` matches every region
+            (e.g. Yahoo Finance under ``region='asia'``).
+        currency : str, optional
+            Filter by currency tag (ISO-4217 alpha-3, e.g. ``'EUR'``,
+            ``'USD'``, ``'GBP'``).  Connectors tagged ``'multi'`` match any
+            currency filter.
+        tenor : str, optional
+            Filter by instrument tenor (e.g. ``'5Y'``, ``'10Y'``, ``'3M'``).
+            Series-level only — connector-level entries have no tenor.
+        offset : int
+            Pagination offset (default 0).
+        limit : int
+            Pagination page size (default 50, max 200).
+
+        Returns
+        -------
+        dict
+            ``{"data": [...], "pagination": {"total": N, "limit": L, "offset": O}}``
+            where each item has ``level``, ``connector_type``, ``name``,
+            ``description``, ``asset_classes``, ``countries``, ``currencies``,
+            and optionally ``tenor``.
+
+        Example — resolving ``'5y german rate'``::
+
+            results = api.connectors.search(
+                asset_class="rates", region="eurozone", tenor="5Y",
+            )
+            for item in results["data"]:
+                print(item["name"], item.get("tenor"))
+        """
+        params: dict[str, str | int] = {}
+        if q is not None:
+            params["q"] = q
+        if asset_class is not None:
+            params["asset_class"] = asset_class
+        if country is not None:
+            params["country"] = country
+        if region is not None:
+            params["region"] = region
+        if currency is not None:
+            params["currency"] = currency
+        if tenor is not None:
+            params["tenor"] = tenor
+        if offset:
+            params["offset"] = offset
+        if limit != 50:
+            params["limit"] = limit
+        return self._request("GET", "/api/v1/data/search", params=params)
 
 
 class AgentPolicyResource(_Resource):
