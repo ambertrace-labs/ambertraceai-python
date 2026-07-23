@@ -241,6 +241,32 @@ def main() -> None:
     except AmbertraceError as e:
         step(f"fetch_multi returned {e.code}: {e}")
 
+    # --- 8. DTCC swap curves -- OIS rates for USD/GBP (no API key) -----------
+    # Output columns are named ``{currency}_{tenor}`` -- e.g. ``USD_10Y``,
+    # ``GBP_5Y``.  Each column holds the aggregated OIS swap rate (decimal,
+    # e.g. 0.0418 = 4.18%) for that currency-tenor pair, one row per date.
+    # Use these column names as ``target_field`` in the prediction pipeline
+    # (e.g. ``target_field="USD_10Y"`` to forecast the 10-year USD SOFR rate).
+    print("\n--- DTCC swap curves (OIS rates, no API key) ---")
+    step(
+        "Fetching OIS swap-rate curves (SOFR/SONIA) from DTCC PPD -- "
+        "trade-level public data curated into a clean curve..."
+    )
+    try:
+        ds = api.datasets.fetch(
+            domain_id=domain_id,
+            connector_type="swap_curves",
+            config={
+                "currencies": ["USD", "GBP"],
+                "tenors": ["2Y", "5Y", "10Y", "30Y"],
+                "method": "median",
+                "max_backfill_days": 5,
+            },
+        )
+        step(f"Dataset {ds.get('id')}: status={ds.get('status')}")
+    except AmbertraceError as e:
+        step(f"Swap curves fetch returned {e.code}: {e}")
+
     # --- Cleanup (throw-away domain) ----------------------------------------
     if "--domain-id" not in sys.argv:
         step(f"Cleaning up throw-away domain {domain_id}...")
