@@ -12,8 +12,9 @@ config declares a ``frequency``.
 When ``include_fitted_series=True``, the ``per_tier_skill`` block carries
 per-tier trading metrics (#2162): ``per_tier_skill['composed']`` contains
 trading metrics on the composed prediction (identical to the headline metrics),
-and ``per_tier_skill['rule_layer']`` shows the symbolic rules' standalone
-trading performance.
+``per_tier_skill['rule_layer']`` shows the symbolic rules' standalone
+trading performance, and ``per_tier_skill['neural']`` shows the GBT
+baseline's standalone trading performance.
 
     python 63_sharpe_objective_forecast.py
 
@@ -111,6 +112,14 @@ def main():
         for key in ("directional_pnl", "sharpe_ratio", "hit_rate",
                      "max_drawdown"):
             print(f"  rule_layer.{key}: {rule_layer.get(key)}")
+
+    # The neural entry shows the GBT baseline's standalone trading perf.
+    neural = per_tier_skill.get("neural")
+    if neural:
+        print("\nPer-tier trading metrics (neural = GBT baseline):")
+        for key in ("directional_pnl", "sharpe_ratio", "hit_rate",
+                     "max_drawdown"):
+            print(f"  neural.{key}: {neural.get(key)}")
 
     print("Done.")
 
