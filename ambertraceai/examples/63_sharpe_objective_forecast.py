@@ -20,7 +20,7 @@ baseline's standalone trading performance.
 
 .. note::
 
-   The ``objective`` field is available from the SDK release shipping with
+   The ``objective`` field is available in the current SDK release.
    The configured objective currently does not drive rule acceptance.
 """
 

@@ -90,7 +90,7 @@ class PlatformOut(TypedDict, total=False):
     structural-health summary (see :class:`BuildQuality`).
 
     ``error_message`` (str | None) — present when the platform build failed;
-    carries the human-readable failure reason (persisted at build time,
+    carries the human-readable failure reason (persisted at build time).
     ``None`` on a healthy platform."""
 
     id: Required[int]

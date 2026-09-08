@@ -260,7 +260,7 @@ class AmbertraceError(Exception):
 
         Prefers the explicit ``rejected_facts`` list off the error body — the
         structured :class:`~ambertraceai.responses.RejectedFact` shape
-        (``{field, value, reasons}``) the platform emits on a fail-closed 503
+        (``{field, value, reasons}``) the platform emits on a fail-closed 503.
         Falls back to the bare ``field`` names carried in ``details``
         for back-compatibility with an earlier deployment (which surfaced only
         the ``details`` FieldError block).

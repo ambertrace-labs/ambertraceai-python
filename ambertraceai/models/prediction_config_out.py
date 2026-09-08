@@ -76,7 +76,7 @@ class PredictionConfigOut:
             auto_reduce run: 'dropped_columns' (per-column {column, action:'dropped_auxiliary', null_count}),
             'usable_rows_before'/'usable_rows_after', 'target_rows', 'target_years', 'usable_span_years_after'. Null when
             auto_reduce has never run or the panel already met the declared bar.
-        regime_platform_id (int | None | Unset): ID of the Decisions platform used for regime conditioning Null when no
+        regime_platform_id (int | None | Unset): ID of the Decisions platform used for regime conditioning. Null when no
             regime platform is configured.
         resolved_target_transform (None | str | Unset): Item 6 — the EFFECTIVE target transform, echoed on the config so
             the output space is known without predicting. When a concrete transform was requested ('none' or 'difference')
