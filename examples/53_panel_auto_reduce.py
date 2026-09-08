@@ -1,6 +1,6 @@
 """53 -- Customer-controlled panel construction: column roles + auto-reduce.
 
-Demonstrates Ask 2 of #1482: instead of a manual drop-column-and-retry loop
+Demonstrates auto-reduce: instead of a manual drop-column-and-retry loop
 when a declared sufficiency bar (``min_rows`` / ``min_history_years``) is
 unmet, tag panel columns by ROLE --
 

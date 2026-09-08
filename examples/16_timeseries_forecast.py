@@ -124,13 +124,19 @@ def run_timeseries_experiment(api, args: argparse.Namespace) -> None:
     print(f"  Platform {platform['id']}: {platform['name']} ({platform.get('status')})")
 
     print_section(5, total, "Creating prediction config")
+    # model_type='auto' (the default) trains all five candidate models
+    # (GBT, Ridge, Lasso, LSTM, Transformer) and selects the winner by
+    # eval_metric on the validation split. The winning model type and
+    # per-candidate scores are recorded in the metrics payload.
+    # autoregressive='none' (the default) = Drivers only -- explain
+    # purely through the other indicators, not the target's own history.
     config = api.predictions.create_config(
         platform["id"],
         target_field="measurement_value",
         time_index_field="reading_date",
         horizon=1,
         frequency="monthly",
-        model_type="gbt",
+        model_type="auto",
     )
     print(f"  Config {config['id']}: target={config.get('target_field')}, "
           f"model={config.get('model_type')} ({config.get('status')})")

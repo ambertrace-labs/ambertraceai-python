@@ -230,7 +230,7 @@ def run_neurosymbolic_bond_yield(api, args: argparse.Namespace) -> None:
     except AmbertraceError as exc:
         print(f"  ! Comparison unavailable ({exc.status_code} {exc.code}): {exc}")
 
-    # What-if: comparison with feature_overrides (#1550). The backtest metrics
+    # What-if: comparison with feature_overrides. The backtest metrics
     # are UNCHANGED (scored against real actuals); the forward_whatif block
     # carries the what-if projection under the supplied overrides.
     print_section(7, total, "Neurosymbolic comparison with what-if override")

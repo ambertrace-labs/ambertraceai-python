@@ -1,6 +1,6 @@
 """51 -- EIA general v2 catalog: browse + pull a non-oil energy dataset.
 
-The ``eia`` connector supports two mutually-exclusive modes (#952):
+The ``eia`` connector supports two mutually-exclusive modes:
 
 * **Mode A** -- preset oil series via ``series_ids`` (see example 24).
 * **Mode B** -- the FULL EIA v2 catalog (electricity, natural gas, coal,
