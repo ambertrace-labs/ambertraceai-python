@@ -1,4 +1,4 @@
-"""54 -- Multi-source panel with on_stale policy for discontinued series (#1382).
+"""54 -- Multi-source panel with on_stale policy for discontinued series.
 
 Demonstrates the customer-controlled staleness policy for wide multi-source
 panels. When one source stops publishing (e.g. a discontinued FRED series),
@@ -18,7 +18,7 @@ The ``stale_periods`` parameter (default 3) controls the threshold: a column
 is flagged stale when its last non-null value lags the panel's last index by
 MORE than ``stale_periods`` cadence periods (cadence = median index spacing).
 
-Combine with ``on_missing`` (#1482) for full panel construction control:
+Combine with ``on_missing`` for full panel construction control:
 ``on_missing`` handles NaN cells from the outer join; ``on_stale`` handles
 columns that stopped publishing entirely.
 

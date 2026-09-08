@@ -4,7 +4,7 @@ Lists the available data-source connectors with their config requirements and
 taxonomy metadata (asset classes, countries, currencies). Supports filtering
 by ``asset_class``, ``country``, and ``currency`` query parameters.
 
-**Agent workflow (#1908):** an agent can browse connectors by metadata to
+**Agent workflow:** an agent can browse connectors by metadata to
 find the right data source for a task:
 
   1. List all connectors to see what is available.
@@ -63,7 +63,7 @@ def main() -> None:
     gb_rates = api.connectors.list(asset_class="rates", country="GB", currency="GBP")
     step(f"  {len(gb_rates)} GB rates connector(s): {[c['type'] for c in gb_rates]}")
 
-    # --- 6. Inspect config_schema for agent-driven configuration (#1908) -----
+    # --- 6. Inspect config_schema for agent-driven configuration -----
     # An agent can read config_schema to learn WHAT to configure before calling
     # test() or fetch(). Each field has: name, type, required, description,
     # and optionally default/enum/example.

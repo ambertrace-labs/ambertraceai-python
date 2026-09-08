@@ -17,7 +17,7 @@ T = TypeVar("T", bound="OnMissingPolicy")
 
 @_attrs_define
 class OnMissingPolicy:
-    """Customer-declared missing-value policy for multi-source panels (Part of #1482).
+    """Customer-declared missing-value policy for multi-source panels.
 
     Controls how NaN cells in the outer-joined panel are handled.
 
@@ -30,11 +30,11 @@ class OnMissingPolicy:
                 interpolation for short gaps (up to max_gap contiguous NaN); longer gaps are dropped. 'proxy_splice' -- forward-
                 fill + back-fill to splice proxy series; flagged as modeled_extrapolation in the transformation manifest.
                 Default: 'ffill'.
-            per_column (None | OnMissingPolicyPerColumnType0 | Unset): Per-source periodicity override (Part of #1482 ask
-                6): column name (POST-NAMESPACE, e.g. 'boe__IUDSOIA') -> {method, max_gap}. Overrides the top-level
-                method/max_gap for the named columns ONLY; every other value column keeps the top-level method. E.g. mix ffill
-                for a step-function rate series with interpolate for a smooth curve series in the SAME panel. The transformation
-                manifest records the ACTUAL per-column method used, not merely the top-level default.
+            per_column (None | OnMissingPolicyPerColumnType0 | Unset): Per-source periodicity override: column name (POST-
+                NAMESPACE, e.g. 'boe__IUDSOIA') -> {method, max_gap}. Overrides the top-level method/max_gap for the named
+                columns ONLY; every other value column keeps the top-level method. E.g. mix ffill for a step-function rate
+                series with interpolate for a smooth curve series in the SAME panel. The transformation manifest records the
+                ACTUAL per-column method used, not merely the top-level default.
     """
 
     max_gap: int | Unset = 3

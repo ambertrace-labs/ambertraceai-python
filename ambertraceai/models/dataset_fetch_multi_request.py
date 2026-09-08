@@ -27,28 +27,28 @@ class DatasetFetchMultiRequest:
         sources (list[FetchSource]): Two or more connector sources to fetch and merge into one dataset. Each value
             column is namespaced by connector_type (e.g. boe__IUDSOIA).
         aggregation (str | Unset): Resample aggregation when frequency is set: 'last' or 'mean'. Default: 'last'.
-        column_roles (DatasetFetchMultiRequestColumnRolesType0 | None | Unset): Column-role declaration (Part of #1482
-            ask 2), keyed by POST-NAMESPACE column name (e.g. 'boe__IUDSOIA'). Columns not listed default to 'auxiliary';
-            the join_on index column is implicitly 'core' regardless of this dict. 'core' columns are NEVER dropped by
-            on_stale.drop_columns or require_coverage -- a stale or low-coverage CORE column is a dataset error instead,
-            never a silent drop. A key naming a column absent from the merged panel (after namespacing) is a validation
-            error. Persisted to schema_info['column_roles']; bridges to a prediction config's core_columns when the config
-            does not set it explicitly (explicit core_columns always wins).
+        column_roles (DatasetFetchMultiRequestColumnRolesType0 | None | Unset): Column-role declaration, keyed by POST-
+            NAMESPACE column name (e.g. 'boe__IUDSOIA'). Columns not listed default to 'auxiliary'; the join_on index column
+            is implicitly 'core' regardless of this dict. 'core' columns are NEVER dropped by on_stale.drop_columns or
+            require_coverage -- a stale or low-coverage CORE column is a dataset error instead, never a silent drop. A key
+            naming a column absent from the merged panel (after namespacing) is a validation error. Persisted to
+            schema_info['column_roles']; bridges to a prediction config's core_columns when the config does not set it
+            explicitly (explicit core_columns always wins).
         frequency (None | str | Unset): Optional common grid to resample every source onto before joining: daily,
             weekly, monthly, quarterly, or annual. Without it, mixed-frequency sources outer-join to a mostly-null table.
         join_on (str | Unset): Index column to outer-join the sources on (default 'date'). Default: 'date'.
-        on_missing (None | OnMissingPolicy | Unset): Missing-value policy applied after the outer join (Part of #1482).
-            Omit for backward-compatible forward-fill. The transformation manifest on the resulting dataset records every
+        on_missing (None | OnMissingPolicy | Unset): Missing-value policy applied after the outer join. Omit for
+            backward-compatible forward-fill. The transformation manifest on the resulting dataset records every
             fill/drop/interpolation with column, method, rows_affected, and modeled_extrapolation flag.
-        on_stale (None | OnStalePolicy | Unset): Staleness policy applied after the panel sufficiency computation
-            (#1382). Omit for backward-compatible warn-only (stale columns are recorded in the panel report but do not
-            block). 'error' fails the dataset; 'drop_columns' removes stale columns from the merged frame. stale_periods
-            overrides the default threshold (3 cadence periods).
-        require_coverage (None | RequireCoverage | Unset): Coverage filter (Part of #1482 ask 4) applied on the raw
-            outer-joined frame, after on_stale and before on_missing. Drops AUXILIARY columns below the declared min_pct
-            coverage; CORE columns are never dropped. Dropped columns are recorded in
-            schema_info['coverage_filter_dropped']. Fails closed (dataset error) if every auxiliary column is dropped AND
-            the surviving core-only panel has no usable (all-core-non-null) rows.
+        on_stale (None | OnStalePolicy | Unset): Staleness policy applied after the panel sufficiency computation. Omit
+            for backward-compatible warn-only (stale columns are recorded in the panel report but do not block). 'error'
+            fails the dataset; 'drop_columns' removes stale columns from the merged frame. stale_periods overrides the
+            default threshold (3 cadence periods).
+        require_coverage (None | RequireCoverage | Unset): Coverage filter applied on the raw outer-joined frame, after
+            on_stale and before on_missing. Drops AUXILIARY columns below the declared min_pct coverage; CORE columns are
+            never dropped. Dropped columns are recorded in schema_info['coverage_filter_dropped']. Fails closed (dataset
+            error) if every auxiliary column is dropped AND the surviving core-only panel has no usable (all-core-non-null)
+            rows.
     """
 
     domain_id: int

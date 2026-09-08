@@ -9,7 +9,7 @@ the per-point GBT neural-tier confidence gate:
 - **tau>0** (e.g. 0.5) -- below-tau GBT predictions are served with
   ``forecast_tier='neural_weak'`` and ``neural_confidence_tau=<tau>`` so
   consumers can distinguish strong from weak neural predictions. The raw
-  GBT value is always served -- never replaced (#1485).
+  GBT value is always served -- never replaced.
 
 The two-axis gate (Axis A: in-training-range OOD gate; Axis B: interval
 sharpness) mirrors the ``ScoredDetermination`` trust-tier pattern
@@ -51,7 +51,7 @@ def main() -> None:
     # Find or create a prediction config with the confidence gate active.
     # neural_confidence_tau=0.5 means: GBT predictions with two-axis
     # confidence >= 0.5 are admitted as 'neural_scored'; below 0.5
-    # the raw GBT prediction is served as 'neural_weak' (#1485).
+    # the raw GBT prediction is served as 'neural_weak'.
     configs = api.platforms.list_prediction_configs(platform_id)
     config_id = None
     for c in configs:
@@ -103,7 +103,7 @@ def main() -> None:
         if basis.get("uncertified_reason"):
             print(f"  reason          : {basis.get('uncertified_reason')}")
 
-    # S3 (#1186): request the symbolic-forecast with fitted_series to get the
+    # Request the symbolic-forecast with fitted_series to get the
     # coverage certificate + per-tier skill reporting. The certificate tells a
     # consumer what fraction of holdout points were served by each tier, and
     # per-tier skill shows how each tier performed independently.
@@ -156,7 +156,7 @@ def main() -> None:
             print(f"    mae                   : {metrics.get('mae')}")
             print(f"    rmse                  : {metrics.get('rmse')}")
 
-    # #2164: per-point rule-firing annotations. Each series point carries
+    # Per-point rule-firing annotations. Each series point carries
     # fired_rules (list of driver names whose condition held on that row)
     # and rule_layer_predicted (anchor + sum of fired effects — the
     # symbolic rule-layer-only prediction for that point).

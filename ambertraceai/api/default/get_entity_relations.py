@@ -68,8 +68,7 @@ def sync_detailed(
     """Entity-linked relations
 
      Returns the declared_relations shape derived from entity-linked datasets in the platform's knowledge
-    graph. These relations can power existsRelated/count_related features in ontology authoring. Scope:
-    #967 (cross-domain entity/join graph).
+    graph. These relations can power existsRelated/count_related features in ontology authoring.
 
     Args:
         id (int): Resource ID
@@ -101,8 +100,7 @@ def sync(
     """Entity-linked relations
 
      Returns the declared_relations shape derived from entity-linked datasets in the platform's knowledge
-    graph. These relations can power existsRelated/count_related features in ontology authoring. Scope:
-    #967 (cross-domain entity/join graph).
+    graph. These relations can power existsRelated/count_related features in ontology authoring.
 
     Args:
         id (int): Resource ID
@@ -129,8 +127,7 @@ async def asyncio_detailed(
     """Entity-linked relations
 
      Returns the declared_relations shape derived from entity-linked datasets in the platform's knowledge
-    graph. These relations can power existsRelated/count_related features in ontology authoring. Scope:
-    #967 (cross-domain entity/join graph).
+    graph. These relations can power existsRelated/count_related features in ontology authoring.
 
     Args:
         id (int): Resource ID
@@ -160,8 +157,7 @@ async def asyncio(
     """Entity-linked relations
 
      Returns the declared_relations shape derived from entity-linked datasets in the platform's knowledge
-    graph. These relations can power existsRelated/count_related features in ontology authoring. Scope:
-    #967 (cross-domain entity/join graph).
+    graph. These relations can power existsRelated/count_related features in ontology authoring.
 
     Args:
         id (int): Resource ID

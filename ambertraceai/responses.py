@@ -91,7 +91,7 @@ class PlatformOut(TypedDict, total=False):
 
     ``error_message`` (str | None) — present when the platform build failed;
     carries the human-readable failure reason (persisted at build time,
-    #1971). ``None`` on a healthy platform."""
+    ``None`` on a healthy platform."""
 
     id: Required[int]
     name: Required[str]
@@ -315,7 +315,7 @@ class CertifiedFactSummary(TypedDict, total=False):
 class RejectedFact(TypedDict, total=False):
     """One fact rejected at the certified-fact gate.
 
-    Carried on BOTH surfaces (#652): the 200 ``explanation.rejected_facts`` and
+    Carried on BOTH surfaces: the 200 ``explanation.rejected_facts`` and
     the fail-closed 503 error body's ``rejected_facts`` (read via
     ``AmbertraceError.rejected_facts``). ``field`` is the rejected field name,
     ``value`` the offending value (``None`` when the reject carries none, e.g. a
@@ -618,10 +618,10 @@ class PredictionRecord(TypedDict, total=False):
     ``False`` when the threshold equals the value (no directional signal).
 
     ``neural_model_name`` (str | None) — the registry key of the neural-tier
-    winner (e.g. ``"gbt"``); echoed from the forecast (#1937).
+    winner (e.g. ``"gbt"``); echoed from the forecast.
 
     ``neural_holdout_skill`` (float | None) — the holdout
-    ``skill_vs_persistence`` of the winning neural model (#1937)."""
+    ``skill_vs_persistence`` of the winning neural model."""
 
     value: Required[float]
     probability: Required[float | None]
@@ -654,7 +654,7 @@ class SymbolicForecastResult(TypedDict, total=False):
     blocks typed as :data:`JsonDict`.
 
     ``hit_rate_alpha`` (float) — the significance level used for the binomial
-    hit-rate pre-filter that gates driver admission (#1963). Echoes the
+    hit-rate pre-filter that gates driver admission. Echoes the
     server's ACTUAL fitted value (default 0.05, overridable via
     ``AMBERTRACE_PREDICTION_HIT_RATE_ALPHA``).
 
@@ -664,12 +664,11 @@ class SymbolicForecastResult(TypedDict, total=False):
 
     ``neural_model_name`` (str | None) — the registry key of the neural-tier
     winner selected during fit (e.g. ``"gbt"``, ``"ridge"``, ``"lasso"``,
-    ``"lstm"``, ``"transformer"``); ``None`` when no neural model was fitted
-    (#1937).
+    ``"lstm"``, ``"transformer"``); ``None`` when no neural model was fitted.
 
     ``neural_holdout_skill`` (float | None) — the holdout
     ``skill_vs_persistence`` of the winning neural model; ``None`` when no
-    neural model was fitted (#1937).
+    neural model was fitted.
 
     ``prediction_react_trajectory`` (dict | None) — the ReAct proposer's
     trajectory summary when the prediction was built via the agentic
@@ -681,7 +680,7 @@ class SymbolicForecastResult(TypedDict, total=False):
     ``prediction_screen_enabled`` (bool) — whether the holdout prediction
     screen was active for this forecast.
 
-    **fitted_series per-point rule-firing annotations (#2164):**
+    **fitted_series per-point rule-firing annotations:**
 
     When ``include_fitted_series=True``, each point in
     ``fitted_series.series[i]`` carries:
@@ -697,7 +696,7 @@ class SymbolicForecastResult(TypedDict, total=False):
     drift-projected level under ``'drift'``). Equals the anchor on
     zero-fire points.
 
-    **per_tier_skill per-tier trading metrics (#2162):**
+    **per_tier_skill per-tier trading metrics:**
 
     When ``include_fitted_series=True`` and the config has a ``frequency``
     set, ``per_tier_skill`` carries per-tier trading metrics alongside the
@@ -707,7 +706,7 @@ class SymbolicForecastResult(TypedDict, total=False):
     ``directional_pnl`` (float | None), ``sharpe_ratio`` (float | None),
     ``hit_rate`` (float | None), ``max_drawdown`` (float).
 
-    Two component-layer entries are added:
+    Three component-layer entries are added:
 
     ``composed`` — trading metrics computed over ALL holdout points using
     the composed prediction (``predicted``). These values are identical to
@@ -717,10 +716,15 @@ class SymbolicForecastResult(TypedDict, total=False):
     ``rule_layer`` — trading metrics computed over ALL holdout points using
     the symbolic rule-layer-only prediction (``rule_layer_predicted``).
 
+    ``neural`` — trading metrics computed over ALL holdout points using the
+    GBT baseline prediction (``neural``). Present when
+    ``baseline_mode='neural'`` (the default).
+
     This lets a consumer reconcile the headline trading metrics with the
     per-point fitted series: ``per_tier_skill['composed']`` equals the
-    headline, and ``per_tier_skill['rule_layer']`` shows the symbolic
-    rules' standalone trading performance."""
+    headline, ``per_tier_skill['rule_layer']`` shows the symbolic rules'
+    standalone trading performance, and ``per_tier_skill['neural']`` shows
+    the GBT baseline's standalone trading performance."""
 
     forecast: Required[ForecastBlock]
     why: Required[list[JsonDict]]
@@ -744,6 +748,54 @@ class SymbolicForecastResult(TypedDict, total=False):
     why_certification: JsonDict
     fitted_series: JsonDict
     unmatched_overrides: list[str]
+    discovery_mode: bool
+    driver_report: list[JsonDict]
+
+
+class DriverReportEntry(TypedDict, total=False):
+    """One ranked driver in a :class:`FindDriversResult` ``driver_report``.
+
+    Each entry is an aggregated base-series driver enriched with holdout
+    evidence. ``holdout_skill`` is the MAX standalone holdout skill among
+    contributing driver-rules; ``significance`` is the MAX fire-rate."""
+
+    series: Required[str]
+    label: Required[str]
+    description: str
+    known: bool
+    importance: float
+    importance_share: float
+    strength: str  # "strong" | "moderate" | "weak"
+    driver_count: int
+    fired_on_latest_row: bool
+    holdout_skill: float | None
+    significance: float | None
+    provenance: str  # "discovered" | "supplied"
+
+
+class FindDriversResult(TypedDict, total=False):
+    """What ``find_drivers`` returns -- a :class:`SymbolicForecastResult` with
+    ``discovery_mode=True`` and a ``driver_report`` (the ranked drivers with
+    their holdout evidence). The full ``why`` / ``forecast`` /
+    ``prediction_record`` are still present for consumers that need them."""
+
+    discovery_mode: Required[bool]
+    driver_report: Required[list[DriverReportEntry]]
+    forecast: Required[ForecastBlock]
+    why: Required[list[JsonDict]]
+    prediction_record: Required[PredictionRecord]
+    target_field: str
+    horizon: int
+    baseline: float
+    skill_vs_persistence: float
+    backtest_skill_vs_persistence: float
+    rule_layer_marginal: float | None
+    max_standalone_holdout_skill: float
+    drivers_fired: int
+    point_is_persistence: bool
+    accepted_drivers: list[JsonDict]
+    aggregated_drivers: list[JsonDict]
+    mode: str
 
 
 class PredictionBlock(TypedDict, total=False):

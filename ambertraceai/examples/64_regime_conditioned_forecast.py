@@ -1,4 +1,4 @@
-"""64 -- Regime-conditioned forecast via composition (#2098).
+"""64 -- Regime-conditioned forecast via composition.
 
 Demonstrates ``regime_platform_id`` on PredictionConfig: the prediction
 config references a separately-built Decisions platform that classifies

@@ -1,6 +1,6 @@
 """55 -- Multi-source panel: column roles (ask 2) + coverage filter (ask 4).
 
-Two related #1482 policies, composed on ``datasets.fetch_multi()``:
+Two related policies, composed on ``datasets.fetch_multi()``:
 
   * ``column_roles`` -- tag POST-NAMESPACE columns as ``"core"`` (never
     dropped by any downstream policy) or ``"auxiliary"`` (droppable).
@@ -34,7 +34,7 @@ from _common import banner, get_client, print_dataset, step, wait_for_dataset
 
 def main() -> None:
     api = get_client()
-    banner("Panel column roles + coverage filter (#1482 asks 2 & 4)")
+    banner("Panel column roles + coverage filter")
 
     domain = api.domains.create(
         name="Column Roles + Coverage Demo",
@@ -84,7 +84,7 @@ def main() -> None:
     print("  (fred__GS10 is CORE -- it is guaranteed present regardless of coverage)")
 
     # The panel report's per-column 'role' field mirrors the same declaration
-    # (Part of #1482 ask 2): PanelColumnOut.role is 'core'/'auxiliary'/None.
+    # PanelColumnOut.role is 'core'/'auxiliary'/None.
     report = api.datasets.panel_report(dataset["id"])
     print("\n  Panel report roles:")
     for col in report.get("columns") or []:

@@ -1,6 +1,6 @@
 """63 -- Sharpe-ratio objective forecast.
 
-Demonstrates the ``objective`` field on PredictionConfig (#2034): creating a
+Demonstrates the ``objective`` field on PredictionConfig: creating a
 prediction config with ``objective='sharpe_ratio'`` so the acceptance gate
 optimises for RISK-ADJUSTED directional PnL instead of the default
 skill-vs-persistence metric.
@@ -10,17 +10,18 @@ max_drawdown) are surfaced in the symbolic-forecast response metadata when the
 config declares a ``frequency``.
 
 When ``include_fitted_series=True``, the ``per_tier_skill`` block carries
-per-tier trading metrics (#2162): ``per_tier_skill['composed']`` contains
+per-tier trading metrics: ``per_tier_skill['composed']`` contains
 trading metrics on the composed prediction (identical to the headline metrics),
-and ``per_tier_skill['rule_layer']`` shows the symbolic rules' standalone
-trading performance.
+``per_tier_skill['rule_layer']`` shows the symbolic rules' standalone
+trading performance, and ``per_tier_skill['neural']`` shows the GBT
+baseline's standalone trading performance.
 
     python 63_sharpe_objective_forecast.py
 
 .. note::
 
    The ``objective`` field is available from the SDK release shipping with
-   #2034 increments 3-4.  The SDK-release train carries it.
+   The configured objective currently does not drive rule acceptance.
 """
 
 import argparse
@@ -84,7 +85,7 @@ def main():
         if val is not None:
             print(f"  {key}: {val}")
 
-    # --- Per-tier trading metrics (#2162) ---
+    # --- Per-tier trading metrics ---
     # Request the fitted series to get per_tier_skill with trading metrics.
     fs_resp = api.symbolic_forecast(
         id=platform_id,
@@ -111,6 +112,14 @@ def main():
         for key in ("directional_pnl", "sharpe_ratio", "hit_rate",
                      "max_drawdown"):
             print(f"  rule_layer.{key}: {rule_layer.get(key)}")
+
+    # The neural entry shows the GBT baseline's standalone trading perf.
+    neural = per_tier_skill.get("neural")
+    if neural:
+        print("\nPer-tier trading metrics (neural = GBT baseline):")
+        for key in ("directional_pnl", "sharpe_ratio", "hit_rate",
+                     "max_drawdown"):
+            print(f"  neural.{key}: {neural.get(key)}")
 
     print("Done.")
 

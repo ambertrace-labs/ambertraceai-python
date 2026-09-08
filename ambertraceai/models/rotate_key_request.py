@@ -14,7 +14,7 @@ T = TypeVar("T", bound="RotateKeyRequest")
 
 @_attrs_define
 class RotateKeyRequest:
-    """Body for POST /api-keys/{id}/rotate (#667). All fields optional.
+    """Body for POST /api-keys/{id}/rotate. All fields optional.
 
     Attributes:
         expires_at (datetime.datetime | None | Unset):

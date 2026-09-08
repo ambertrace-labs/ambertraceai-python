@@ -29,7 +29,7 @@ class ConnectorOut:
         entitlement (str | Unset):  Default: 'restricted'.
         redistributable (bool | Unset):  Default: False.
         requires (list[str] | Unset):
-        source_notice (None | str | Unset): Licence notice (#976) that must be shown wherever this source's data -- or a
+        source_notice (None | str | Unset): Licence notice that must be shown wherever this source's data -- or a
             derivative of it -- is delivered. Some source licences impose a per-access disclosure duty that a signup-time
             acceptance or a static legal footer does not discharge. None when no notice is due.
     """

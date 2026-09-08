@@ -87,7 +87,7 @@ def main() -> None:
         # 2) What-if override: ask "what would the forecast look like if a key
         #    driver were at a different level?". The override is injected into the
         #    raw data before feature engineering + composition, so the baseline
-        #    AND the fired driver-rules respond to the scenario (#1550).
+        #    AND the fired driver-rules respond to the scenario.
         overrides = {"FEDFUNDS": 6.0}
         whatif = api.predictions.symbolic_forecast(
             platform_id, prediction_config_id=config_id,

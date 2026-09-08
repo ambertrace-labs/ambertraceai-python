@@ -93,7 +93,7 @@ def sync_detailed(
         body (DatasetDeriveRequest): Derive one new column as a fixed binary arithmetic
             expression.
 
-            v1 grammar (deliberately minimal, #1658): exactly ONE op over TWO
+            v1 grammar (deliberately minimal): exactly ONE op over TWO
             EXISTING named columns -> ONE new named column. No scalars, no chaining,
             no general expression evaluator.
 
@@ -141,7 +141,7 @@ def sync(
         body (DatasetDeriveRequest): Derive one new column as a fixed binary arithmetic
             expression.
 
-            v1 grammar (deliberately minimal, #1658): exactly ONE op over TWO
+            v1 grammar (deliberately minimal): exactly ONE op over TWO
             EXISTING named columns -> ONE new named column. No scalars, no chaining,
             no general expression evaluator.
 
@@ -184,7 +184,7 @@ async def asyncio_detailed(
         body (DatasetDeriveRequest): Derive one new column as a fixed binary arithmetic
             expression.
 
-            v1 grammar (deliberately minimal, #1658): exactly ONE op over TWO
+            v1 grammar (deliberately minimal): exactly ONE op over TWO
             EXISTING named columns -> ONE new named column. No scalars, no chaining,
             no general expression evaluator.
 
@@ -230,7 +230,7 @@ async def asyncio(
         body (DatasetDeriveRequest): Derive one new column as a fixed binary arithmetic
             expression.
 
-            v1 grammar (deliberately minimal, #1658): exactly ONE op over TWO
+            v1 grammar (deliberately minimal): exactly ONE op over TWO
             EXISTING named columns -> ONE new named column. No scalars, no chaining,
             no general expression evaluator.
 

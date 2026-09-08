@@ -1,6 +1,6 @@
 """65 -- Combined neural+rule composition tier.
 
-Demonstrates the ``combined`` forecast tier (#2167): when
+Demonstrates the ``combined`` forecast tier: when
 ``baseline_mode='neural'`` and symbolic driver-rules fire, the forecast
 composes onto the neural (GBT) prediction instead of persistence.
 

@@ -69,8 +69,7 @@ def sync_detailed(
 
      Returns entities (countries, currencies, asset classes, join keys) linked across datasets and series
     in the platform's knowledge graph. Supports filtering by entity_label, entity_type, and
-    relation_type. Each entity includes its linked series and datasets. Scope: #967 (cross-domain
-    entity/join graph).
+    relation_type. Each entity includes its linked series and datasets.
 
     Args:
         id (int): Resource ID
@@ -103,8 +102,7 @@ def sync(
 
      Returns entities (countries, currencies, asset classes, join keys) linked across datasets and series
     in the platform's knowledge graph. Supports filtering by entity_label, entity_type, and
-    relation_type. Each entity includes its linked series and datasets. Scope: #967 (cross-domain
-    entity/join graph).
+    relation_type. Each entity includes its linked series and datasets.
 
     Args:
         id (int): Resource ID
@@ -132,8 +130,7 @@ async def asyncio_detailed(
 
      Returns entities (countries, currencies, asset classes, join keys) linked across datasets and series
     in the platform's knowledge graph. Supports filtering by entity_label, entity_type, and
-    relation_type. Each entity includes its linked series and datasets. Scope: #967 (cross-domain
-    entity/join graph).
+    relation_type. Each entity includes its linked series and datasets.
 
     Args:
         id (int): Resource ID
@@ -164,8 +161,7 @@ async def asyncio(
 
      Returns entities (countries, currencies, asset classes, join keys) linked across datasets and series
     in the platform's knowledge graph. Supports filtering by entity_label, entity_type, and
-    relation_type. Each entity includes its linked series and datasets. Scope: #967 (cross-domain
-    entity/join graph).
+    relation_type. Each entity includes its linked series and datasets.
 
     Args:
         id (int): Resource ID

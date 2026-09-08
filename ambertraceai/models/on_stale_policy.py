@@ -14,7 +14,7 @@ T = TypeVar("T", bound="OnStalePolicy")
 
 @_attrs_define
 class OnStalePolicy:
-    """Customer-declared staleness policy for multi-source panels (#1382).
+    """Customer-declared staleness policy for multi-source panels.
 
     Controls what happens when a source column's last non-null value lags the
     panel's last index by more than ``stale_periods`` cadence periods (i.e. it

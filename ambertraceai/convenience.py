@@ -29,6 +29,7 @@ from .responses import (
     DiscoveredRules,
     DiscoverySummary,
     DomainOut,
+    FindDriversResult,
     ForecastOut,
     JobOut,
     NeurosymbolicComparison,
@@ -260,8 +261,8 @@ class AmbertraceError(Exception):
         Prefers the explicit ``rejected_facts`` list off the error body — the
         structured :class:`~ambertraceai.responses.RejectedFact` shape
         (``{field, value, reasons}``) the platform emits on a fail-closed 503
-        (#652). Falls back to the bare ``field`` names carried in ``details``
-        for back-compatibility with a pre-#652 deployment (which surfaced only
+        Falls back to the bare ``field`` names carried in ``details``
+        for back-compatibility with an earlier deployment (which surfaced only
         the ``details`` FieldError block).
         """
         if self._rejected_facts_explicit is not None:
@@ -767,7 +768,7 @@ class DatasetResource(_Resource):
 
         ``sources`` is a list of source dicts (at least two). Each source is
         EITHER a connector source ``{"connector_type": ..., "config": {...}}``
-        OR an uploaded-dataset source ``{"dataset_id": <int>}`` (#1723).
+        OR an uploaded-dataset source ``{"dataset_id": <int>}``.
 
         Connector sources fetch from a registered connector (e.g. FRED, BoE).
         Uploaded-dataset sources include an already-uploaded dataset by its ID,
@@ -804,7 +805,7 @@ class DatasetResource(_Resource):
           flagged ``modeled_extrapolation: true`` in the **transformation
           manifest** (the values are NOT observed data).
         * ``{"method": "...", "per_column": {col: {"method": ..., "max_gap": ...}}}``
-          -- **per-source periodicity override** (#1482 ask 6): mix methods
+          -- **per-source periodicity override**: mix methods
           within ONE panel, e.g. ``ffill`` for a step-function policy-rate
           series alongside ``interpolate`` for a smooth yield-curve series.
           ``col`` is the POST-NAMESPACE column name (e.g. ``"boe__IUDSOIA"``).
@@ -823,7 +824,7 @@ class DatasetResource(_Resource):
         ``api.connectors.list()`` for available connectors and their requirements.
 
         ``on_stale`` -- **staleness policy** applied after the panel sufficiency
-        computation (#1382). Controls what happens when a column's last non-null
+        computation. Controls what happens when a column's last non-null
         value lags the panel's last index by more than ``stale_periods`` cadence
         periods (i.e. the column is discontinued/stale). Accepted shapes:
 
@@ -840,7 +841,7 @@ class DatasetResource(_Resource):
           threshold (3 cadence periods). A column is flagged stale when its lag
           exceeds ``stale_periods * cadence_days``.
 
-        ``column_roles`` -- **column-role declaration** (#1482 ask 2):
+        ``column_roles`` -- **column-role declaration**:
         ``{column: "core"|"auxiliary"}``, POST-NAMESPACE names. Columns not
         listed default to ``"auxiliary"``; the ``join_on`` index column is
         implicitly ``"core"`` regardless of this dict. CORE columns are NEVER
@@ -852,7 +853,7 @@ class DatasetResource(_Resource):
         ``core_columns`` is not set explicitly, it is DERIVED from this
         declaration (explicit ``core_columns`` on the config always wins).
 
-        ``require_coverage`` -- **coverage filter** (#1482 ask 4):
+        ``require_coverage`` -- **coverage filter**:
         ``{"relative_to": "panel"|"core", "min_pct": N}``. Applied on the raw
         (pre-fill) outer-joined frame, after ``on_stale`` and before
         ``on_missing``: drops AUXILIARY columns whose non-null coverage falls
@@ -990,7 +991,7 @@ class DatasetResource(_Resource):
         right: str,
         drop_source_columns: bool = True,
     ) -> DatasetOut:
-        """Derive a new column as a fixed binary arithmetic expression (#1658).
+        """Derive a new column as a fixed binary arithmetic expression.
 
         Materialises ``new_column = left <op> right`` INTO the dataset file +
         ``schema_info`` -- the derived column is then usable exactly like any
@@ -1181,7 +1182,7 @@ class PlatformResource(_Resource):
         FOCAL row.  Each value is EITHER a bare scalar (confidence 1.0,
         backward-compatible) OR a ``FactWithConfidence`` carrier
         ``{"value": <v>, "confidence": <c>}`` that states per-observation
-        confidence explicitly (#1655).
+        confidence explicitly.
 
         **Per-fact confidence** (requires ``require_confidence=True`` in
         ``neural_config``): every fact MUST be a carrier; a bare scalar is
@@ -1325,7 +1326,7 @@ class PlatformResource(_Resource):
             # the attached rows — no pre-joined boolean in `facts`.
 
         ``projection`` (``list[str] | None``, default ``None``) — compact mode
-        (#1656). When supplied, ONLY the listed top-level response field names
+        When supplied, ONLY the listed top-level response field names
         (e.g. ``["decision", "proof_checked"]``) PLUS the always-present anchors
         (``platform_id``, ``query``) are included in the response; all other
         fields are omitted. Use this for high-throughput callers (verifiers,
@@ -1408,7 +1409,7 @@ class PlatformResource(_Resource):
         queries: list[dict[str, Any]],
         projection: list[str] | None = None,
     ) -> dict:
-        """Execute N queries against a single platform in one call (#1656).
+        """Execute N queries against a single platform in one call.
 
         Each item in *queries* is a dict with the same keys as the single-query
         method (``query``, ``explain``, ``top_k``, ``facts``, ``predictions``,
@@ -1774,7 +1775,7 @@ class PredictionResource(_Resource):
         predicting last value), plus ``target_transform``. With no transform,
         ``transformed == level`` (backward compatible).
 
-        Sufficiency gate (Part of #1383):
+        Sufficiency gate:
 
         * ``min_rows`` — optional int (>= 1).  Minimum post-warmup row count
           required for :meth:`train`.  When set, the train endpoint runs feature
@@ -1791,14 +1792,14 @@ class PredictionResource(_Resource):
           I/O); the HARD gate fires at ``train`` time after the post-warmup
           row count is computed.
 
-        Auto-reduce — customer-controlled panel construction (Part of #1482):
+        Auto-reduce — customer-controlled panel construction:
 
         * ``core_columns`` — optional ``list[str]``. Columns that must NEVER be
           dropped by auto-reduce. ``target_field`` and ``time_index_field`` are
           implicitly core regardless of this list. Every other candidate
           feature column is AUXILIARY — droppable, sparsest (most nulls) first.
           When omitted, it is DERIVED from the ``column_roles`` declared at
-          ingest time via :meth:`datasets.fetch_multi` (#1482 ask 2) — set
+          ingest time via :meth:`datasets.fetch_multi` — set
           ``core_columns`` explicitly here to override that derivation.
         * ``auto_reduce`` — optional bool, default ``False``. When a declared
           ``min_rows``/``min_history_years`` bar is unmet at :meth:`train`
@@ -1829,7 +1830,7 @@ class PredictionResource(_Resource):
         ``target_transform`` altogether now echoes the ``"auto"`` default too
         (it used to read ``"none"`` while the trainer applied ``"auto"``).
 
-        Objective selection (Part of #2034):
+        Objective selection:
 
         * ``objective`` — optimisation objective for the prediction loop, one of:
 
@@ -1871,7 +1872,7 @@ class PredictionResource(_Resource):
         #
         # On CONFLICT the top-level value is deliberately LEFT IN kwargs rather
         # than dropped: the server then validates it and 422s an out-of-set
-        # value. Dropping the loser would re-create the #1416 defect inside the
+        # value. Dropping the loser would re-create the defect inside the
         # SDK — a bogus spelling vanishing with only a "the nested value wins"
         # warning, which reads as "your spelling was legitimate but lost a
         # precedence contest".
@@ -2071,7 +2072,7 @@ class PredictionResource(_Resource):
         ``sharpe_ratio``), ``delta`` also includes ``objective`` (naming the
         metric) and the metric's own key with the neurosymbolic-minus-neural
         difference, so you can evaluate the correction-rule delta on the
-        config's chosen objective (#2167).
+        config's chosen objective.
 
         Pass ``include_pending=True`` to ALSO apply the accepted-but-pending
         discovered rules read-only — a "what-if" preview of the discovered set
@@ -2158,7 +2159,7 @@ class PredictionResource(_Resource):
 
         When ``baseline_mode='neural'`` and driver-rules fire, the response carries
         ``forecast_tier='combined'`` and ``anchor_used='neural'`` — the forecast
-        composes onto the neural (GBT) prediction instead of persistence (#2167).
+        composes onto the neural (GBT) prediction instead of persistence.
         ``baseline`` is the neural anchor value (the GBT prediction), and
         ``forecast.value`` is neural anchor + sum of fired rule effects.
 
@@ -2182,7 +2183,7 @@ class PredictionResource(_Resource):
               ]
             }
 
-        Each series point carries per-point rule-firing annotations (#2164):
+        Each series point carries per-point rule-firing annotations:
 
         * ``fired_rules`` — list of admitted driver-rule names whose condition
           held on that holdout row (empty on ``baseline_anchor`` points).
@@ -2218,13 +2219,13 @@ class PredictionResource(_Resource):
         numeric VALUES remain fitted-not-proven (the ``honesty`` field states
         the boundary).
 
-        **per_tier_skill per-tier trading metrics (#2162):**
+        **per_tier_skill per-tier trading metrics:**
 
         When the config has a ``frequency`` set (e.g. ``'monthly'``),
         ``per_tier_skill`` carries per-tier trading metrics:
         ``directional_pnl``, ``sharpe_ratio``, ``hit_rate``, ``max_drawdown``.
         These appear on each tier partition entry, on ``all_points``, and on
-        two component-layer entries:
+        three component-layer entries:
 
         * ``per_tier_skill['composed']`` — trading metrics computed over ALL
           holdout points using the composed prediction (``predicted``). These
@@ -2234,6 +2235,9 @@ class PredictionResource(_Resource):
         * ``per_tier_skill['rule_layer']`` — trading metrics computed over ALL
           holdout points using ``rule_layer_predicted`` (the symbolic rules'
           standalone prediction).
+        * ``per_tier_skill['neural']`` — trading metrics computed over ALL
+          holdout points using the GBT baseline prediction (``neural``). Present
+          when ``baseline_mode='neural'`` (the default).
 
         ``why`` IS the substantive explanation — the full set of materially-
         contributing driver-rules the model induced + accepted on the holdout (NOT
@@ -2268,7 +2272,7 @@ class PredictionResource(_Resource):
         across the materially-contributing set (the strongest single driver's
         evidence), so you can gauge the explanation's overall strength at a glance.
 
-        ``sign_base_rate`` (#1702) — a top-level float, present whenever the
+        ``sign_base_rate`` — a top-level float, present whenever the
         forecaster could induce driver-rules, giving the TARGET's own
         dominant-sign base rate (the fraction of fit-window periods moving in
         its more-common direction). This is the null EVERY accepted driver's
@@ -2289,7 +2293,7 @@ class PredictionResource(_Resource):
         to the most recent row before composing (e.g. ``{"FEDFUNDS": 6.0}``). The
         override propagates through BOTH the fired driver-rules AND the neural
         baseline (when ``baseline_mode='neural'`` the GBT anchor is recomputed with
-        the overridden engineered features, so the baseline itself moves -- #1550).
+        the overridden engineered features, so the baseline itself moves).
         Column matching is case-insensitive. The config need not be trained -- the
         symbolic forecaster is independent of the neural model.
 
@@ -2341,13 +2345,13 @@ class PredictionResource(_Resource):
         ``forecast_tier`` is the honest per-point tier label: ``"verified_symbolic"``
         when driver-rules fired AND were proof-checked; ``"combined"`` when
         ``baseline_mode='neural'`` and driver-rules fire — the forecast composes
-        onto the neural (GBT) anchor instead of persistence (#2167); the response
+        onto the neural (GBT) anchor instead of persistence; the response
         carries ``anchor_used='neural'``, and each fitted-series point gains
         ``neural`` (the GBT anchor) and ``combined`` (neural + fired effects)
         columns; ``"neural_scored"`` when the neural confidence gate served the GBT
         prediction (``baseline_mode='neural'`` with no fired drivers, above the tau
         threshold); ``"neural_weak"`` when below tau (the raw GBT prediction is
-        always served with the full confidence metric -- never replaced, #1485);
+        always served with the full confidence metric -- never replaced);
         ``"no_forecast"`` when genuinely no model exists (value is null);
         ``"baseline_anchor"`` for non-neural anchors (persistence / drift) with no
         fired drivers. The tau value that was previously embedded in the tier string
@@ -2356,7 +2360,7 @@ class PredictionResource(_Resource):
         (the decision-bridge ``predictions={role: record}`` fan-in) should key on
         ``forecast_tier`` to distinguish genuine driver-based forecasts from anchor
         filler -- not ``point_is_persistence``, which is True ONLY under a persistence
-        anchor (narrow post-#1226 semantics).
+        anchor (narrow semantics).
 
         ``per_point_forecast_tiers`` is present when ``include_fitted_series=True``
         was requested: a per-holdout-point array of ``{index, forecast_tier}`` dicts,
@@ -2464,7 +2468,7 @@ class PredictionResource(_Resource):
         ``skill_vs_persistence`` of the winning neural model.
 
         ``hit_rate_alpha`` (float) — the significance level used by the binomial
-        hit-rate pre-filter that gates driver admission (#1963). Echoes the
+        hit-rate pre-filter that gates driver admission. Echoes the
         server's ACTUAL value so the caller records the alpha the forecast was
         fitted at, never a client-side assumption.
 
@@ -2506,6 +2510,57 @@ class PredictionResource(_Resource):
             body["period"] = period
         if entity is not None:
             body["entity"] = entity
+        if top_drivers_n is not None:
+            body["top_drivers_n"] = top_drivers_n
+        return self._request(
+            "POST", f"/api/v1/platforms/{platform_id}/symbolic-forecast", json=body)
+
+    def find_drivers(self, platform_id: int, *, prediction_config_id: int,
+                     verified: bool = False,
+                     top_drivers_n: int | None = None) -> FindDriversResult:
+        """Find My Drivers -- discovery-mode convenience over symbolic_forecast.
+
+        Returns the ranked predictive drivers the platform discovered for a
+        prediction config whose ``feature_fields`` is null (discovery mode --
+        the mainline usage). The response's ``driver_report`` is the headline:
+        each base series ranked by importance with its holdout skill,
+        significance (fire rate), and provenance tag.
+
+        This is a convenience wrapper: it calls ``symbolic_forecast`` with
+        discovery-mode defaults and returns the full response (forecast +
+        driver_report + why). The ``discovery_mode`` echo on the response
+        confirms the config ran in discovery mode (``True`` when
+        ``feature_fields`` is null).
+
+        ``verified=True`` runs the active-driver set through the verified
+        kernel -- each driver in ``driver_report`` that fired on the latest
+        row is then proof-carrying (``proof_checked``).
+
+        ``top_drivers_n`` controls how many ranked drivers appear in the
+        ``prediction_record.top_drivers`` list (default 5).
+
+        The underlying ``symbolic_forecast`` call uses ``feature_overrides=None``
+        (the real latest data, not a what-if) because the purpose is DISCOVERY
+        of the drivers, not a scenario forecast.
+
+        Usage::
+
+            result = api.predictions.find_drivers(
+                platform_id, prediction_config_id=config_id,
+            )
+            for d in result["driver_report"]:
+                print(f"{d['label']}: importance={d['importance_share']:.0%}, "
+                      f"skill={d.get('holdout_skill')}")
+
+        **Org-capability gating.** Requires the ``predictions`` capability.
+        Returns 403 ``capability_disabled`` when disabled for the org.
+        """
+        body: dict[str, Any] = {
+            "prediction_config_id": prediction_config_id,
+            "verified": verified,
+            "include_fitted_series": False,
+            "compact_certification": True,
+        }
         if top_drivers_n is not None:
             body["top_drivers_n"] = top_drivers_n
         return self._request(
@@ -2832,7 +2887,7 @@ class ConnectorResource(_Resource):
         return self._request("GET", "/api/v1/data/search", params=params)
 
     def eia_discover(self, *, route: str | None = None) -> dict:
-        """Browse the EIA v2 general data catalog (#952).
+        """Browse the EIA v2 general data catalog.
 
         The ``eia`` connector supports two mutually-exclusive modes: **Mode
         A**, preset oil series via ``series_ids`` (``PET.RWTC.W`` etc.), and
@@ -3161,7 +3216,7 @@ class AgentPolicyResource(_Resource):
         facts the policy reasons over (``args`` wins on a key collision). Supply a
         value for each of :meth:`status`'s ``input_fields``.
 
-        **Per-fact confidence** (#1655): each value in ``args`` or ``context``
+        **Per-fact confidence**: each value in ``args`` or ``context``
         may be a ``FactWithConfidence`` carrier
         ``{"value": <v>, "confidence": <c>}`` instead of a bare scalar.  On a
         platform with ``require_confidence=True`` every value MUST be a
@@ -3371,9 +3426,9 @@ class AuditResource(_Resource):
     Two surfaces:
 
     - :meth:`list_events` — the append-only sharing/team/role event log
-      (SIEM export, #865).
+      (SIEM export).
     - :meth:`access_review` — a point-in-time member + role snapshot for
-      periodic access reviews (SOC 2 CC6.2/CC6.3, #1067).
+      periodic access reviews (SOC 2 CC6.2/CC6.3).
 
     Both require org-admin privileges (403 otherwise). Org-scoped: only the
     caller's own organisation's data is ever returned.
@@ -3739,7 +3794,7 @@ class AmbertraceAPI:
         is below the floor. The effective interval widens gently with each
         stale poll (no forward progress) and resets on progress.
 
-        **Stuck-job detection (#2106).** A job that stays ``pending`` with
+        **Stuck-job detection.** A job that stays ``pending`` with
         ``started_at`` null for longer than the server's watchdog threshold
         (default 30 minutes) is automatically failed by a server-side watchdog
         with ``error_message`` containing "watchdog". This means

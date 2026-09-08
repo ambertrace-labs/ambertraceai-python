@@ -13,7 +13,7 @@ T = TypeVar("T", bound="OnMissingColumnPolicy")
 
 @_attrs_define
 class OnMissingColumnPolicy:
-    """Per-column override of the on_missing method (Part of #1482 ask 6).
+    """Per-column override of the on_missing method.
 
     Lets the customer mix methods within ONE panel -- e.g. ``ffill`` for a
     step-function policy-rate series alongside ``interpolate`` for a smooth

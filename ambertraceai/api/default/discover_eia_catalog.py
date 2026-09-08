@@ -71,9 +71,9 @@ def sync_detailed(
 ) -> Response[list[ValidationErrorModel]]:
     r"""Browse the EIA v2 general data catalog
 
-     Browses the EIA v2 API catalog (#952): omit \"route\" for the 14 top-level routes (electricity,
-    petroleum, natural-gas, coal, nuclear, renewables, CO2 emissions, international, ...), pass a top-
-    level route (e.g. \"electricity\") for its child routes, or a full leaf dataset route (e.g.
+     Browses the EIA v2 API catalog: omit \"route\" for the 14 top-level routes (electricity, petroleum,
+    natural-gas, coal, nuclear, renewables, CO2 emissions, international, ...), pass a top-level route
+    (e.g. \"electricity\") for its child routes, or a full leaf dataset route (e.g.
     \"electricity/retail-sales\") for its queryable facets, data columns, and supported frequencies.
     Feed the returned facet IDs into the eia connector Mode B \"facets\" config for a general (non-oil-
     preset) EIA pull. Returns the raw v2 metadata unmodified.
@@ -111,9 +111,9 @@ def sync(
 ) -> list[ValidationErrorModel] | None:
     r"""Browse the EIA v2 general data catalog
 
-     Browses the EIA v2 API catalog (#952): omit \"route\" for the 14 top-level routes (electricity,
-    petroleum, natural-gas, coal, nuclear, renewables, CO2 emissions, international, ...), pass a top-
-    level route (e.g. \"electricity\") for its child routes, or a full leaf dataset route (e.g.
+     Browses the EIA v2 API catalog: omit \"route\" for the 14 top-level routes (electricity, petroleum,
+    natural-gas, coal, nuclear, renewables, CO2 emissions, international, ...), pass a top-level route
+    (e.g. \"electricity\") for its child routes, or a full leaf dataset route (e.g.
     \"electricity/retail-sales\") for its queryable facets, data columns, and supported frequencies.
     Feed the returned facet IDs into the eia connector Mode B \"facets\" config for a general (non-oil-
     preset) EIA pull. Returns the raw v2 metadata unmodified.
@@ -146,9 +146,9 @@ async def asyncio_detailed(
 ) -> Response[list[ValidationErrorModel]]:
     r"""Browse the EIA v2 general data catalog
 
-     Browses the EIA v2 API catalog (#952): omit \"route\" for the 14 top-level routes (electricity,
-    petroleum, natural-gas, coal, nuclear, renewables, CO2 emissions, international, ...), pass a top-
-    level route (e.g. \"electricity\") for its child routes, or a full leaf dataset route (e.g.
+     Browses the EIA v2 API catalog: omit \"route\" for the 14 top-level routes (electricity, petroleum,
+    natural-gas, coal, nuclear, renewables, CO2 emissions, international, ...), pass a top-level route
+    (e.g. \"electricity\") for its child routes, or a full leaf dataset route (e.g.
     \"electricity/retail-sales\") for its queryable facets, data columns, and supported frequencies.
     Feed the returned facet IDs into the eia connector Mode B \"facets\" config for a general (non-oil-
     preset) EIA pull. Returns the raw v2 metadata unmodified.
@@ -184,9 +184,9 @@ async def asyncio(
 ) -> list[ValidationErrorModel] | None:
     r"""Browse the EIA v2 general data catalog
 
-     Browses the EIA v2 API catalog (#952): omit \"route\" for the 14 top-level routes (electricity,
-    petroleum, natural-gas, coal, nuclear, renewables, CO2 emissions, international, ...), pass a top-
-    level route (e.g. \"electricity\") for its child routes, or a full leaf dataset route (e.g.
+     Browses the EIA v2 API catalog: omit \"route\" for the 14 top-level routes (electricity, petroleum,
+    natural-gas, coal, nuclear, renewables, CO2 emissions, international, ...), pass a top-level route
+    (e.g. \"electricity\") for its child routes, or a full leaf dataset route (e.g.
     \"electricity/retail-sales\") for its queryable facets, data columns, and supported frequencies.
     Feed the returned facet IDs into the eia connector Mode B \"facets\" config for a general (non-oil-
     preset) EIA pull. Returns the raw v2 metadata unmodified.

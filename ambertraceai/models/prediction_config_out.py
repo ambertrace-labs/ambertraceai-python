@@ -34,16 +34,19 @@ class PredictionConfigOut:
         status (str): Config lifecycle status: 'pending' (created, not yet trained), 'training' (training in progress),
             'trained' (ready to predict), 'failed' (training failed — see error_message).
         target_field (str):
-        auto_reduce (bool | Unset): Whether auto-reduce (#1482 ask 2) is opted in — drop the sparsest auxiliary columns
-            to meet a declared sufficiency bar instead of returning HTTP 409. Default: False.
+        auto_reduce (bool | Unset): Whether auto-reduce is opted in — drop the sparsest auxiliary columns to meet a
+            declared sufficiency bar instead of returning HTTP 409. Default: False.
         autoregressive (str | Unset): Autoregression control: 'full' (history allowed, default), 'limited' (drivers + a
             little history), or 'none' (drivers only). Default: 'full'.
         backtest_config (None | PredictionConfigOutBacktestConfigType0 | Unset):
         baseline_mode (str | Unset): Forecast anchor mode: 'neural' (default), 'persistence', or 'drift'. Default:
             'neural'.
-        core_columns (list[str] | None | Unset): Declared never-drop columns (#1482 ask 2). The target_field and
-            time_index_field are implicitly core regardless of this list.
+        core_columns (list[str] | None | Unset): Declared never-drop columns. The target_field and time_index_field are
+            implicitly core regardless of this list.
         created_at (None | str | Unset):
+        discovery_mode (bool | Unset): Whether this config runs in discovery mode: True when feature_fields is null (the
+            platform auto-discovers ALL numeric columns as candidate drivers), False when an explicit feature set is
+            supplied. Discovery is the mainline usage — target + features, no recipe. Default: False.
         error_message (None | str | Unset): Human-readable error details when status is 'failed'.
         eval_metric_config (None | PredictionConfigOutEvalMetricConfigType0 | Unset):
         feature_config (None | PredictionConfigOutFeatureConfigType0 | Unset):
@@ -56,10 +59,10 @@ class PredictionConfigOut:
         min_rows (int | None | Unset): Declared minimum post-warmup row count for the sufficiency gate.
         mode (str | Unset): Prediction mode: 'timeseries' or 'cross_sectional'. Default: 'timeseries'.
         neural_confidence_tau (float | Unset): Per-point neural-tier confidence threshold: GBT prediction admitted as
-            neural_scored when confidence >= tau, else neural_weak (raw GBT still served, #1485). 0.0 = gate labels only.
-            Default: 0.0.
+            neural_scored when confidence >= tau, else neural_weak (raw GBT still served). 0.0 = gate labels only. Default:
+            0.0.
         objective (PredictionConfigOutObjective | Unset): Optimisation objective selection. The metric is computed and
-            reported; gate/OBSERVE wiring lands in #2034 increments 3-4. Default:
+            reported; the configured objective currently does not drive rule acceptance. Default:
             PredictionConfigOutObjective.SKILL_VS_PERSISTENCE.
         output_space (None | str | Unset): Item 6 — the space predict() 'value' will be in given the resolved transform:
             'level' (transform 'none' — value is a level) or 'change' (a differencing transform — predict() reconstructs to
@@ -73,8 +76,8 @@ class PredictionConfigOut:
             auto_reduce run: 'dropped_columns' (per-column {column, action:'dropped_auxiliary', null_count}),
             'usable_rows_before'/'usable_rows_after', 'target_rows', 'target_years', 'usable_span_years_after'. Null when
             auto_reduce has never run or the panel already met the declared bar.
-        regime_platform_id (int | None | Unset): ID of the Decisions platform used for regime conditioning (#2098). Null
-            when no regime platform is configured.
+        regime_platform_id (int | None | Unset): ID of the Decisions platform used for regime conditioning Null when no
+            regime platform is configured.
         resolved_target_transform (None | str | Unset): Item 6 — the EFFECTIVE target transform, echoed on the config so
             the output space is known without predicting. When a concrete transform was requested ('none' or 'difference')
             this echoes it immediately at create_config time. When 'auto' was requested it resolves at TRAIN time, so before
@@ -103,6 +106,7 @@ class PredictionConfigOut:
     baseline_mode: str | Unset = "neural"
     core_columns: list[str] | None | Unset = UNSET
     created_at: None | str | Unset = UNSET
+    discovery_mode: bool | Unset = False
     error_message: None | str | Unset = UNSET
     eval_metric_config: None | PredictionConfigOutEvalMetricConfigType0 | Unset = UNSET
     feature_config: None | PredictionConfigOutFeatureConfigType0 | Unset = UNSET
@@ -176,6 +180,8 @@ class PredictionConfigOut:
             created_at = UNSET
         else:
             created_at = self.created_at
+
+        discovery_mode = self.discovery_mode
 
         error_message: None | str | Unset
         if isinstance(self.error_message, Unset):
@@ -324,6 +330,8 @@ class PredictionConfigOut:
             field_dict["core_columns"] = core_columns
         if created_at is not UNSET:
             field_dict["created_at"] = created_at
+        if discovery_mode is not UNSET:
+            field_dict["discovery_mode"] = discovery_mode
         if error_message is not UNSET:
             field_dict["error_message"] = error_message
         if eval_metric_config is not UNSET:
@@ -440,6 +448,8 @@ class PredictionConfigOut:
             return cast(None | str | Unset, data)
 
         created_at = _parse_created_at(d.pop("created_at", UNSET))
+
+        discovery_mode = d.pop("discovery_mode", UNSET)
 
         def _parse_error_message(data: object) -> None | str | Unset:
             if data is None:
@@ -660,6 +670,7 @@ class PredictionConfigOut:
             baseline_mode=baseline_mode,
             core_columns=core_columns,
             created_at=created_at,
+            discovery_mode=discovery_mode,
             error_message=error_message,
             eval_metric_config=eval_metric_config,
             feature_config=feature_config,
