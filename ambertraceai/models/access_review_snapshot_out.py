@@ -16,7 +16,7 @@ T = TypeVar("T", bound="AccessReviewSnapshotOut")
 
 @_attrs_define
 class AccessReviewSnapshotOut:
-    """Paginated access-review snapshot (SOC 2 CC6.2/6.3, #1067).
+    """Paginated access-review snapshot (SOC 2 CC6.2/6.3).
 
     Attributes:
         data (list[AccessReviewMemberOut]):

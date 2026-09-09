@@ -11,7 +11,7 @@ anchor the symbolic forecaster composes driver effects onto:
 - **climatology** -- fit-window mean. The forecast anchors on the historical
   average rather than the latest level; useful when the latest level is an
   outlier or you want a mean-reversion framing.
-- **persistence** -- last observed level. The original default before #1208,
+- **persistence** -- last observed level. The original default,
   still selectable for backward compatibility.
 - **drift** -- last level + h * OLS slope. A linear-trend anchor.
 

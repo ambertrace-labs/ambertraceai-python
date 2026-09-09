@@ -49,3 +49,5 @@ track_number,icao24,callsign,origin_country,position_source,mode3a_code,emergenc
 2048,bc01a6,BAW729,Austria,ads_b,2015,0,0,mode3_valid,1,0,4169,4169,426,204,-470,46.96771,6.71663,0,1,1,GS-RADAR-01,47.0,7.5,1800,59537,0.842,clear,
 2049,711c10,BAW953,Switzerland,ads_b,6575,0,0,mode3_valid,0,0,29580,29580,234,145,-1008,46.98625,8.03293,1,0,1,UAS-ORBIT-09,46.9,8.2,18000,16287,0.869,escalate,zone_breach
 2050,b11d44,AUA740,Germany,ads_b,5551,0,0,mode3_valid,1,0,35188,35188,494,173,-5293,47.42526,8.58989,1,0,1,GS-RADAR-02,47.5,9.0,1500,33541,0.853,escalate,zone_breach
+2051,a7c3d1,SWR401,Switzerland,ads_b,7700,1,0,emergency,0,0,8200,8200,310,45,1200,47.35000,8.55000,0,1,1,GS-RADAR-02,47.5,9.0,1500,28000,0.910,escalate,emergency
+2052,f1e8b2,DLH912,Germany,ads_b,3044,0,0,mode3_valid,1,0,28500,28500,380,192,9200,47.12000,7.85000,0,1,1,GS-RADAR-01,47.0,7.5,1800,42000,0.870,monitor,kinematic

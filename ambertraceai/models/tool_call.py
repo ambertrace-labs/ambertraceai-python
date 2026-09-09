@@ -23,8 +23,8 @@ class ToolCall:
         args (ToolCallArgs | Unset): Structured tool arguments. Mapped (by canonical field name) directly to
             client_facts — NO LLM extraction; the request IS the facts. Keys matching a declared policy field are gated;
             unknown keys are rejected-and-surfaced by the certified-fact gate. Each value may be a bare scalar OR a
-            ``{"value": <v>, "confidence": <c>}`` carrier for per-observation confidence (#1655); on a
-            ``require_confidence`` platform every value MUST be a carrier.
+            ``{"value": <v>, "confidence": <c>}`` carrier for per-observation confidence; on a ``require_confidence``
+            platform every value MUST be a carrier.
     """
 
     tool: str

@@ -21,9 +21,9 @@ class PanelColumnOut:
         non_null_count (int | Unset):  Default: 0.
         null_count (int | Unset):  Default: 0.
         recency_lag_periods (int | None | Unset):
-        role (None | str | Unset): Column role (Part of #1482 ask 2): 'core' or 'auxiliary'. Only populated when the
-            caller passed column_roles (or the ingested dataset carries a schema_info['column_roles'] declaration); None
-            when no role declaration exists for this panel.
+        role (None | str | Unset): Column role: 'core' or 'auxiliary'. Only populated when the caller passed
+            column_roles (or the ingested dataset carries a schema_info['column_roles'] declaration); None when no role
+            declaration exists for this panel.
         rows_recovered_if_dropped (int | Unset):  Default: 0.
         stale (bool | Unset):  Default: False.
     """

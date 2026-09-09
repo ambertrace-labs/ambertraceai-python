@@ -38,22 +38,21 @@ class PredictionConfigCreate:
         Attributes:
             target_field (str): Column name of the variable to predict. Must exist in the platform's dataset. Examples:
                 'yield_10y', 'loan_approved', 'fraud_score'.
-            auto_reduce (bool | Unset): Opt-in auto-reduction (#1482 ask 2). When a declared min_rows/min_history_years bar
-                is unmet at train time, instead of returning HTTP 409 sufficiency_gate_failed, the sparsest AUXILIARY columns
-                (never core_columns, target_field, or time_index_field) are dropped one at a time until the bar is met. The
-                reduced feature set is persisted to feature_fields and a reduction manifest (dropped columns + before/after
-                usable rows) is returned on the train 202 body and readable back on the config. If the bar is UNREACHABLE even
-                after dropping every auxiliary column, the 409 is still returned (fail-closed — this never trains on a sub-bar
-                panel and never fills/fabricates values to meet the bar). Default False: old 409-only behaviour, byte-identical
-                when unset. Default: False.
+            auto_reduce (bool | Unset): Opt-in auto-reduction. When a declared min_rows/min_history_years bar is unmet at
+                train time, instead of returning HTTP 409 sufficiency_gate_failed, the sparsest AUXILIARY columns (never
+                core_columns, target_field, or time_index_field) are dropped one at a time until the bar is met. The reduced
+                feature set is persisted to feature_fields and a reduction manifest (dropped columns + before/after usable rows)
+                is returned on the train 202 body and readable back on the config. If the bar is UNREACHABLE even after dropping
+                every auxiliary column, the 409 is still returned (fail-closed — this never trains on a sub-bar panel and never
+                fills/fabricates values to meet the bar). Default False: old 409-only behaviour, byte-identical when unset.
+                Default: False.
             autoregressive (str | Unset): Autoregression control (timeseries mode only) — how much the forecast may rely on
-                the TARGET's own recent values. Plain-language framing: 'full' = History allowed (default — the target's own
-                lags/rolling/rate-of-change features are available; today's behaviour, backward compatible); 'limited' = Drivers
-                + a little history (only the most recent value / shortest target-history feature is allowed, so the drivers
-                carry the explanation); 'none' = Drivers only (no target-derived lag/roc/rolling features at all — explain
-                purely through the other indicators). Covariate (driver) features are NEVER restricted. The advanced
-                'max_ar_lag' overrides this. The effective setting is echoed in the model metadata of the predict response.
-                Ignored in cross_sectional mode. Default: 'full'.
+                the TARGET's own recent values. Plain-language framing: 'none' = Drivers only (default — no target-derived
+                lag/roc/rolling features; explain purely through the other indicators); 'limited' = Drivers + a little history
+                (only the most recent value / shortest target-history feature is allowed, so the drivers carry the explanation);
+                'full' = History allowed (the target's own lags/rolling/rate-of-change features are available). Covariate
+                (driver) features are NEVER restricted. The advanced 'max_ar_lag' overrides this. The effective setting is
+                echoed in the model metadata of the predict response. Ignored in cross_sectional mode. Default: 'none'.
             backtest_config (None | PredictionConfigCreateBacktestConfigType0 | Unset): Backtesting configuration. Keys:
                 'test_ratio' (float, default 0.2), 'n_splits' (int, default 1). In timeseries mode, uses expanding-window splits
                 to prevent future leakage. In cross_sectional mode, uses stratified random splits.
@@ -63,12 +62,14 @@ class PredictionConfigCreate:
                 'drift' (last level + h * OLS slope — a linear-trend anchor). The holdout acceptance gate recomposes driver
                 effects onto the chosen anchor so they are not mis-scaled. skill_vs_persistence is ALWAYS reported as the
                 external benchmark regardless of anchor. Ignored in cross_sectional mode. Default: 'neural'.
-            core_columns (list[str] | None | Unset): Column-role declaration (#1482 ask 2): columns that must NEVER be
-                dropped by auto_reduce. The target_field and time_index_field are implicitly core regardless of this list. Every
-                other candidate feature column is treated as AUXILIARY — droppable by auto_reduce, cheapest-information-cost
+            core_columns (list[str] | None | Unset): Column-role declaration: columns that must NEVER be dropped by
+                auto_reduce. The target_field and time_index_field are implicitly core regardless of this list. Every other
+                candidate feature column is treated as AUXILIARY — droppable by auto_reduce, cheapest-information-cost
                 (sparsest) first. Has no effect unless auto_reduce=true.
-            eval_metric (str | Unset): Primary evaluation metric. Options: 'rmse' (root mean squared error), 'mae' (mean
-                absolute error), 'r2' (R-squared), 'dir_accuracy' (directional accuracy — timeseries only). Default: 'rmse'.
+            eval_metric (None | str | Unset): Primary evaluation metric. Options: 'rmse' (root mean squared error), 'mae'
+                (mean absolute error), 'r2' (R-squared), 'dir_accuracy' (directional accuracy — timeseries only). When null (the
+                default), the metric is derived from the objective: skill_vs_persistence -> rmse;
+                directional_pnl/sharpe_ratio/hit_rate -> dir_accuracy. An explicit value overrides the derivation.
             eval_metric_config (None | PredictionConfigCreateEvalMetricConfigType0 | Unset): Additional metric
                 configuration. Reserved for future use.
             feature_config (None | PredictionConfigCreateFeatureConfigType0 | Unset): Advanced feature engineering
@@ -105,28 +106,29 @@ class PredictionConfigCreate:
                 target mapping. Default: 'timeseries'. Default: 'timeseries'.
             model_tier (str | Unset): Model complexity tier. Currently only 'tier1' is supported: the built-in registry
                 (sklearn GBT/ridge/lasso + CPU-trainable PyTorch LSTM/Transformer). Default: 'tier1'.
-            model_type (str | Unset): Algorithm to use. Options: 'gbt' (Gradient Boosted Trees — best general-purpose
-                choice), 'ridge' (L2-regularised linear), 'lasso' (L1-regularised linear, good for sparse features), 'lstm'
-                (LSTM recurrent network — slower to train, CPU-viable), 'transformer' (Transformer encoder — slower to train,
-                CPU-viable). LSTM/Transformer train in ~200 epochs on CPU; training is async (202 + poll) so the cost is wall-
-                clock, not request-blocking. Default: 'gbt'.
+            model_type (str | Unset): Algorithm to use. Options: 'auto' (default — trains all five candidate models and
+                selects the winner by eval_metric on the validation split; the winning model type and per-candidate scores are
+                recorded in the metrics payload), 'gbt' (Gradient Boosted Trees), 'ridge' (L2-regularised linear), 'lasso'
+                (L1-regularised linear, good for sparse features), 'lstm' (LSTM recurrent network — slower to train, CPU-
+                viable), 'transformer' (Transformer encoder — slower to train, CPU-viable). LSTM/Transformer train in ~200
+                epochs on CPU; training is async (202 + poll) so the cost is wall-clock, not request-blocking. Default: 'auto'.
             neural_confidence_tau (float | Unset): Per-point neural-tier confidence threshold (timeseries mode only). The
                 GBT prediction is admitted as 'neural_scored' when its two-axis confidence (Axis A: in-training-range OOD gate +
                 Axis B: interval sharpness) >= tau. Below tau the raw GBT prediction is still served with tier 'neural_weak' and
-                the full confidence certificate (#1485). Default 0.0 (gate labels every prediction with its tier and confidence;
-                set > 0 to distinguish strong vs weak neural predictions). Default: 0.0.
-            objective (PredictionConfigCreateObjective | Unset): Optimisation objective selection (#2034). The chosen
-                objective is stored on the config and the corresponding trading metric is computed and reported in backtest
-                results. NOTE: gate/OBSERVE wiring lands in #2034 increments 3-4 — until then skill_vs_persistence remains the
-                acceptance criterion regardless of this setting. Options: 'skill_vs_persistence' (default — forecast skill
-                relative to a naive persist-last-value baseline), 'directional_pnl' (cumulative directional PnL on the holdout),
+                the full confidence certificate. Default 0.0 (gate labels every prediction with its tier and confidence; set > 0
+                to distinguish strong vs weak neural predictions). Default: 0.0.
+            objective (PredictionConfigCreateObjective | Unset): Optimisation objective selection. The chosen objective is
+                stored on the config and the corresponding trading metric is computed and reported in backtest results. NOTE:
+                the configured objective currently does not drive rule acceptance; skill_vs_persistence remains the acceptance
+                criterion regardless of this setting. Options: 'skill_vs_persistence' (default — forecast skill relative to a
+                naive persist-last-value baseline), 'directional_pnl' (cumulative directional PnL on the holdout),
                 'sharpe_ratio' (annualised Sharpe of the directional PnL stream), 'hit_rate' (directional hit rate excluding
                 zero-actual-move periods). Trading objectives (pnl/sharpe/hit_rate) require a frequency on the config for
                 annualisation. Default: PredictionConfigCreateObjective.SKILL_VS_PERSISTENCE.
-            regime_platform_id (int | None | Unset): ID of a Decisions platform (same org) that classifies macro regimes
-                (#2098). At build time the panel is batch-classified via this platform and regime labels are injected as one-hot
-                dummy features (regime_<label>). The symbolic forecaster can then learn regime-conditional rules. At forecast
-                time a live single-classify of the current observation is performed and the regime provenance (label + proof
+            regime_platform_id (int | None | Unset): ID of a Decisions platform (same org) that classifies macro regimes. At
+                build time the panel is batch-classified via this platform and regime labels are injected as one-hot dummy
+                features (regime_<label>). The symbolic forecaster can then learn regime-conditional rules. At forecast time a
+                live single-classify of the current observation is performed and the regime provenance (label + proof
                 certificate) is returned on the payload. Null (default) = no regime conditioning.
             target_transform (None | str | Unset): Top-level shorthand for feature_config['target_transform'] (timeseries
                 mode only). One of 'auto' (the default when omitted) | 'none' | 'difference'; an unknown value is rejected with
@@ -140,11 +142,11 @@ class PredictionConfigCreate:
 
     target_field: str
     auto_reduce: bool | Unset = False
-    autoregressive: str | Unset = "full"
+    autoregressive: str | Unset = "none"
     backtest_config: None | PredictionConfigCreateBacktestConfigType0 | Unset = UNSET
     baseline_mode: str | Unset = "neural"
     core_columns: list[str] | None | Unset = UNSET
-    eval_metric: str | Unset = "rmse"
+    eval_metric: None | str | Unset = UNSET
     eval_metric_config: None | PredictionConfigCreateEvalMetricConfigType0 | Unset = UNSET
     feature_config: None | PredictionConfigCreateFeatureConfigType0 | Unset = UNSET
     feature_fields: list[str] | None | Unset = UNSET
@@ -155,7 +157,7 @@ class PredictionConfigCreate:
     min_rows: int | None | Unset = UNSET
     mode: str | Unset = "timeseries"
     model_tier: str | Unset = "tier1"
-    model_type: str | Unset = "gbt"
+    model_type: str | Unset = "auto"
     neural_confidence_tau: float | Unset = 0.0
     objective: PredictionConfigCreateObjective | Unset = PredictionConfigCreateObjective.SKILL_VS_PERSISTENCE
     regime_platform_id: int | None | Unset = UNSET
@@ -195,7 +197,11 @@ class PredictionConfigCreate:
         else:
             core_columns = self.core_columns
 
-        eval_metric = self.eval_metric
+        eval_metric: None | str | Unset
+        if isinstance(self.eval_metric, Unset):
+            eval_metric = UNSET
+        else:
+            eval_metric = self.eval_metric
 
         eval_metric_config: dict[str, Any] | None | Unset
         if isinstance(self.eval_metric_config, Unset):
@@ -387,7 +393,14 @@ class PredictionConfigCreate:
 
         core_columns = _parse_core_columns(d.pop("core_columns", UNSET))
 
-        eval_metric = d.pop("eval_metric", UNSET)
+        def _parse_eval_metric(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        eval_metric = _parse_eval_metric(d.pop("eval_metric", UNSET))
 
         def _parse_eval_metric_config(data: object) -> None | PredictionConfigCreateEvalMetricConfigType0 | Unset:
             if data is None:

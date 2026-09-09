@@ -17,7 +17,7 @@ class PanelRecoveryGroupOut:
 
     Reported because two series dying in the same window make every SINGLE
     column recovery zero -- a single-column-only report says "nothing is
-    binding" on exactly that case (#1382).
+    binding" on exactly that case.
 
         Attributes:
             columns (list[str]):

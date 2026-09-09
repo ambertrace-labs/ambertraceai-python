@@ -31,11 +31,11 @@ class PredictionOut:
             raw CHANGE that could not be reconstructed to a level because a difference transform had no base history, treat
             'value' as unreliable), 'target_transform' (the EFFECTIVE, post-'auto'-resolution transform applied at train
             time), and 'baseline' (the level used to reconstruct a differenced forecast, or null when not applicable).
-            Tiered coverage (#1185): 'forecast_tier' labels the trust tier of the point ('neural_scored' when the GBT
-            prediction's two-axis confidence >= tau, 'neural_weak' when below tau — the raw GBT prediction is always served
-            with its confidence metric, never replaced; 'no_forecast' when no model exists — value is null). 'confidence' is
-            the per-point confidence in [0,1]. 'confidence_basis' is the structured certificate (method, in_range,
-            sigma_clim, interval_half_width, uncertified_reason). Null for legacy models without fit-time artifacts.
+            Tiered coverage: 'forecast_tier' labels the trust tier of the point ('neural_scored' when the GBT prediction's
+            two-axis confidence >= tau, 'neural_weak' when below tau — the raw GBT prediction is always served with its
+            confidence metric, never replaced; 'no_forecast' when no model exists — value is null). 'confidence' is the per-
+            point confidence in [0,1]. 'confidence_basis' is the structured certificate (method, in_range, sigma_clim,
+            interval_half_width, uncertified_reason). Null for legacy models without fit-time artifacts.
         target (str): Name of the predicted target field.
         explanation (None | PredictionOutExplanationType0 | Unset): Detailed explanation when explain=true. Contains
             'feature_importance' (sorted list), 'adjustment_rules_fired', 'constraint_rules_fired', 'model' metadata, and

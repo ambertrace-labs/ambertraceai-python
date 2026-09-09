@@ -23,7 +23,7 @@ class NeurosymbolicComparisonQuery:
 
     The comparison scores BOTH branches against KNOWN historical actuals over
     the expanding-window holdout (the backtest is NEVER overridden).  When
-    ``feature_overrides`` is supplied (#1550), a FORWARD what-if projection is
+    ``feature_overrides`` is supplied, a FORWARD what-if projection is
     computed alongside the backtest: the overrides are injected into the latest
     data row and propagated through the neural+symbolic forward forecast.  The
     response carries both the forward what-if result and the backtest impact
@@ -34,11 +34,10 @@ class NeurosymbolicComparisonQuery:
                 model alone; neurosymbolic metrics apply the platform's active adjustment+constraint rules over the same
                 holdout.
             feature_overrides (NeurosymbolicComparisonQueryFeatureOverridesType0 | None | Unset): Optional map of raw column
-                name -> what-if value for the FORWARD projection (#1550). Overrides are injected into the latest data row and
-                propagated through engineered features (lags, rolling means) for the forward forecast ONLY — the backtest
-                scoring path is NEVER overridden. The response carries the forward what-if result under 'forward_whatif'
-                alongside the backtest impact under 'backtest_impact'. Omit (or null) for a backtest-only comparison (backward-
-                compatible).
+                name -> what-if value for the FORWARD projection. Overrides are injected into the latest data row and propagated
+                through engineered features (lags, rolling means) for the forward forecast ONLY — the backtest scoring path is
+                NEVER overridden. The response carries the forward what-if result under 'forward_whatif' alongside the backtest
+                impact under 'backtest_impact'. Omit (or null) for a backtest-only comparison (backward-compatible).
             include_pending (bool | Unset): When true, the neurosymbolic branch ALSO applies the accepted-but-pending
                 discovered rules for this config (a read-only 'what-if' preview of the discovered set BEFORE the human approval
                 gate). is_active is never mutated. The result carries mode='preview_pending' and n_pending_rules. Default false:

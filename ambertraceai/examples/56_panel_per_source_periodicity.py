@@ -1,5 +1,5 @@
 """56 -- Multi-source panel: per-source periodicity via on_missing.per_column
-(#1482 ask 6).
+
 
 Different sources behave differently when they go quiet, and ONE fill method
 for the whole panel is often wrong for at least one of them:
@@ -41,7 +41,7 @@ from _common import banner, get_client, print_dataset, step, wait_for_dataset
 
 def main() -> None:
     api = get_client()
-    banner("Panel per-source periodicity via on_missing.per_column (#1482 ask 6)")
+    banner("Panel per-source periodicity via on_missing.per_column")
 
     domain = api.domains.create(
         name="Per-Source Periodicity Demo",

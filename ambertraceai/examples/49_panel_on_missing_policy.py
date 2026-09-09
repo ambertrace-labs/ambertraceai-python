@@ -1,7 +1,7 @@
 """49 -- Multi-source panel with on_missing policy and transformation manifest.
 
 Demonstrates the customer-controlled missing-value policy for wide multi-source
-panels (#1482). When fetching data from multiple connectors, gaps arise from
+panels. When fetching data from multiple connectors, gaps arise from
 source misalignment (different start dates, different cadences, discontinued
 series). Without an explicit policy, gaps silently drop rows or NaN-pad,
 collapsing a 40-year panel to a few years.

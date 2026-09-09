@@ -1,9 +1,9 @@
-"""52 -- Swap-curve slope: fetch_multi -> derive_column -> forecast (#1658).
+"""52 -- Swap-curve slope: fetch_multi -> derive_column -> forecast.
 
 The motivating case: a customer needs a forecast target that is an ARITHMETIC
 COMBINATION of two connector-sourced columns (e.g. the EUR 10Y-2Y swap-curve
 slope), with independent driver discovery ON the slope itself -- not on each
-leg separately. Before #1658 this was unbuildable: there was no way to derive
+leg separately. Previously this was unbuildable: there was no way to derive
 a new dataset column from two existing columns server-side, and no way to
 pull a connector's raw row-level data back to the caller's process either.
 

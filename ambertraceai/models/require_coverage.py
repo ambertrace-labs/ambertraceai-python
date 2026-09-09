@@ -14,7 +14,7 @@ T = TypeVar("T", bound="RequireCoverage")
 
 @_attrs_define
 class RequireCoverage:
-    """Coverage filter for multi-source panels (Part of #1482 ask 4).
+    """Coverage filter for multi-source panels.
 
     Applied on the RAW (pre-fill) outer-joined frame, AFTER on_stale and
     BEFORE on_missing: drops AUXILIARY columns whose non-null coverage falls

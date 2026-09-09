@@ -33,9 +33,9 @@ class DatasetOut:
         relation_name (None | str | Unset):
         row_count (int | None | Unset):
         schema_info (DatasetOutSchemaInfoType0 | None | Unset):
-        source_notices (list[str] | Unset): Licence notices (#976) due for the connector source(s) this dataset was
-            fetched from -- rendered on every access, because some source licences impose a per-access disclosure duty.
-            Empty for uploads and for sources with no notice due.
+        source_notices (list[str] | Unset): Licence notices due for the connector source(s) this dataset was fetched
+            from -- rendered on every access, because some source licences impose a per-access disclosure duty. Empty for
+            uploads and for sources with no notice due.
         updated_at (None | str | Unset):
     """
 

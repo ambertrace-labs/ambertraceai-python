@@ -26,7 +26,7 @@ class AuthorizeActionRequest:
         context (AuthorizeActionRequestContextType0 | None | Unset): Optional contextual facts the policy reasons over
             (e.g. an external signal, a flag, a classifier output). Merged with args as candidate client_facts; args wins on
             a key collision. A required-but-missing contextual fact yields a fail-closed deny. Each value may be a bare
-            scalar OR a ``{"value": <v>, "confidence": <c>}`` carrier for per-observation confidence (#1655).
+            scalar OR a ``{"value": <v>, "confidence": <c>}`` carrier for per-observation confidence.
         predictions (AuthorizeActionRequestPredictionsType0 | None | Unset): Optional VERIFIED-PREDICTION REFERENCES as
             a {role: {model_id, as_of}} map. Each role references a persisted PredictionRecord the PLATFORM produced+stored;
             the platform fetches the SCOPED (org+owner) trusted row and admits its certified fields to the decision EDB

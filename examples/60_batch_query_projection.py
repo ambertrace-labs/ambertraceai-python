@@ -1,6 +1,6 @@
 """60 -- Batch query + compact/projection mode.
 
-Demonstrates two platform throughput features (#1656):
+Demonstrates two platform throughput features:
 
 1. **Batch query** (``platforms.query_batch``): send N queries in one call
    instead of N round-trips. Each item is independent -- a failure in one item

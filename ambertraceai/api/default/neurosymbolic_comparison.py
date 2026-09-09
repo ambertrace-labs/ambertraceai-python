@@ -81,11 +81,10 @@ def sync_detailed(
     array over the SAME holdout (each entry {index, time, actual, neural, neurosymbolic, rule_fired}) so
     the head-to-head can be charted over time; it reconciles with the aggregate metrics and is omitted
     by default. Timeseries configs only. feature_overrides applies a what-if override to the FORWARD
-    projection only (#1550). The backtest-scoring path (expanding-window holdout scored against real
-    historical actuals) is NEVER overridden — the head-to-head metrics are always the real historical
-    skill. The forward what-if number and the backtest impact information are returned side-by-side so
-    the user sees both \"what-if projection under overrides\" and \"how this model performed
-    historically\".
+    projection only. The backtest-scoring path (expanding-window holdout scored against real historical
+    actuals) is NEVER overridden — the head-to-head metrics are always the real historical skill. The
+    forward what-if number and the backtest impact information are returned side-by-side so the user
+    sees both \"what-if projection under overrides\" and \"how this model performed historically\".
 
     Args:
         id (int): Resource ID
@@ -94,7 +93,7 @@ def sync_detailed(
 
             The comparison scores BOTH branches against KNOWN historical actuals over
             the expanding-window holdout (the backtest is NEVER overridden).  When
-            ``feature_overrides`` is supplied (#1550), a FORWARD what-if projection is
+            ``feature_overrides`` is supplied, a FORWARD what-if projection is
             computed alongside the backtest: the overrides are injected into the latest
             data row and propagated through the neural+symbolic forward forecast.  The
             response carries both the forward what-if result and the backtest impact
@@ -138,11 +137,10 @@ def sync(
     array over the SAME holdout (each entry {index, time, actual, neural, neurosymbolic, rule_fired}) so
     the head-to-head can be charted over time; it reconciles with the aggregate metrics and is omitted
     by default. Timeseries configs only. feature_overrides applies a what-if override to the FORWARD
-    projection only (#1550). The backtest-scoring path (expanding-window holdout scored against real
-    historical actuals) is NEVER overridden — the head-to-head metrics are always the real historical
-    skill. The forward what-if number and the backtest impact information are returned side-by-side so
-    the user sees both \"what-if projection under overrides\" and \"how this model performed
-    historically\".
+    projection only. The backtest-scoring path (expanding-window holdout scored against real historical
+    actuals) is NEVER overridden — the head-to-head metrics are always the real historical skill. The
+    forward what-if number and the backtest impact information are returned side-by-side so the user
+    sees both \"what-if projection under overrides\" and \"how this model performed historically\".
 
     Args:
         id (int): Resource ID
@@ -151,7 +149,7 @@ def sync(
 
             The comparison scores BOTH branches against KNOWN historical actuals over
             the expanding-window holdout (the backtest is NEVER overridden).  When
-            ``feature_overrides`` is supplied (#1550), a FORWARD what-if projection is
+            ``feature_overrides`` is supplied, a FORWARD what-if projection is
             computed alongside the backtest: the overrides are injected into the latest
             data row and propagated through the neural+symbolic forward forecast.  The
             response carries both the forward what-if result and the backtest impact
@@ -190,11 +188,10 @@ async def asyncio_detailed(
     array over the SAME holdout (each entry {index, time, actual, neural, neurosymbolic, rule_fired}) so
     the head-to-head can be charted over time; it reconciles with the aggregate metrics and is omitted
     by default. Timeseries configs only. feature_overrides applies a what-if override to the FORWARD
-    projection only (#1550). The backtest-scoring path (expanding-window holdout scored against real
-    historical actuals) is NEVER overridden — the head-to-head metrics are always the real historical
-    skill. The forward what-if number and the backtest impact information are returned side-by-side so
-    the user sees both \"what-if projection under overrides\" and \"how this model performed
-    historically\".
+    projection only. The backtest-scoring path (expanding-window holdout scored against real historical
+    actuals) is NEVER overridden — the head-to-head metrics are always the real historical skill. The
+    forward what-if number and the backtest impact information are returned side-by-side so the user
+    sees both \"what-if projection under overrides\" and \"how this model performed historically\".
 
     Args:
         id (int): Resource ID
@@ -203,7 +200,7 @@ async def asyncio_detailed(
 
             The comparison scores BOTH branches against KNOWN historical actuals over
             the expanding-window holdout (the backtest is NEVER overridden).  When
-            ``feature_overrides`` is supplied (#1550), a FORWARD what-if projection is
+            ``feature_overrides`` is supplied, a FORWARD what-if projection is
             computed alongside the backtest: the overrides are injected into the latest
             data row and propagated through the neural+symbolic forward forecast.  The
             response carries both the forward what-if result and the backtest impact
@@ -245,11 +242,10 @@ async def asyncio(
     array over the SAME holdout (each entry {index, time, actual, neural, neurosymbolic, rule_fired}) so
     the head-to-head can be charted over time; it reconciles with the aggregate metrics and is omitted
     by default. Timeseries configs only. feature_overrides applies a what-if override to the FORWARD
-    projection only (#1550). The backtest-scoring path (expanding-window holdout scored against real
-    historical actuals) is NEVER overridden — the head-to-head metrics are always the real historical
-    skill. The forward what-if number and the backtest impact information are returned side-by-side so
-    the user sees both \"what-if projection under overrides\" and \"how this model performed
-    historically\".
+    projection only. The backtest-scoring path (expanding-window holdout scored against real historical
+    actuals) is NEVER overridden — the head-to-head metrics are always the real historical skill. The
+    forward what-if number and the backtest impact information are returned side-by-side so the user
+    sees both \"what-if projection under overrides\" and \"how this model performed historically\".
 
     Args:
         id (int): Resource ID
@@ -258,7 +254,7 @@ async def asyncio(
 
             The comparison scores BOTH branches against KNOWN historical actuals over
             the expanding-window holdout (the backtest is NEVER overridden).  When
-            ``feature_overrides`` is supplied (#1550), a FORWARD what-if projection is
+            ``feature_overrides`` is supplied, a FORWARD what-if projection is
             computed alongside the backtest: the overrides are injected into the latest
             data row and propagated through the neural+symbolic forward forecast.  The
             response carries both the forward what-if result and the backtest impact
