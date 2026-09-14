@@ -664,7 +664,7 @@ class DatasetResource(_Resource):
     def list(self) -> list[DatasetOut]:
         """List the caller's datasets.
 
-        Each item is an :class:`AttrDict` — subscriptable as before
+        Each item is an :class:`AttrDict` — subscriptable
         (``ds["row_count"]``) and attribute-accessible (``ds.row_count``,
         ``ds.column_count``, ``ds.decision_column``) for IDE autocomplete.
         """
@@ -1730,9 +1730,8 @@ class PredictionResource(_Resource):
             ``last_value + change`` reconstruction step at all.
 
           .. versionchanged:: 1.0.16
-             The top-level ``target_transform=`` kwarg is honoured. Before this
-             it was silently dropped by the server and the config resolved to
-             ``"none"`` with no error, even for a bogus value.
+             The top-level ``target_transform=`` kwarg is honoured and
+             validated — an out-of-set value is rejected with an error.
 
           **No-AR / level-direct recipe (a forecast with NO last-value anchor).**
           ``autoregressive="none"`` ALONE does NOT remove the last-value anchor:
@@ -1827,8 +1826,7 @@ class PredictionResource(_Resource):
         ``"auto"`` was requested the transform resolves at TRAIN time, so before
         training they read ``"auto (resolved at train time)"`` and reflect the
         concrete resolved transform once the config is trained. Omitting
-        ``target_transform`` altogether now echoes the ``"auto"`` default too
-        (it used to read ``"none"`` while the trainer applied ``"auto"``).
+        ``target_transform`` altogether echoes the ``"auto"`` default.
 
         Objective selection:
 
@@ -1872,10 +1870,9 @@ class PredictionResource(_Resource):
         #
         # On CONFLICT the top-level value is deliberately LEFT IN kwargs rather
         # than dropped: the server then validates it and 422s an out-of-set
-        # value. Dropping the loser would re-create the defect inside the
-        # SDK — a bogus spelling vanishing with only a "the nested value wins"
-        # warning, which reads as "your spelling was legitimate but lost a
-        # precedence contest".
+        # value. Dropping the loser here would let a bogus spelling vanish with
+        # only a "the nested value wins" warning, which reads as "your spelling
+        # was legitimate but lost a precedence contest".
         target_transform = kwargs.get("target_transform")
         mode = kwargs.get("mode") or "timeseries"
         if target_transform is not None and mode != "cross_sectional":
@@ -2243,8 +2240,8 @@ class PredictionResource(_Resource):
         contributing driver-rules the model induced + accepted on the holdout (NOT
         only the ones firing on the most-recent row). So ``why`` is non-empty and
         informative even when nothing fires on the latest row (e.g. a mid-range
-        macro reading) — the case where it used to come back ``[]``. It is empty
-        ONLY when the data admitted no data-fitting driver at all. Each ``why``
+        macro reading). It is empty ONLY when the data admitted no data-fitting
+        driver at all. Each ``why``
         entry carries:
 
         * ``driver`` — the plain-English rule (``WHEN … THEN <target> moves …``);
@@ -2354,8 +2351,7 @@ class PredictionResource(_Resource):
         always served with the full confidence metric -- never replaced);
         ``"no_forecast"`` when genuinely no model exists (value is null);
         ``"baseline_anchor"`` for non-neural anchors (persistence / drift) with no
-        fired drivers. The tau value that was previously embedded in the tier string
-        (e.g. ``neural_scored@0.5``) is now emitted separately as
+        fired drivers. The confidence threshold is reported separately as
         ``neural_confidence_tau``. Record-first consumers
         (the decision-bridge ``predictions={role: record}`` fan-in) should key on
         ``forecast_tier`` to distinguish genuine driver-based forecasts from anchor
@@ -3804,11 +3800,11 @@ class AmbertraceAPI:
         for N seconds).
 
         On a terminal FAILED status (``error`` / ``failed``) this **raises**
-        :class:`AmbertraceError`, surfacing the job's ``error_message`` — so a
-        failed build is no longer swallowed (which would otherwise mislead a
-        later ``platforms.query()`` into a "Platform is not active" error). On a
-        success status (``ready`` / ``active`` / ``completed``) it returns the
-        full job dict as before. A build that completes with
+        :class:`AmbertraceError`, surfacing the job's ``error_message`` so the
+        failure is explicit at build time rather than surfacing later as a
+        "Platform is not active" error on ``platforms.query()``. On a success
+        status (``ready`` / ``active`` / ``completed``) it returns the full job
+        dict. A build that completes with
         ``build_quality.status == "needs_review"`` (warnings only) is NOT a
         failure — its status is a success status, so it still returns normally.
 

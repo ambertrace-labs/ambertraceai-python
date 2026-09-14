@@ -7,7 +7,7 @@ efficiency >= 58%), cross-field comparisons (emissions vs limit), and
 string/boolean checks (MOT status, insurance active).
 
 After running, the demo scores predictions against the rules that actually
-fired — a compact regression test for the symbolic engine.
+fired — a compact demonstration of rule coverage on the symbolic engine.
 
 Creates resources on your account. Run with --help for options.
 

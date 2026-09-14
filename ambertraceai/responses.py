@@ -17,7 +17,7 @@ Design notes:
 
 * ``TypedDict`` is a STRUCTURAL type only. At runtime a ``TypedDict`` *is* a
   ``dict`` — annotating ``-> QueryResult`` does not wrap or validate anything;
-  the object returned is the same ``AttrDict`` as before. So this module can
+  the object returned is a plain ``AttrDict``. So this module can
   never break a consumer's ``[...]`` access.
 * ``total=False`` marks a shape whose fields are all OPTIONAL — used where the
   API only sends a field conditionally (e.g. ``explanation`` only when
