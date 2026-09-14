@@ -11,17 +11,21 @@ config declares a ``frequency``.
 
 When ``include_fitted_series=True``, the ``per_tier_skill`` block carries
 per-tier trading metrics: ``per_tier_skill['composed']`` contains
-trading metrics on the composed prediction (identical to the headline metrics),
-``per_tier_skill['rule_layer']`` shows the symbolic rules' standalone
-trading performance, and ``per_tier_skill['neural']`` shows the GBT
-baseline's standalone trading performance.
+trading metrics on the composed prediction, ``per_tier_skill['rule_layer']``
+shows the symbolic rules' standalone trading performance, and
+``per_tier_skill['neural']`` shows the GBT baseline's standalone trading
+performance.  The headline ``objective_value`` is aligned to the
+objective-dominant tier (the ``served_tier`` key names it).
 
     python 63_sharpe_objective_forecast.py
 
 .. note::
 
-   The ``objective`` field is available in the current SDK release.
-   The configured objective currently does not drive rule acceptance.
+   The ``objective`` field drives tier selection: the served forecast
+   uses the tier with the highest value of the configured objective on the
+   holdout.  ``baseline_mode='persistence'`` is not supported -- a forecast
+   derived from the last observed value moves with spot and is untradeable.
+   Persistence remains as a reference metric (``skill_vs_persistence``).
 """
 
 import argparse
@@ -97,10 +101,13 @@ def main():
     fs_data = fs_resp.data
     per_tier_skill = fs_data.get("per_tier_skill") or {}
 
-    # The composed entry carries the SAME trading metrics as the headline.
+    # The composed entry carries trading metrics for the full composed
+    # prediction.  The headline objective_value is aligned to the
+    # objective-dominant tier (named in served_tier).
+    print(f"\nServed tier: {fs_data.get('served_tier', 'N/A')}")
     composed = per_tier_skill.get("composed")
     if composed:
-        print("\nPer-tier trading metrics (composed = headline):")
+        print("\nPer-tier trading metrics (composed):")
         for key in ("directional_pnl", "sharpe_ratio", "hit_rate",
                      "max_drawdown"):
             print(f"  composed.{key}: {composed.get(key)}")
