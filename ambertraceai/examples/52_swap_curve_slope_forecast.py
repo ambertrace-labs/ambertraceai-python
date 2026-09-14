@@ -3,9 +3,9 @@
 The motivating case: a customer needs a forecast target that is an ARITHMETIC
 COMBINATION of two connector-sourced columns (e.g. the EUR 10Y-2Y swap-curve
 slope), with independent driver discovery ON the slope itself -- not on each
-leg separately. Previously this was unbuildable: there was no way to derive
-a new dataset column from two existing columns server-side, and no way to
-pull a connector's raw row-level data back to the caller's process either.
+leg separately. The platform builds this server-side: derive a new dataset
+column as an arithmetic combination of two existing columns, and pull a
+connector's raw row-level data back to the caller's process.
 
 Flow:
     1. fetch_multi() the two swap-curve legs (EUR 10Y, EUR 2Y) as ONE

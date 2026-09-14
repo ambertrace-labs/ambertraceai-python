@@ -14,18 +14,15 @@ code_review_approved, change_ticket_approved, within_change_window), a scalar
 comparison (rollout_pct at most 10), or a cross-field inequality (the approver must
 not be the author) — the obligation class that compiles cleanly today.
 
-SEPARATION OF DUTIES (cross-field inequality — now composes)
-------------------------------------------------------------
+SEPARATION OF DUTIES (cross-field inequality)
+---------------------------------------------
 A classic deploy control is *separation of duties*: "the approver must not be the
 author" — a cross-field inequality between two action fields. The production permit
 now carries it (``approver`` != ``author``), and it composes correctly with the
 other per-action conditions: an all-green production deploy with approver != author
-PERMITS, and the same action with approver == author DENIES. (When this example was
-first published the cross-field inequality did not yet compose with the conditional
-permits — the compiler reverted to a satisfaction-field conflation and within-policy
-prod deploys wrongly denied; that enforcement bug is fixed.) The gate proves the
+PERMITS, and the same action with approver == author DENIES. The gate proves the
 inequality directly — there is no ``*_check_passed`` discharge fact to supply, and the
-policy now compiles finding-free.
+policy compiles finding-free.
 
 TEMPORAL / SEQUENCING — a NATIVE gate primitive (see example 40)
 ----------------------------------------------------------------
@@ -125,8 +122,8 @@ SUITE = [
     _case("no change ticket", "deny", change_ticket_approved=False),
     _case("rollout 50% (> 10 canary cap)", "deny", rollout_pct=50),
     # Separation of duties — the approver must not be the author (a cross-field
-    # inequality between two action fields). This now composes with the per-env
-    # conditional permits (enforced as of deploy 2c4caa20962b); see the docstring.
+    # inequality between two action fields). This composes with the per-env
+    # conditional permits; see the docstring.
     _case("SoD VIOLATION: approver == author", "deny", author="alice", approver="alice"),
     _case("SoD satisfied: approver != author (all else green)", "permit",
           author="alice", approver="carol"),

@@ -177,8 +177,8 @@ def run_no_ar_level_direct(api, args: argparse.Namespace) -> None:
     print_section(5, total, "THE SHORTHAND — target_transform as a top-level kwarg")
     # Both forms are accepted and mean the same thing: the TOP-LEVEL
     # target_transform="difference" kwarg is folded into feature_config for you.
-    # (It used to be silently dropped — even a bogus value — which is why this
-    # step asserts the echo rather than just printing it.)
+    # This step asserts the config echoes the transform back, so you can confirm
+    # it was applied.
     shorthand = api.predictions.create_config(
         pid, **common, target_transform="difference")
     print(f"  config {shorthand['id']} (target_transform='difference', top level): "
