@@ -709,9 +709,7 @@ class SymbolicForecastResult(TypedDict, total=False):
     Three component-layer entries are added:
 
     ``composed`` — trading metrics computed over ALL holdout points using
-    the composed prediction (``predicted``). These values are identical to
-    the headline ``directional_pnl`` / ``sharpe_ratio`` / ``hit_rate`` /
-    ``max_drawdown`` in the top-level response.
+    the composed prediction (``predicted``).
 
     ``rule_layer`` — trading metrics computed over ALL holdout points using
     the symbolic rule-layer-only prediction (``rule_layer_predicted``).
@@ -720,11 +718,18 @@ class SymbolicForecastResult(TypedDict, total=False):
     GBT baseline prediction (``neural``). Present when
     ``baseline_mode='neural'`` (the default).
 
-    This lets a consumer reconcile the headline trading metrics with the
-    per-point fitted series: ``per_tier_skill['composed']`` equals the
-    headline, ``per_tier_skill['rule_layer']`` shows the symbolic rules'
+    The headline ``objective_value`` is aligned to the objective-dominant
+    tier on the holdout (the ``served_tier`` key names which tier was
+    selected).  ``per_tier_skill['rule_layer']`` shows the symbolic rules'
     standalone trading performance, and ``per_tier_skill['neural']`` shows
-    the GBT baseline's standalone trading performance."""
+    the GBT baseline's standalone trading performance.
+
+    .. note::
+
+       ``baseline_mode='persistence'`` is not supported.  A forecast
+       derived from the last observed value moves with spot and is
+       untradeable.  Persistence is retained as a reference metric
+       (``skill_vs_persistence``) for comparison only."""
 
     forecast: Required[ForecastBlock]
     why: Required[list[JsonDict]]
@@ -750,6 +755,8 @@ class SymbolicForecastResult(TypedDict, total=False):
     unmatched_overrides: list[str]
     discovery_mode: bool
     driver_report: list[JsonDict]
+    served_tier: str
+    objective_value: float
 
 
 class DriverReportEntry(TypedDict, total=False):
