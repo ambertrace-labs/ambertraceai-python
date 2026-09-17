@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class PredictionConfigOutObjective(str, Enum):
+class PredictionConfigOutObjectiveType0(str, Enum):
     DIRECTIONAL_PNL = "directional_pnl"
     HIT_RATE = "hit_rate"
     SHARPE_RATIO = "sharpe_ratio"

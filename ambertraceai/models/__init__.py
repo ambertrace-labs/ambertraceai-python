@@ -149,12 +149,12 @@ from .prediction_config_create import PredictionConfigCreate
 from .prediction_config_create_backtest_config_type_0 import PredictionConfigCreateBacktestConfigType0
 from .prediction_config_create_eval_metric_config_type_0 import PredictionConfigCreateEvalMetricConfigType0
 from .prediction_config_create_feature_config_type_0 import PredictionConfigCreateFeatureConfigType0
-from .prediction_config_create_objective import PredictionConfigCreateObjective
+from .prediction_config_create_objective_type_0 import PredictionConfigCreateObjectiveType0
 from .prediction_config_out import PredictionConfigOut
 from .prediction_config_out_backtest_config_type_0 import PredictionConfigOutBacktestConfigType0
 from .prediction_config_out_eval_metric_config_type_0 import PredictionConfigOutEvalMetricConfigType0
 from .prediction_config_out_feature_config_type_0 import PredictionConfigOutFeatureConfigType0
-from .prediction_config_out_objective import PredictionConfigOutObjective
+from .prediction_config_out_objective_type_0 import PredictionConfigOutObjectiveType0
 from .prediction_config_out_panel_sufficiency_type_0 import PredictionConfigOutPanelSufficiencyType0
 from .prediction_config_out_reduction_manifest_type_0 import PredictionConfigOutReductionManifestType0
 from .prediction_out import PredictionOut
@@ -370,12 +370,12 @@ __all__ = (
     "PredictionConfigCreateBacktestConfigType0",
     "PredictionConfigCreateEvalMetricConfigType0",
     "PredictionConfigCreateFeatureConfigType0",
-    "PredictionConfigCreateObjective",
+    "PredictionConfigCreateObjectiveType0",
     "PredictionConfigOut",
     "PredictionConfigOutBacktestConfigType0",
     "PredictionConfigOutEvalMetricConfigType0",
     "PredictionConfigOutFeatureConfigType0",
-    "PredictionConfigOutObjective",
+    "PredictionConfigOutObjectiveType0",
     "PredictionConfigOutPanelSufficiencyType0",
     "PredictionConfigOutReductionManifestType0",
     "PredictionOut",
