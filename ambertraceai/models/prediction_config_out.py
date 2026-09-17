@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, TypeVar, cast
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
-from ..models.prediction_config_out_objective import PredictionConfigOutObjective
+from ..models.prediction_config_out_objective_type_0 import PredictionConfigOutObjectiveType0
 from ..types import UNSET, Unset
 
 if TYPE_CHECKING:
@@ -39,8 +39,8 @@ class PredictionConfigOut:
         autoregressive (str | Unset): Autoregression control: 'full' (history allowed, default), 'limited' (drivers + a
             little history), or 'none' (drivers only). Default: 'full'.
         backtest_config (None | PredictionConfigOutBacktestConfigType0 | Unset):
-        baseline_mode (str | Unset): Forecast anchor mode: 'neural' (default), 'persistence', or 'drift'. Default:
-            'neural'.
+        baseline_mode (str | Unset): Forecast anchor mode: 'neural' (default). 'neural' selects the best-of-neural-
+            registry model. Default: 'neural'.
         core_columns (list[str] | None | Unset): Declared never-drop columns. The target_field and time_index_field are
             implicitly core regardless of this list.
         created_at (None | str | Unset):
@@ -61,9 +61,9 @@ class PredictionConfigOut:
         neural_confidence_tau (float | Unset): Per-point neural-tier confidence threshold: GBT prediction admitted as
             neural_scored when confidence >= tau, else neural_weak (raw GBT still served). 0.0 = gate labels only. Default:
             0.0.
-        objective (PredictionConfigOutObjective | Unset): Optimisation objective selection. The metric is computed and
-            reported; the configured objective currently does not drive rule acceptance. Default:
-            PredictionConfigOutObjective.SKILL_VS_PERSISTENCE.
+        objective (None | PredictionConfigOutObjectiveType0 | Unset): Optimisation objective. Governs rule acceptance
+            and neural-tier model selection. Default: 'sharpe_ratio' when frequency is declared, 'skill_vs_persistence'
+            otherwise.
         output_space (None | str | Unset): Item 6 — the space predict() 'value' will be in given the resolved transform:
             'level' (transform 'none' — value is a level) or 'change' (a differencing transform — predict() reconstructs to
             a level when history is available; see the predict response's 'value_space'). 'unknown (auto — resolved at train
@@ -118,7 +118,7 @@ class PredictionConfigOut:
     min_rows: int | None | Unset = UNSET
     mode: str | Unset = "timeseries"
     neural_confidence_tau: float | Unset = 0.0
-    objective: PredictionConfigOutObjective | Unset = PredictionConfigOutObjective.SKILL_VS_PERSISTENCE
+    objective: None | PredictionConfigOutObjectiveType0 | Unset = UNSET
     output_space: None | str | Unset = UNSET
     panel_sufficiency: None | PredictionConfigOutPanelSufficiencyType0 | Unset = UNSET
     reduction_manifest: None | PredictionConfigOutReductionManifestType0 | Unset = UNSET
@@ -248,9 +248,13 @@ class PredictionConfigOut:
 
         neural_confidence_tau = self.neural_confidence_tau
 
-        objective: str | Unset = UNSET
-        if not isinstance(self.objective, Unset):
+        objective: None | str | Unset
+        if isinstance(self.objective, Unset):
+            objective = UNSET
+        elif isinstance(self.objective, PredictionConfigOutObjectiveType0):
             objective = self.objective.value
+        else:
+            objective = self.objective
 
         output_space: None | str | Unset
         if isinstance(self.output_space, Unset):
@@ -560,12 +564,22 @@ class PredictionConfigOut:
 
         neural_confidence_tau = d.pop("neural_confidence_tau", UNSET)
 
-        _objective = d.pop("objective", UNSET)
-        objective: PredictionConfigOutObjective | Unset
-        if isinstance(_objective, Unset):
-            objective = UNSET
-        else:
-            objective = PredictionConfigOutObjective(_objective)
+        def _parse_objective(data: object) -> None | PredictionConfigOutObjectiveType0 | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            try:
+                if not isinstance(data, str):
+                    raise TypeError()
+                objective_type_0 = PredictionConfigOutObjectiveType0(data)
+
+                return objective_type_0
+            except (TypeError, ValueError, AttributeError, KeyError):
+                pass
+            return cast(None | PredictionConfigOutObjectiveType0 | Unset, data)
+
+        objective = _parse_objective(d.pop("objective", UNSET))
 
         def _parse_output_space(data: object) -> None | str | Unset:
             if data is None:

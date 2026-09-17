@@ -1832,20 +1832,23 @@ class PredictionResource(_Resource):
 
         * ``objective`` — optimisation objective for the prediction loop, one of:
 
-          - ``"skill_vs_persistence"`` (DEFAULT) — forecast skill relative to a
-            naive persist-last-value baseline; higher is better.
-          - ``"directional_pnl"`` — cumulative directional PnL on the holdout;
-            higher is better.
           - ``"sharpe_ratio"`` — annualised Sharpe ratio of the directional PnL
             stream; higher is better.
+          - ``"directional_pnl"`` — cumulative directional PnL on the holdout;
+            higher is better.
           - ``"hit_rate"`` — directional hit rate, excluding zero-actual-move
             periods; higher is better.
+          - ``"skill_vs_persistence"`` — forecast skill relative to a naive
+            persist-last-value baseline; higher is better.
 
-          The chosen objective is stored on the config and the corresponding
-          trading metric is computed and reported in backtest / predict results.
-          Trading objectives (``directional_pnl``, ``sharpe_ratio``,
-          ``hit_rate``) require ``frequency`` on the config for annualisation.
-          Readable on the returned ``PredictionConfigOut.objective``.
+          When ``objective`` is omitted the default is context-dependent:
+          ``"sharpe_ratio"`` if a ``frequency`` is declared on the config (the
+          trading objectives need it for annualisation), otherwise
+          ``"skill_vs_persistence"``. The chosen objective is stored on the
+          config and the corresponding metric is computed and reported in
+          backtest / predict results. Trading objectives (``directional_pnl``,
+          ``sharpe_ratio``, ``hit_rate``) require ``frequency``. Readable on the
+          returned ``PredictionConfigOut.objective``.
 
           Example::
 

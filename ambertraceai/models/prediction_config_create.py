@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, TypeVar, cast
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
-from ..models.prediction_config_create_objective import PredictionConfigCreateObjective
+from ..models.prediction_config_create_objective_type_0 import PredictionConfigCreateObjectiveType0
 from ..types import UNSET, Unset
 
 if TYPE_CHECKING:
@@ -57,11 +57,9 @@ class PredictionConfigCreate:
                 'test_ratio' (float, default 0.2), 'n_splits' (int, default 1). In timeseries mode, uses expanding-window splits
                 to prevent future leakage. In cross_sectional mode, uses stratified random splits.
             baseline_mode (str | Unset): Forecast anchor for the symbolic forecaster (timeseries mode only). Controls the
-                reference model the forecast composes onto: 'neural' (default — GBT prediction through the S2 confidence gate
-                for no-driver points; no_forecast when the platform has no trained model); 'persistence' (last observed level);
-                'drift' (last level + h * OLS slope — a linear-trend anchor). The holdout acceptance gate recomposes driver
-                effects onto the chosen anchor so they are not mis-scaled. skill_vs_persistence is ALWAYS reported as the
-                external benchmark regardless of anchor. Ignored in cross_sectional mode. Default: 'neural'.
+                reference model the forecast composes onto: 'neural' (default) selects the best-of-neural-registry model
+                (GBT/ridge/lasso/LSTM/transformer ranked by the configured objective). skill_vs_persistence is always reported
+                as an external benchmark. Ignored in cross_sectional mode. Default: 'neural'.
             core_columns (list[str] | None | Unset): Column-role declaration: columns that must NEVER be dropped by
                 auto_reduce. The target_field and time_index_field are implicitly core regardless of this list. Every other
                 candidate feature column is treated as AUXILIARY — droppable by auto_reduce, cheapest-information-cost
@@ -117,14 +115,12 @@ class PredictionConfigCreate:
                 Axis B: interval sharpness) >= tau. Below tau the raw GBT prediction is still served with tier 'neural_weak' and
                 the full confidence certificate. Default 0.0 (gate labels every prediction with its tier and confidence; set > 0
                 to distinguish strong vs weak neural predictions). Default: 0.0.
-            objective (PredictionConfigCreateObjective | Unset): Optimisation objective selection. The chosen objective is
-                stored on the config and the corresponding trading metric is computed and reported in backtest results. NOTE:
-                the configured objective currently does not drive rule acceptance; skill_vs_persistence remains the acceptance
-                criterion regardless of this setting. Options: 'skill_vs_persistence' (default — forecast skill relative to a
-                naive persist-last-value baseline), 'directional_pnl' (cumulative directional PnL on the holdout),
-                'sharpe_ratio' (annualised Sharpe of the directional PnL stream), 'hit_rate' (directional hit rate excluding
-                zero-actual-move periods). Trading objectives (pnl/sharpe/hit_rate) require a frequency on the config for
-                annualisation. Default: PredictionConfigCreateObjective.SKILL_VS_PERSISTENCE.
+            objective (None | PredictionConfigCreateObjectiveType0 | Unset): Optimisation objective. Governs rule
+                acceptance, neural-tier model selection, and greedy forward selection. Default: 'sharpe_ratio' when frequency is
+                declared, 'skill_vs_persistence' otherwise. Options: 'sharpe_ratio' (annualised Sharpe of directional PnL),
+                'directional_pnl' (cumulative directional PnL on holdout), 'hit_rate' (directional hit rate excluding zero-move
+                periods), 'skill_vs_persistence' (forecast skill vs naive persist-last-value). Trading objectives require a
+                frequency for annualisation.
             regime_platform_id (int | None | Unset): ID of a Decisions platform (same org) that classifies macro regimes. At
                 build time the panel is batch-classified via this platform and regime labels are injected as one-hot dummy
                 features (regime_<label>). The symbolic forecaster can then learn regime-conditional rules. At forecast time a
@@ -159,7 +155,7 @@ class PredictionConfigCreate:
     model_tier: str | Unset = "tier1"
     model_type: str | Unset = "auto"
     neural_confidence_tau: float | Unset = 0.0
-    objective: PredictionConfigCreateObjective | Unset = PredictionConfigCreateObjective.SKILL_VS_PERSISTENCE
+    objective: None | PredictionConfigCreateObjectiveType0 | Unset = UNSET
     regime_platform_id: int | None | Unset = UNSET
     target_transform: None | str | Unset = UNSET
     time_index_field: None | str | Unset = UNSET
@@ -266,9 +262,13 @@ class PredictionConfigCreate:
 
         neural_confidence_tau = self.neural_confidence_tau
 
-        objective: str | Unset = UNSET
-        if not isinstance(self.objective, Unset):
+        objective: None | str | Unset
+        if isinstance(self.objective, Unset):
+            objective = UNSET
+        elif isinstance(self.objective, PredictionConfigCreateObjectiveType0):
             objective = self.objective.value
+        else:
+            objective = self.objective
 
         regime_platform_id: int | None | Unset
         if isinstance(self.regime_platform_id, Unset):
@@ -506,12 +506,22 @@ class PredictionConfigCreate:
 
         neural_confidence_tau = d.pop("neural_confidence_tau", UNSET)
 
-        _objective = d.pop("objective", UNSET)
-        objective: PredictionConfigCreateObjective | Unset
-        if isinstance(_objective, Unset):
-            objective = UNSET
-        else:
-            objective = PredictionConfigCreateObjective(_objective)
+        def _parse_objective(data: object) -> None | PredictionConfigCreateObjectiveType0 | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            try:
+                if not isinstance(data, str):
+                    raise TypeError()
+                objective_type_0 = PredictionConfigCreateObjectiveType0(data)
+
+                return objective_type_0
+            except (TypeError, ValueError, AttributeError, KeyError):
+                pass
+            return cast(None | PredictionConfigCreateObjectiveType0 | Unset, data)
+
+        objective = _parse_objective(d.pop("objective", UNSET))
 
         def _parse_regime_platform_id(data: object) -> int | None | Unset:
             if data is None:

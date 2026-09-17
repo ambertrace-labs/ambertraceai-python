@@ -692,9 +692,8 @@ class SymbolicForecastResult(TypedDict, total=False):
     ``rule_layer_predicted`` (float) — the symbolic rule-layer-only
     prediction: anchor + sum of fired effects, where anchor is the
     forecaster's per-point composition base (persistence under
-    ``baseline_mode='persistence'``; GBT prediction under ``'neural'``;
-    drift-projected level under ``'drift'``). Equals the anchor on
-    zero-fire points.
+    ``baseline_mode='persistence'``; best-of-neural-registry prediction
+    under ``'neural'``). Equals the anchor on zero-fire points.
 
     **per_tier_skill per-tier trading metrics:**
 
