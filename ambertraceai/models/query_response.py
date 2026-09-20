@@ -22,10 +22,16 @@ class QueryResponse:
         answer (str):
         platform_id (int):
         query (str):
-        decision (None | str | Unset): The platform's authoritative decision label for this query (e.g. ``approve``,
-            ``deny``, ``refer``, ``escalate``). Derived from the fired verdict rules using the platform's declared decision
-            vocabulary. ``null`` when no verdict rules fire or the platform has no decision layer. Also available inside
-            ``explanation.decision.decision``.
+        decision (None | str | Unset): The platform's authoritative decision label for this query, expressed in the
+            policy author's own vocabulary (e.g. ``approve``, ``deny``, ``refer``, ``escalate``). When the platform's
+            compiled rules use non-canonical verbs (e.g. ``approve`` instead of ``permit``), this field carries the AUTHORED
+            verb; the canonical machine-readable signal is in ``outcome`` and ``permitted``. ``null`` when no verdict rules
+            fire or the platform has no decision layer.
+
+            NOTE: when ``explain=True``, ``explanation.decision.decision`` carries the UNMAPPED canonical label (e.g.
+            ``permit``), while this top-level ``decision`` carries the mapped author verb (e.g. ``approve``). Programmatic
+            consumers should switch on ``outcome`` / ``permitted`` (always canonical), not on ``decision`` (which varies by
+            policy vocabulary).
         explanation (None | QueryResponseExplanationType0 | Unset): Full explainability trace (present only when
             ``explain=True``). A DOCUMENTED, VERSIONED contract for dense-reward / audit consumers. Pinned keys:
             * ``schema_version`` (int) — the trace schema version; pin/validate against it (currently 1). Bumped on any
@@ -49,6 +55,14 @@ class QueryResponse:
             * ``decision`` — the certified verdict ``{decision, deciding_rules: [{rule, reason}]}`` (decision platforms).
             ``rules[].required`` and the verified ``fired`` reconciliation are purely additive — they change no decision. On
             any internal error the rules are left exactly as produced (fail-closed).
+        outcome (None | str | Unset): Canonical machine-readable decision outcome: ``permit``, ``deny``, or
+            ``indeterminate``. Always uses the canonical vocabulary regardless of the policy author's verb map — use this
+            (not ``decision``) for programmatic switching. ``null`` when no verdict rules fire or the platform has no
+            decision layer. Mirrors the ``outcome`` field on the ``authorize-action`` endpoint.
+        permitted (bool | None | Unset): Boolean ``within-policy`` reading of the decision: ``True`` when the decision
+            is in the permit-family (the action is within policy), ``False`` when restrictive (deny-family or
+            indeterminate). ``null`` when no decision layer is present. Use this for execute-or-block logic without
+            enumerating the vocabulary. Mirrors the ``permitted`` field on the ``authorize-action`` endpoint.
         proof_checked (bool | None | Unset): Verified profile only. ``True`` when the decision was independently re-
             derived and verified (the active rule set satisfies the platform's invariant manifest and the proof certificate
             is valid). ``null`` for non-verified platforms (no proof is generated). A verified query that cannot be
@@ -66,6 +80,8 @@ class QueryResponse:
     query: str
     decision: None | str | Unset = UNSET
     explanation: None | QueryResponseExplanationType0 | Unset = UNSET
+    outcome: None | str | Unset = UNSET
+    permitted: bool | None | Unset = UNSET
     proof_checked: bool | None | Unset = UNSET
     proof_summary: None | str | Unset = UNSET
     vocabulary_declared: bool | None | Unset = UNSET
@@ -93,6 +109,18 @@ class QueryResponse:
             explanation = self.explanation.to_dict()
         else:
             explanation = self.explanation
+
+        outcome: None | str | Unset
+        if isinstance(self.outcome, Unset):
+            outcome = UNSET
+        else:
+            outcome = self.outcome
+
+        permitted: bool | None | Unset
+        if isinstance(self.permitted, Unset):
+            permitted = UNSET
+        else:
+            permitted = self.permitted
 
         proof_checked: bool | None | Unset
         if isinstance(self.proof_checked, Unset):
@@ -125,6 +153,10 @@ class QueryResponse:
             field_dict["decision"] = decision
         if explanation is not UNSET:
             field_dict["explanation"] = explanation
+        if outcome is not UNSET:
+            field_dict["outcome"] = outcome
+        if permitted is not UNSET:
+            field_dict["permitted"] = permitted
         if proof_checked is not UNSET:
             field_dict["proof_checked"] = proof_checked
         if proof_summary is not UNSET:
@@ -171,6 +203,24 @@ class QueryResponse:
 
         explanation = _parse_explanation(d.pop("explanation", UNSET))
 
+        def _parse_outcome(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        outcome = _parse_outcome(d.pop("outcome", UNSET))
+
+        def _parse_permitted(data: object) -> bool | None | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(bool | None | Unset, data)
+
+        permitted = _parse_permitted(d.pop("permitted", UNSET))
+
         def _parse_proof_checked(data: object) -> bool | None | Unset:
             if data is None:
                 return data
@@ -204,6 +254,8 @@ class QueryResponse:
             query=query,
             decision=decision,
             explanation=explanation,
+            outcome=outcome,
+            permitted=permitted,
             proof_checked=proof_checked,
             proof_summary=proof_summary,
             vocabulary_declared=vocabulary_declared,
