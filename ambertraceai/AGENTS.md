@@ -63,6 +63,13 @@ The canonical sequence to go from nothing to a verified, queryable AI platform:
 See `examples/00_quickstart.py` through `examples/02_platform_lifecycle.py`
 for runnable code.
 
+**Universal claims (certified search)** -- `POST /api/v1/platforms/{id}/verify-property`
+(SDK: `platforms.verify_property`). Where `query` certifies one input, this certifies a
+mechanism for EVERY case in a finite space you declare: `result` is `HOLDS`
+(`certified: "exhaustive"`), `VIOLATED` (a re-certified `witness`) or `ABSTAIN`
+(space above your `bound`/the platform ceiling -- never a pass). Branch on `result`
+and `proof_checked`. See `examples/69_verify_property_strategy_proof.py`.
+
 ## Async jobs
 
 Long-running operations (ontology build, platform build, predictions) return

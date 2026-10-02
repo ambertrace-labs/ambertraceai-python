@@ -42,6 +42,7 @@ from .responses import (
     StepResult,
     SymbolicForecastResult,
     QueryResult,
+    VerifyPropertyResult,
 )
 
 # Sentinel for "no progress marker observed yet" so the first poll always counts
@@ -97,6 +98,36 @@ def _wrap(value: Any) -> Any:
     if isinstance(value, list):
         return [_wrap(v) for v in value]
     return value
+
+
+def _render_property_answer(res: dict) -> str:
+    """One-line answer for a ``verify_property`` result, built ONLY from its
+    structured fields (``result`` / ``certified`` / ``search`` / ``witness`` /
+    ``reason``) -- never from free text -- so it can never name a different verdict
+    than ``result`` does."""
+    result = res.get("result")
+    search = res.get("search") or {}
+    if result == "HOLDS":
+        return (f"HOLDS (certified: {res.get('certified')}): the property holds for all "
+                f"{search.get('space_size')} members of the space (bound "
+                f"{search.get('bound')}); the enumeration was complete.")
+    if result == "VIOLATED":
+        return (f"VIOLATED (certified: {res.get('certified')}): counterexample "
+                f"{res.get('witness')} -- re-certified; {search.get('space_size')} "
+                f"members in the declared space.")
+    if result == "ABSTAIN":
+        return (f"ABSTAIN: no verdict ({res.get('reason')}); the space (size "
+                f"{search.get('space_size')}, bound {search.get('bound')}) was not "
+                f"decided -- this is NOT a pass.")
+    return f"UNKNOWN result {result!r}: not a verdict."
+
+
+def _stamp_property_answer(body: Any) -> "AttrDict":
+    """Wrap a ``verify_property`` response as an :class:`AttrDict` and stamp the
+    SDK-rendered ``answer`` (never overwriting a server-supplied key)."""
+    out = AttrDict(body if isinstance(body, dict) else {})
+    out.setdefault("answer", _render_property_answer(out))
+    return out
 
 
 # The id of a created job/platform arrives under different keys across the
@@ -1448,6 +1479,70 @@ class PlatformResource(_Resource):
         return self._request(
             "POST", f"/api/v1/platforms/{platform_id}/query-batch", json=body,
         )
+
+    def verify_property(
+        self,
+        platform_id: int,
+        *,
+        property: str,
+        space: dict[str, Any],
+    ) -> VerifyPropertyResult:
+        """Certified search: prove a UNIVERSAL property over a finite space.
+
+        ``query`` certifies ONE input ("for THIS fact base the decision is X").
+        ``verify_property`` certifies a MECHANISM universally ("for EVERY profile and
+        EVERY deviation ...") and returns exactly one of:
+
+        * ``result == "HOLDS"`` -- the property holds for every member of the space,
+          decided exhaustively by a machine-checked enumeration
+          (``certified == "exhaustive"``; ``search.space_size`` is |S|, the product of
+          your declared domain sizes; ``search.complete`` is True);
+        * ``result == "VIOLATED"`` -- a certified counterexample: ``witness`` is a
+          concrete member that breaks the property, independently re-certified
+          (``certified == "witness"``);
+        * ``result == "ABSTAIN"`` -- no verdict, with a ``reason``: the space is
+          larger than your ``bound`` or than the platform ceiling, the time budget
+          ran out, or the request is outside the library. ABSTAIN is never a pass.
+
+        ``result``, ``certified``, ``proof_checked``, ``proof_summary`` and ``search``
+        always name the same verdict; ``proof_checked`` is the authoritative flag
+        (false on every ABSTAIN). The returned ``answer`` is a one-line rendering of
+        those same fields.
+
+        ``property``: ``"strategy_proof"`` -- no agent can profit from misreporting
+        (v1). ``space`` (all keys required):
+
+        * ``mechanism`` -- ``"plurality"`` (3-5 alternatives; ties break in
+          ``domain`` order), ``"majority"`` (exactly 2 alternatives, tie -> first),
+          ``"vickrey"`` (2 bidders, second-price) or ``"first_price"`` (2 bidders,
+          first-price -- a manipulable control);
+        * ``agents`` -- number of voters / bidders;
+        * ``domain`` -- plurality / majority: the alternatives, e.g. ``["A","B","C"]``;
+          vickrey / first_price: the discrete bid grid, e.g. ``[0, 1, 2, 3]``
+          (distinct non-negative ints, at most 10);
+        * ``bound`` -- the largest |S| you accept (a larger space is an ABSTAIN).
+
+        The space is every agent's type x which agent deviates x its misreport, so
+        |S| for 3-candidate plurality with 3 voters is (3!)^3 x 3 x 3 = 1944. The
+        platform scopes access and audit; the mechanism is declared in ``space``.
+        This is the certified-search capability: reachable through this dedicated
+        method (``POST /api/v1/platforms/{id}/verify-property``), see example 69.
+        Requires the ``query`` capability (403 ``capability_disabled`` otherwise).
+
+        .. code-block:: python
+
+            res = api.platforms.verify_property(
+                pid, property="strategy_proof",
+                space={"mechanism": "plurality", "agents": 3,
+                       "domain": ["A", "B", "C"], "bound": 2000})
+            print(res.answer)             # VIOLATED ... certified witness ...
+            if res.result == "VIOLATED":
+                print(res.witness)        # the manipulation: types, agent, misreport
+        """
+        body: dict[str, Any] = {"property": property, "space": space}
+        result = self._request(
+            "POST", f"/api/v1/platforms/{platform_id}/verify-property", json=body)
+        return _stamp_property_answer(result)
 
     def suggest_rules(self, platform_id: int, *, max_suggestions: int = 5) -> dict:
         return self._request("POST", f"/api/v1/platforms/{platform_id}/suggest-rules", json={"max_suggestions": max_suggestions})

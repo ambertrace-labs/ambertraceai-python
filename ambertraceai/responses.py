@@ -409,6 +409,40 @@ class QueryResult(TypedDict, total=False):
     explanation: QueryExplanation
 
 
+class VerifyPropertySearch(TypedDict, total=False):
+    """The ``search`` block of a :class:`VerifyPropertyResult`."""
+
+    space_size: int | None  # |S| = product of the declared domain sizes
+    bound: int | None  # the finiteness bound you declared
+    complete: Required[bool]  # True iff the checker attests it covered ALL of S
+
+
+class VerifyPropertyResult(TypedDict, total=False):
+    """The certified verdict ``platforms.verify_property`` returns.
+
+    ``result`` is ``"HOLDS"`` (the universal property holds for EVERY member of the
+    space -- ``certified == "exhaustive"``, ``search.complete`` is True),
+    ``"VIOLATED"`` (a certified counterexample: ``witness`` is present and was
+    independently re-certified -- ``certified == "witness"``) or ``"ABSTAIN"`` (no
+    verdict: the space is above your ``bound`` or the platform ceiling, the time
+    budget ran out, or the request is outside the library -- ``reason`` says which;
+    never a partial pass). ``result``, ``certified``, ``proof_checked``,
+    ``proof_summary`` and ``search`` are all computed from ONE source (the proven
+    checker's decision) and always name the same verdict. ``answer`` is a
+    one-sentence rendering the SDK builds from those same fields."""
+
+    result: Required[str]  # "HOLDS" | "VIOLATED" | "ABSTAIN"
+    witness: JsonDict | None  # iff VIOLATED: every agent's type + `agent` + `misreport`
+    proof_checked: Required[bool]  # AUTHORITATIVE: false on every ABSTAIN
+    proof_summary: Required[str]
+    search: Required[VerifyPropertySearch]
+    certified: str | None  # "exhaustive" | "witness" | None (ABSTAIN)
+    reason: str | None  # ABSTAIN only
+    witness_index: int | None  # VIOLATED only: 0-based position in the enumeration
+    witness_recertification: JsonDict | None  # VIOLATED: the two kernel derivations
+    answer: str  # SDK-rendered from result/certified/search/witness (never free text)
+
+
 class AuthorizeActionResult(TypedDict, total=False):
     """The permit/deny verdict ``agent_policy.authorize_action`` returns (and
     the ``verdict`` inside ``step``'s result). BRANCH on ``outcome`` — it

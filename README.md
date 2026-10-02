@@ -11,6 +11,7 @@ example that shows it). If you're unsure whether something is `author()`,
 | Capability | Reach it via | Example |
 |------------|--------------|---------|
 | Verified query / decision (proof-carrying answer) | `platforms.query(pid, query=..., facts=...)` | 30, 38 |
+| Certified search — prove a mechanism's universal property (e.g. strategy-proofness) over a finite space: exhaustive HOLDS, a certified counterexample, or an explicit ABSTAIN | `platforms.verify_property(pid, property="strategy_proof", space={…, "bound": N})` — dedicated method, see [Certified search](#certified-search--prove-a-property-for-every-case) | 69 |
 | N-class / multi-class classifier (decision = winning label) | `domains.build_ontology` → `platforms.create(verified_profile=True)` → `platforms.query` — **NOT `author()`** | 38 |
 | Custom decision vocabulary (verbs beyond permit/deny) | phrase the `build_ontology` / `author` description with your verbs; read `query().decision` | 19, 24, 38 |
 | Build a VERIFIED platform | `platforms.create(verified_profile=True, verified_min_confidence=…, invariant_manifest=…)` | 10, 11, 14 |
@@ -127,13 +128,55 @@ print(answer["explanation"])
 |----------|---------|
 | `api.domains` | `list`, `create`, `get`, `update`, `delete`, `build_ontology`, `eval_config`, `set_eval_config`, `delete_eval_config`, `suggest_eval_config`, `list_templates`, `create_template`, `update_template`, `delete_template`, `feedback_stats` |
 | `api.datasets` | `list`, `get`, `upload` (incl. `decision_column`), `fetch`, `fetch_multi`, `quality`, `clean`, `preview`, `delete` |
-| `api.platforms` | `list`, `create`, `get`, `delete`, `status`, `query`, `suggest_rules`, `list_suggestions`, `approve_suggestion`, `reject_suggestion`, `graph` |
+| `api.platforms` | `list`, `create`, `get`, `delete`, `status`, `query`, `verify_property`, `suggest_rules`, `list_suggestions`, `approve_suggestion`, `reject_suggestion`, `graph` |
 | `api.predictions` | `predict`, `list_configs`, `create_config`, `delete_config`, `train`, `list_predictions`, `discover_prediction_rules`, `discovered_prediction_rules`, `neurosymbolic_comparison`, `symbolic_forecast`, `residual_diagnosis` (preview) |
 | `api.connectors` | `list`, `test` |
 | `api.usage` | `get` |
 | `api.jobs` | `get` |
 | `api.api_keys` | `list`, `create` (optional `expires_at`), `revoke`, `rotate` (grace-window rotation) |
 | `api.agent_policy` (preview) | `author`, `status`, `examples`, `authorize_action`, `create_session`, `step`, `get_session` |
+
+## Certified search — prove a property for EVERY case
+
+`platforms.query` certifies one input. `platforms.verify_property` certifies a
+**mechanism universally** — "for every profile of preferences and every
+deviation, no agent profits from misreporting" — over a finite space you declare,
+and returns exactly one of:
+
+| `result` | `certified` | Meaning |
+|----------|-------------|---------|
+| `HOLDS` | `"exhaustive"` | The property holds for **every** member of the space, decided by a machine-checked enumeration. `search.space_size` is \|S\| (the product of your declared domain sizes) and `search.complete` is `True`. |
+| `VIOLATED` | `"witness"` | A **certified counterexample**: `witness` is a concrete profile + agent + misreport that profits, independently re-certified by the trusted kernel. |
+| `ABSTAIN` | `None` | No verdict, with a `reason` (`over_bound`, `over_ceiling`, `timeout`, `unsupported_*`). Your `bound` is smaller than the space, or the space is above the platform ceiling. **ABSTAIN is never a pass.** |
+
+```python
+res = api.platforms.verify_property(
+    pid, property="strategy_proof",
+    space={"mechanism": "plurality", "agents": 3,
+           "domain": ["A", "B", "C"], "bound": 2000})
+print(res.answer)         # VIOLATED (certified: witness): counterexample {...}
+print(res.witness)        # {'pref_1': 'A>B>C', 'pref_2': 'B>A>C', 'pref_3': 'C>B>A',
+                          #  'agent': 3, 'misreport': 'B'}  -- agent 3 profits by voting B
+```
+
+* `property` — `"strategy_proof"` (v1).
+* `space.mechanism` — `"plurality"` (3–5 alternatives, ties break in `domain` order),
+  `"majority"` (2 alternatives, tie → first), `"vickrey"` (2 bidders, second-price)
+  or `"first_price"` (2 bidders; a manipulable control).
+* `space.agents`, `space.domain` (the alternatives, or the discrete bid grid of
+  distinct non-negative ints, at most 10), `space.bound` (**required**: the largest
+  \|S\| you accept).
+* \|S\| = every agent's type × which agent deviates × its misreport — e.g.
+  3-candidate plurality with 3 voters is (3!)³ × 3 × 3 = 1944; majority-of-2 with 4
+  voters is 2⁴ × 4 × 2 = 128.
+
+`result`, `certified`, `proof_checked`, `proof_summary` and `search` are all computed
+from ONE source and always name the same verdict; `proof_checked` is the authoritative
+flag (false on every ABSTAIN). `answer` is a one-line rendering the SDK builds from
+those same fields. The method needs the `query` capability (403 `capability_disabled`
+otherwise); the platform you pass scopes access and audit, the mechanism is declared
+in `space`. Reachable through this dedicated method only (it is not a `query` mode).
+See example `69_verify_property_strategy_proof.py`.
 
 ## Verified relational queries — cross-domain cueing (preview)
 
@@ -701,6 +744,21 @@ This brings the query failure path to parity with
 Full API reference: [app.ambertrace.ai/openapi/redoc](https://app.ambertrace.ai/openapi/redoc)
 
 ## Changelog
+
+### 2.7.0
+
+**Certified search -- `platforms.verify_property`.** Prove a mechanism's
+UNIVERSAL property over a finite space instead of checking one input: the first
+property is `strategy_proof` over `plurality`, `majority`, `vickrey` and
+`first_price`. The result is `HOLDS` (exhaustive, machine-checked, `search.complete`),
+`VIOLATED` (a certified, independently re-certified `witness`) or an explicit
+`ABSTAIN` (space above your `bound` or the platform ceiling -- never a silent partial
+pass). `result`, `certified`, `proof_checked`, `proof_summary` and the SDK-rendered
+`answer` always name the same verdict. New dedicated method (`POST
+/api/v1/platforms/{id}/verify-property`; not a `query` mode), new `VerifyPropertyResult`
+/ `VerifyPropertySearch` types, and example `69_verify_property_strategy_proof.py`.
+See the new [Certified search](#certified-search--prove-a-property-for-every-case)
+section.
 
 ### 1.0.10
 

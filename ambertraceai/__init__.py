@@ -65,6 +65,8 @@ from .responses import (
     StepResult,
     SymbolicForecastResult,
     SymbolicTrace,
+    VerifyPropertyResult,
+    VerifyPropertySearch,
 )
 
 __all__ = (
@@ -130,5 +132,7 @@ __all__ = (
     "SymbolicForecastResult",
     "SymbolicTrace",
     "UsageResource",
+    "VerifyPropertyResult",
+    "VerifyPropertySearch",
     "sdk_examples",
 )
