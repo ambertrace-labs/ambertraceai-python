@@ -481,6 +481,42 @@ class _Resource:
                 )
             return body.get("data", body) if isinstance(body, dict) else body
 
+    # Terminal job statuses — the same set :meth:`AmbertraceAPI.wait_for_job`
+    # treats as done, so the SDK has ONE notion of job completion.
+    _JOB_TERMINAL = ("ready", "active", "error", "failed", "completed")
+    _JOB_FAILED = ("error", "failed")
+
+    def _await_job(self, job_id: int, *, what: str, timeout: float,
+                   poll_interval: float) -> Any:
+        """Poll a job to a terminal status and return its ``result`` payload.
+
+        Mirrors :meth:`AmbertraceAPI.wait_for_job` (same terminal-status set,
+        same :class:`JobResource` getter) — kept here so a resource method can
+        poll without a back-reference to the parent client. Raises
+        :class:`AmbertraceError` on a failed job and :class:`TimeoutError` if the
+        job does not finish within ``timeout``.
+        """
+        jobs = JobResource(self._http)
+        deadline = time.monotonic() + timeout
+        while True:
+            job = jobs.get(int(job_id))
+            status = job.get("status", "")
+            if status in self._JOB_TERMINAL:
+                if status in self._JOB_FAILED:
+                    raise AmbertraceError(
+                        500, "job_failed",
+                        f"{what} failed (job {job_id}: "
+                        f"{job.get('error_message') or status})",
+                    )
+                result = job.get("result")
+                return result if isinstance(result, dict) else job
+            if time.monotonic() >= deadline:
+                raise TimeoutError(
+                    f"{what} did not complete within {timeout:.0f}s "
+                    f"(job {job_id}, last status: {status})"
+                )
+            time.sleep(poll_interval)
+
 
 class DomainResource(_Resource):
     def list(self) -> list[DomainOut]:
@@ -1486,8 +1522,21 @@ class PlatformResource(_Resource):
         *,
         property: str,
         space: dict[str, Any],
+        wait: bool = True,
+        timeout: float = 300.0,
+        poll_interval: float = 5.0,
     ) -> VerifyPropertyResult:
-        """Certified search: prove a UNIVERSAL property over a finite space.
+        """Certified search: prove a UNIVERSAL property over a finite space (async job).
+
+        The server runs the search as a background job (the checker is an external
+        process, so it can take tens of seconds): ``POST .../verify-property`` returns
+        202 ``{"job_id", "poll", ...}``. By DEFAULT (``wait=True``) this method polls
+        ``GET /api/v1/jobs/{job_id}`` every ``poll_interval`` seconds (default 5) until
+        the job completes and returns the verdict as ONE blocking call -- raising
+        :class:`AmbertraceError` if the job fails and :class:`TimeoutError` after
+        ``timeout`` seconds. Pass ``wait=False`` for the raw 202 envelope and poll the
+        job yourself (``api.wait_for_job``). Job polling needs a user-scoped key or a
+        session (a platform-scoped key can start the job but not poll it).
 
         ``query`` certifies ONE input ("for THIS fact base the decision is X").
         ``verify_property`` certifies a MECHANISM universally ("for EVERY profile and
@@ -1540,8 +1589,16 @@ class PlatformResource(_Resource):
                 print(res.witness)        # the manipulation: types, agent, misreport
         """
         body: dict[str, Any] = {"property": property, "space": space}
-        result = self._request(
+        resp = self._request(
             "POST", f"/api/v1/platforms/{platform_id}/verify-property", json=body)
+        if not wait:
+            return resp
+        job_id = resp.get("job_id") if isinstance(resp, dict) else None
+        if job_id is None:
+            return _stamp_property_answer(resp)
+        result = self._await_job(
+            job_id, what=f"verify_property on platform {platform_id}",
+            timeout=timeout, poll_interval=poll_interval)
         return _stamp_property_answer(result)
 
     def suggest_rules(self, platform_id: int, *, max_suggestions: int = 5) -> dict:
@@ -2049,42 +2106,6 @@ class PredictionResource(_Resource):
     # job to completion and returns its result — pass ``wait=False`` to get the raw
     # 202 envelope back and poll the job yourself via :meth:`AmbertraceAPI.jobs` /
     # :meth:`AmbertraceAPI.wait_for_job` (the SAME job-poll machinery used here).
-
-    # Terminal job statuses — the same set :meth:`AmbertraceAPI.wait_for_job`
-    # treats as done, so the SDK has ONE notion of job completion.
-    _JOB_TERMINAL = ("ready", "active", "error", "failed", "completed")
-    _JOB_FAILED = ("error", "failed")
-
-    def _await_job(self, job_id: int, *, what: str, timeout: float,
-                   poll_interval: float) -> Any:
-        """Poll a job to a terminal status and return its ``result`` payload.
-
-        Mirrors :meth:`AmbertraceAPI.wait_for_job` (same terminal-status set,
-        same :class:`JobResource` getter) — kept here so a resource method can
-        poll without a back-reference to the parent client. Raises
-        :class:`AmbertraceError` on a failed job and :class:`TimeoutError` if the
-        job does not finish within ``timeout``.
-        """
-        jobs = JobResource(self._http)
-        deadline = time.monotonic() + timeout
-        while True:
-            job = jobs.get(int(job_id))
-            status = job.get("status", "")
-            if status in self._JOB_TERMINAL:
-                if status in self._JOB_FAILED:
-                    raise AmbertraceError(
-                        500, "job_failed",
-                        f"{what} failed (job {job_id}: "
-                        f"{job.get('error_message') or status})",
-                    )
-                result = job.get("result")
-                return result if isinstance(result, dict) else job
-            if time.monotonic() >= deadline:
-                raise TimeoutError(
-                    f"{what} did not complete within {timeout:.0f}s "
-                    f"(job {job_id}, last status: {status})"
-                )
-            time.sleep(poll_interval)
 
     def discover_prediction_rules(self, platform_id: int, *,
                                   prediction_config_id: int,

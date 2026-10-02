@@ -68,7 +68,9 @@ for runnable code.
 mechanism for EVERY case in a finite space you declare: `result` is `HOLDS`
 (`certified: "exhaustive"`), `VIOLATED` (a re-certified `witness`) or `ABSTAIN`
 (space above your `bound`/the platform ceiling -- never a pass). Branch on `result`
-and `proof_checked`. See `examples/69_verify_property_strategy_proof.py`.
+and `proof_checked`. The route is async (202 `job_id`, poll `GET /api/v1/jobs/{id}`); the SDK
+polls every 5s and returns the verdict (`wait=False` for the raw envelope). See
+`examples/69_verify_property_strategy_proof.py`.
 
 ## Async jobs
 

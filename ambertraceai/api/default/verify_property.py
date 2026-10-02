@@ -8,7 +8,7 @@ from ... import errors
 from ...client import AuthenticatedClient, Client
 from ...models.validation_error_model import ValidationErrorModel
 from ...models.verify_property_request import VerifyPropertyRequest
-from ...models.verify_property_response import VerifyPropertyResponse
+from ...models.verify_property_started import VerifyPropertyStarted
 from ...types import Response
 
 
@@ -36,11 +36,11 @@ def _get_kwargs(
 
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> VerifyPropertyResponse | list[ValidationErrorModel] | None:
-    if response.status_code == 200:
-        response_200 = VerifyPropertyResponse.from_dict(response.json())
+) -> VerifyPropertyStarted | list[ValidationErrorModel] | None:
+    if response.status_code == 202:
+        response_202 = VerifyPropertyStarted.from_dict(response.json())
 
-        return response_200
+        return response_202
 
     if response.status_code == 422:
         response_422 = []
@@ -60,7 +60,7 @@ def _parse_response(
 
 def _build_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> Response[VerifyPropertyResponse | list[ValidationErrorModel]]:
+) -> Response[VerifyPropertyStarted | list[ValidationErrorModel]]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -74,8 +74,8 @@ def sync_detailed(
     *,
     client: AuthenticatedClient | Client,
     body: VerifyPropertyRequest,
-) -> Response[VerifyPropertyResponse | list[ValidationErrorModel]]:
-    r"""Certify a universal property over a finite space (certified search)
+) -> Response[VerifyPropertyStarted | list[ValidationErrorModel]]:
+    r"""Certify a universal property over a finite space (certified search, async)
 
      Certified search: decides a UNIVERSAL claim (\"for every profile and every deviation ...\") over a
     finite, rule-defined space and returns EITHER a machine-checked exhaustiveness verdict
@@ -85,6 +85,13 @@ def sync_detailed(
     result=ABSTAIN (space above your `bound` or the platform ceiling, time budget exceeded, unsupported
     request) -- never a silent partial pass. result, certified, proof_checked, proof_summary and search
     are computed from ONE source, the proven searchcheck binary's decision.
+
+    ASYNC: the search can run external checker processes for tens of seconds, so this starts a
+    background job and returns 202 with a job_id -- poll GET /api/v1/jobs/{job_id} (every 5s) until
+    status=completed; the completed job `result` is the verdict object {result, witness, proof_checked,
+    proof_summary, search, certified, reason?, witness_index?, witness_recertification?}. A failed job
+    (status=failed) is an infrastructure error, never a verdict. The SDK method
+    platforms.verify_property does the polling and returns the verdict as one blocking call.
 
     Property library (v1): `strategy_proof` (no agent can profit from misreporting) over the mechanism
     library plurality / majority / vickrey / first_price, declared in `space` (see VerifyPropertySpace).
@@ -103,7 +110,7 @@ def sync_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[VerifyPropertyResponse | list[ValidationErrorModel]]
+        Response[VerifyPropertyStarted | list[ValidationErrorModel]]
     """
 
     kwargs = _get_kwargs(
@@ -123,8 +130,8 @@ def sync(
     *,
     client: AuthenticatedClient | Client,
     body: VerifyPropertyRequest,
-) -> VerifyPropertyResponse | list[ValidationErrorModel] | None:
-    r"""Certify a universal property over a finite space (certified search)
+) -> VerifyPropertyStarted | list[ValidationErrorModel] | None:
+    r"""Certify a universal property over a finite space (certified search, async)
 
      Certified search: decides a UNIVERSAL claim (\"for every profile and every deviation ...\") over a
     finite, rule-defined space and returns EITHER a machine-checked exhaustiveness verdict
@@ -134,6 +141,13 @@ def sync(
     result=ABSTAIN (space above your `bound` or the platform ceiling, time budget exceeded, unsupported
     request) -- never a silent partial pass. result, certified, proof_checked, proof_summary and search
     are computed from ONE source, the proven searchcheck binary's decision.
+
+    ASYNC: the search can run external checker processes for tens of seconds, so this starts a
+    background job and returns 202 with a job_id -- poll GET /api/v1/jobs/{job_id} (every 5s) until
+    status=completed; the completed job `result` is the verdict object {result, witness, proof_checked,
+    proof_summary, search, certified, reason?, witness_index?, witness_recertification?}. A failed job
+    (status=failed) is an infrastructure error, never a verdict. The SDK method
+    platforms.verify_property does the polling and returns the verdict as one blocking call.
 
     Property library (v1): `strategy_proof` (no agent can profit from misreporting) over the mechanism
     library plurality / majority / vickrey / first_price, declared in `space` (see VerifyPropertySpace).
@@ -152,7 +166,7 @@ def sync(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        VerifyPropertyResponse | list[ValidationErrorModel]
+        VerifyPropertyStarted | list[ValidationErrorModel]
     """
 
     return sync_detailed(
@@ -167,8 +181,8 @@ async def asyncio_detailed(
     *,
     client: AuthenticatedClient | Client,
     body: VerifyPropertyRequest,
-) -> Response[VerifyPropertyResponse | list[ValidationErrorModel]]:
-    r"""Certify a universal property over a finite space (certified search)
+) -> Response[VerifyPropertyStarted | list[ValidationErrorModel]]:
+    r"""Certify a universal property over a finite space (certified search, async)
 
      Certified search: decides a UNIVERSAL claim (\"for every profile and every deviation ...\") over a
     finite, rule-defined space and returns EITHER a machine-checked exhaustiveness verdict
@@ -178,6 +192,13 @@ async def asyncio_detailed(
     result=ABSTAIN (space above your `bound` or the platform ceiling, time budget exceeded, unsupported
     request) -- never a silent partial pass. result, certified, proof_checked, proof_summary and search
     are computed from ONE source, the proven searchcheck binary's decision.
+
+    ASYNC: the search can run external checker processes for tens of seconds, so this starts a
+    background job and returns 202 with a job_id -- poll GET /api/v1/jobs/{job_id} (every 5s) until
+    status=completed; the completed job `result` is the verdict object {result, witness, proof_checked,
+    proof_summary, search, certified, reason?, witness_index?, witness_recertification?}. A failed job
+    (status=failed) is an infrastructure error, never a verdict. The SDK method
+    platforms.verify_property does the polling and returns the verdict as one blocking call.
 
     Property library (v1): `strategy_proof` (no agent can profit from misreporting) over the mechanism
     library plurality / majority / vickrey / first_price, declared in `space` (see VerifyPropertySpace).
@@ -196,7 +217,7 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[VerifyPropertyResponse | list[ValidationErrorModel]]
+        Response[VerifyPropertyStarted | list[ValidationErrorModel]]
     """
 
     kwargs = _get_kwargs(
@@ -214,8 +235,8 @@ async def asyncio(
     *,
     client: AuthenticatedClient | Client,
     body: VerifyPropertyRequest,
-) -> VerifyPropertyResponse | list[ValidationErrorModel] | None:
-    r"""Certify a universal property over a finite space (certified search)
+) -> VerifyPropertyStarted | list[ValidationErrorModel] | None:
+    r"""Certify a universal property over a finite space (certified search, async)
 
      Certified search: decides a UNIVERSAL claim (\"for every profile and every deviation ...\") over a
     finite, rule-defined space and returns EITHER a machine-checked exhaustiveness verdict
@@ -225,6 +246,13 @@ async def asyncio(
     result=ABSTAIN (space above your `bound` or the platform ceiling, time budget exceeded, unsupported
     request) -- never a silent partial pass. result, certified, proof_checked, proof_summary and search
     are computed from ONE source, the proven searchcheck binary's decision.
+
+    ASYNC: the search can run external checker processes for tens of seconds, so this starts a
+    background job and returns 202 with a job_id -- poll GET /api/v1/jobs/{job_id} (every 5s) until
+    status=completed; the completed job `result` is the verdict object {result, witness, proof_checked,
+    proof_summary, search, certified, reason?, witness_index?, witness_recertification?}. A failed job
+    (status=failed) is an infrastructure error, never a verdict. The SDK method
+    platforms.verify_property does the polling and returns the verdict as one blocking call.
 
     Property library (v1): `strategy_proof` (no agent can profit from misreporting) over the mechanism
     library plurality / majority / vickrey / first_price, declared in `space` (see VerifyPropertySpace).
@@ -243,7 +271,7 @@ async def asyncio(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        VerifyPropertyResponse | list[ValidationErrorModel]
+        VerifyPropertyStarted | list[ValidationErrorModel]
     """
 
     return (

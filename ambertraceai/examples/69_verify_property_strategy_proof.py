@@ -28,7 +28,11 @@ the mechanism is declared in ``space``):
 ``result``, ``certified``, ``proof_checked``, ``proof_summary`` and the SDK-rendered
 ``answer`` always name the SAME verdict -- the script asserts it.
 
-Creates nothing: it only reads your platforms.  Run with --help for options.
+Each call is an async server-side job (the checker is an external process): the SDK
+starts it (202) and polls ``GET /api/v1/jobs/{id}`` every 5s, so ``verify_property``
+still reads as one blocking call that returns the verdict.
+
+Creates nothing but short-lived job records: it only reads your platforms.  Run with --help for options.
 
     python 69_verify_property_strategy_proof.py
 """

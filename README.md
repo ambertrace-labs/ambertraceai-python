@@ -178,6 +178,14 @@ otherwise); the platform you pass scopes access and audit, the mechanism is decl
 in `space`. Reachable through this dedicated method only (it is not a `query` mode).
 See example `69_verify_property_strategy_proof.py`.
 
+The search runs as an **async server-side job** (it drives external checker processes):
+the server answers `POST .../verify-property` with `202 {"job_id", "poll", ...}` and the
+SDK polls `GET /api/v1/jobs/{job_id}` every `poll_interval` seconds (default 5) until the job
+completes, so `verify_property` still reads as one blocking call that returns the verdict
+(`timeout=300` s; `wait=False` returns the raw 202 envelope for you to poll with
+`api.wait_for_job`). A failed job raises `AmbertraceError` (never a verdict). Polling needs a
+user-scoped key or a session — a platform-scoped key can start the job but not poll it.
+
 ## Verified relational queries — cross-domain cueing (preview)
 
 `api.platforms.query` takes an optional `facts` (the focal `{field: scalar}` row)
@@ -755,7 +763,8 @@ property is `strategy_proof` over `plurality`, `majority`, `vickrey` and
 `ABSTAIN` (space above your `bound` or the platform ceiling -- never a silent partial
 pass). `result`, `certified`, `proof_checked`, `proof_summary` and the SDK-rendered
 `answer` always name the same verdict. New dedicated method (`POST
-/api/v1/platforms/{id}/verify-property`; not a `query` mode), new `VerifyPropertyResult`
+/api/v1/platforms/{id}/verify-property`, an async 202 + `GET /jobs/{id}` poll that the SDK
+runs for you -- `wait=True` default, `poll_interval=5`; not a `query` mode), new `VerifyPropertyResult`
 / `VerifyPropertySearch` types, and example `69_verify_property_strategy_proof.py`.
 See the new [Certified search](#certified-search--prove-a-property-for-every-case)
 section.

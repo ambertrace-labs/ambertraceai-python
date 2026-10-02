@@ -228,11 +228,8 @@ from .usage_stats_out import UsageStatsOut
 from .validation_error_model import ValidationErrorModel
 from .validation_error_model_ctx_type_0 import ValidationErrorModelCtxType0
 from .verify_property_request import VerifyPropertyRequest
-from .verify_property_response import VerifyPropertyResponse
-from .verify_property_response_witness_recertification_type_0 import VerifyPropertyResponseWitnessRecertificationType0
-from .verify_property_response_witness_type_0 import VerifyPropertyResponseWitnessType0
-from .verify_property_search import VerifyPropertySearch
 from .verify_property_space import VerifyPropertySpace
+from .verify_property_started import VerifyPropertyStarted
 from .version_data import VersionData
 from .version_response import VersionResponse
 
@@ -457,11 +454,8 @@ __all__ = (
     "ValidationErrorModel",
     "ValidationErrorModelCtxType0",
     "VerifyPropertyRequest",
-    "VerifyPropertyResponse",
-    "VerifyPropertyResponseWitnessRecertificationType0",
-    "VerifyPropertyResponseWitnessType0",
-    "VerifyPropertySearch",
     "VerifyPropertySpace",
+    "VerifyPropertyStarted",
     "VersionData",
     "VersionResponse",
 )
