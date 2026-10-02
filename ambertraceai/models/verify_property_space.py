@@ -17,11 +17,12 @@ class VerifyPropertySpace:
     that agent's misreport domain; ``|S|`` is recomputed by the proven checker.
 
         Attributes:
-            agents (int): Number of agents (voters / bidders).
+            agents (int): Number of agents (voters / bidders); the v1 library supports 1 to 8.
             bound (int): REQUIRED finiteness bound: the largest |S| you accept. A space larger than `bound` (or than the
                 platform ceiling) is an explicit ABSTAIN, never a partial answer.
             domain (list[int | str]): The finite value domain. plurality / majority: the alternatives (alphanumeric names,
                 e.g. ['A','B','C']); vickrey / first_price: the discrete bid grid (distinct non-negative integers, at most 10).
+                At most 64 entries are accepted at all (the library's own caps are tighter).
             mechanism (str): Mechanism library entry: 'plurality' (3-5 alternatives, ties break in `domain` order),
                 'majority' (exactly 2 alternatives, tie -> first), 'vickrey' (2 bidders, second-price) or 'first_price' (2
                 bidders, first-price; a manipulable control).
