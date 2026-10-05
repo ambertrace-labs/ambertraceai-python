@@ -17,11 +17,16 @@ T = TypeVar("T", bound="VerifyPropertyRequest")
 class VerifyPropertyRequest:
     """
     Attributes:
-        property_ (str): The universal property to certify. v1: 'strategy_proof'.
-        space (VerifyPropertySpace): The finite space a ``verify_property`` claim quantifies over (v1 grammar).
+        property_ (str): The universal property to certify: 'strategy_proof' (needs space.mechanism, agents, domain) or
+            'exactly_one_verdict' (regime-grid totality + exclusivity of the platform's decision rules; needs
+            space.variables).
+        space (VerifyPropertySpace): The finite space a ``verify_property`` claim quantifies over.
 
-            The space is the PRODUCT of every agent's type domain x which agent deviates x
-            that agent's misreport domain; ``|S|`` is recomputed by the proven checker.
+            ``strategy_proof``: the PRODUCT of every agent's type domain x which agent deviates x
+            that agent's misreport domain (`mechanism`, `agents`, `domain`).
+            ``exactly_one_verdict``: the PRODUCT of the declared `variables` domains (the regime
+            grid) over the platform's own active decision rules.  ``|S|`` is recomputed by the
+            proven checker.
     """
 
     property_: str

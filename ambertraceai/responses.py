@@ -439,6 +439,7 @@ class VerifyPropertyResult(TypedDict, total=False):
     certified: str | None  # "exhaustive" | "witness" | None (ABSTAIN)
     reason: str | None  # ABSTAIN only
     witness_index: int | None  # VIOLATED only: 0-based position in the enumeration
+    witness_detail: JsonDict | None  # exactly_one_verdict VIOLATED: cell, verdicts, coverage
     witness_recertification: JsonDict | None  # VIOLATED: the two kernel derivations
     answer: str  # SDK-rendered from result/certified/search/witness (never free text)
 
@@ -543,6 +544,15 @@ class AgentPolicyStatus(TypedDict, total=False):
     input_fields: list[InputField]
     relations: list[RelationDecl]
     decision_vocabulary: JsonDict
+    # Advisory soundness findings are computed when the policy is COMPILED and
+    # persisted; ``findings_compiled_at`` / ``findings_compiler_build`` say when
+    # and by which build, ``findings_stale`` is True when the running build has
+    # moved on since (re-``author`` the policy to regenerate them).
+    findings: list[JsonDict]
+    findings_compiled_at: str | None
+    findings_compiler_build: str | None
+    running_build: str | None
+    findings_stale: bool | None
 
 
 # --- Prediction returns ----------------------------------------------------

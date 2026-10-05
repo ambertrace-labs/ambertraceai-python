@@ -1558,8 +1558,20 @@ class PlatformResource(_Resource):
         (false on every ABSTAIN). The returned ``answer`` is a one-line rendering of
         those same fields.
 
-        ``property``: ``"strategy_proof"`` -- no agent can profit from misreporting
-        (v1). ``space`` (all keys required):
+        ``property`` is one of two:
+
+        * ``"exactly_one_verdict"`` -- REGIME-GRID TOTALITY + EXCLUSIVITY of THIS
+          platform's own active decision rules: for every cell of a grid you declare,
+          EXACTLY ONE verdict derives. ``space`` = ``{"variables": [{"field": "priced",
+          "domain": ["neg","zero","pos"]}, ...], "bound": N}``. ``VIOLATED`` returns
+          the uncovered (no verdict) or double-covered (several verdicts) cell in
+          ``witness`` and ``witness_detail`` (``cell``, ``verdicts``, ``coverage``).
+          A rule leaf that is not a scalar test on a declared grid field (aggregate,
+          temporal, graph, relational ...) makes the call ``ABSTAIN``
+          (``condition_out_of_fragment`` / ``field_outside_grid``) -- never a guess.
+          See example 70.
+        * ``"strategy_proof"`` -- no agent can profit from misreporting.
+          ``space`` (all keys required):
 
         * ``mechanism`` -- ``"plurality"`` (3-5 alternatives; ties break in
           ``domain`` order), ``"majority"`` (exactly 2 alternatives, tie -> first),
@@ -1572,8 +1584,10 @@ class PlatformResource(_Resource):
         * ``bound`` -- the largest |S| you accept (a larger space is an ABSTAIN).
 
         The space is every agent's type x which agent deviates x its misreport, so
-        |S| for 3-candidate plurality with 3 voters is (3!)^3 x 3 x 3 = 1944. The
-        platform scopes access and audit; the mechanism is declared in ``space``.
+        |S| for 3-candidate plurality with 3 voters is (3!)^3 x 3 x 3 = 1944 (for
+        ``exactly_one_verdict`` it is the product of your grid's domain sizes). The
+        platform scopes access and audit; for ``strategy_proof`` the mechanism is
+        declared in ``space``, for ``exactly_one_verdict`` the rules are the platform's.
         This is the certified-search capability: reachable through this dedicated
         method (``POST /api/v1/platforms/{id}/verify-property``), see example 69.
         Requires the ``query`` capability (403 ``capability_disabled`` otherwise).
@@ -1587,6 +1601,14 @@ class PlatformResource(_Resource):
             print(res.answer)             # VIOLATED ... certified witness ...
             if res.result == "VIOLATED":
                 print(res.witness)        # the manipulation: types, agent, misreport
+
+            res = api.platforms.verify_property(
+                pid, property="exactly_one_verdict",
+                space={"variables": [{"field": "priced", "domain": ["neg", "zero", "pos"]},
+                                     {"field": "reaction", "domain": ["hawk", "dove"]}],
+                       "bound": 6})
+            if res.result == "VIOLATED":
+                print(res.witness_detail)  # {'cell': {...}, 'verdicts': [], 'coverage': 'uncovered'}
         """
         body: dict[str, Any] = {"property": property, "space": space}
         resp = self._request(
@@ -3908,6 +3930,14 @@ class AmbertraceAPI:
         long builds; a :class:`UserWarning` is emitted when the supplied value
         is below the floor. The effective interval widens gently with each
         stale poll (no forward progress) and resets on progress.
+
+        **Long ontology builds.** ``domains.build_ontology`` on a hard domain
+        (ReAct-authored rules) can take 15-20 minutes, so the default
+        ``timeout=600`` is not enough. Use
+        ``wait_for_job(job_id, timeout=1800, poll_interval=10, stall_timeout=300)``:
+        the ontology job reports a rising ``progress`` and a descriptive
+        ``current_step`` throughout the build, so a ``stall_timeout`` of 300s
+        distinguishes a slow-but-progressing build from a stuck one.
 
         **Stuck-job detection.** A job that stays ``pending`` with
         ``started_at`` null for longer than the server's watchdog threshold

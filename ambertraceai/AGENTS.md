@@ -70,7 +70,12 @@ mechanism for EVERY case in a finite space you declare: `result` is `HOLDS`
 (space above your `bound`/the platform ceiling -- never a pass). Branch on `result`
 and `proof_checked`. The route is async (202 `job_id`, poll `GET /api/v1/jobs/{id}`); the SDK
 polls every 5s and returns the verdict (`wait=False` for the raw envelope). See
-`examples/69_verify_property_strategy_proof.py`.
+`examples/69_verify_property_strategy_proof.py`. The same method certifies **regime-grid
+totality + exclusivity** with `property="exactly_one_verdict"` and
+`space={"variables": [{"field", "domain"}, ...], "bound": N}`: every cell of the declared
+grid derives EXACTLY ONE verdict from the platform's own decision rules (`VIOLATED` names
+the uncovered / double-covered cell in `witness` / `witness_detail`; a non-scalar rule
+leaf is an `ABSTAIN`). See `examples/70_verify_property_regime_grid.py`.
 
 ## Async jobs
 

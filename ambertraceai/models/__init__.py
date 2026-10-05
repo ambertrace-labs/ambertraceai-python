@@ -230,6 +230,7 @@ from .validation_error_model_ctx_type_0 import ValidationErrorModelCtxType0
 from .verify_property_request import VerifyPropertyRequest
 from .verify_property_space import VerifyPropertySpace
 from .verify_property_started import VerifyPropertyStarted
+from .verify_property_variable import VerifyPropertyVariable
 from .version_data import VersionData
 from .version_response import VersionResponse
 
@@ -456,6 +457,7 @@ __all__ = (
     "VerifyPropertyRequest",
     "VerifyPropertySpace",
     "VerifyPropertyStarted",
+    "VerifyPropertyVariable",
     "VersionData",
     "VersionResponse",
 )
