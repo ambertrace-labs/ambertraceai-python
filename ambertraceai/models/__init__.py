@@ -141,6 +141,7 @@ from .platform_out_build_quality_type_0 import PlatformOutBuildQualityType0
 from .platform_out_config_type_0 import PlatformOutConfigType0
 from .platform_out_neural_config_type_0 import PlatformOutNeuralConfigType0
 from .platform_status_out import PlatformStatusOut
+from .platform_status_out_decision_vocabulary_type_0 import PlatformStatusOutDecisionVocabularyType0
 from .platform_update_request import PlatformUpdateRequest
 from .platform_update_request_scored_determinations_type_0 import PlatformUpdateRequestScoredDeterminationsType0
 from .predict_request import PredictRequest
@@ -368,6 +369,7 @@ __all__ = (
     "PlatformOutConfigType0",
     "PlatformOutNeuralConfigType0",
     "PlatformStatusOut",
+    "PlatformStatusOutDecisionVocabularyType0",
     "PlatformUpdateRequest",
     "PlatformUpdateRequestScoredDeterminationsType0",
     "PredictionConfigCreate",

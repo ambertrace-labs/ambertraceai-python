@@ -16,12 +16,16 @@ class DomainCreate:
     """
     Attributes:
         name (str):
+        decision_vocabulary (Any | None | Unset): Rejected with 400. Decision verbs are not pinned at domain create:
+            state them in the description; read the minted vocabulary from platforms.status()['decision_vocabulary'] or
+            domains.get(id)['ontology']['decision_vocabulary'].
         description (str | Unset):  Default: ''.
         team_id (int | None | Unset): Required when visibility='team'; the caller must be a member.
         visibility (None | str | Unset): Sharing audience: 'user' (private, default) | 'team' | 'org'.
     """
 
     name: str
+    decision_vocabulary: Any | None | Unset = UNSET
     description: str | Unset = ""
     team_id: int | None | Unset = UNSET
     visibility: None | str | Unset = UNSET
@@ -29,6 +33,12 @@ class DomainCreate:
 
     def to_dict(self) -> dict[str, Any]:
         name = self.name
+
+        decision_vocabulary: Any | None | Unset
+        if isinstance(self.decision_vocabulary, Unset):
+            decision_vocabulary = UNSET
+        else:
+            decision_vocabulary = self.decision_vocabulary
 
         description = self.description
 
@@ -51,6 +61,8 @@ class DomainCreate:
                 "name": name,
             }
         )
+        if decision_vocabulary is not UNSET:
+            field_dict["decision_vocabulary"] = decision_vocabulary
         if description is not UNSET:
             field_dict["description"] = description
         if team_id is not UNSET:
@@ -64,6 +76,15 @@ class DomainCreate:
     def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
         d = dict(src_dict)
         name = d.pop("name")
+
+        def _parse_decision_vocabulary(data: object) -> Any | None | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(Any | None | Unset, data)
+
+        decision_vocabulary = _parse_decision_vocabulary(d.pop("decision_vocabulary", UNSET))
 
         description = d.pop("description", UNSET)
 
@@ -87,6 +108,7 @@ class DomainCreate:
 
         domain_create = cls(
             name=name,
+            decision_vocabulary=decision_vocabulary,
             description=description,
             team_id=team_id,
             visibility=visibility,

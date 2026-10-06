@@ -2,6 +2,11 @@
 
 Python client for the [Ambertrace](https://ambertrace.ai) neurosymbolic AI platform API.
 
+**Machine-readable OpenAPI spec:** [`https://app.ambertrace.ai/api/v1/openapi.json`](https://app.ambertrace.ai/api/v1/openapi.json)
+(public, unauthenticated; also served at `/openapi.json` and `/openapi/spec`).
+**Interactive API docs (ReDoc):** [`https://app.ambertrace.ai/docs`](https://app.ambertrace.ai/docs).
+**Agent/LLM orientation:** see [`AGENTS.md`](AGENTS.md) for a one-page entry-point covering auth, the golden-path workflow, async jobs, error contracts, and API boundaries.
+
 ## Capability index — what can I do, and which method produces it?
 
 The one authoritative map from a CAPABILITY to the method that reaches it (and the
@@ -12,6 +17,7 @@ example that shows it). If you're unsure whether something is `author()`,
 |------------|--------------|---------|
 | Verified query / decision (proof-carrying answer) | `platforms.query(pid, query=..., facts=...)` | 30, 38 |
 | Certified search — prove a mechanism's universal property (e.g. strategy-proofness) over a finite space: exhaustive HOLDS, a certified counterexample, or an explicit ABSTAIN | `platforms.verify_property(pid, property="strategy_proof", space={…, "bound": N})` — dedicated method, see [Certified search](#certified-search--prove-a-property-for-every-case) | 69 |
+| Certified regime-grid totality + exclusivity — for every cell of a grid you declare, EXACTLY ONE verdict derives from the platform's own decision rules (VIOLATED names the uncovered / double-covered cell) | `platforms.verify_property(pid, property="exactly_one_verdict", space={"variables": [{"field": …, "domain": […]}, …], "bound": N})` — same dedicated method, see [Certified search](#certified-search--prove-a-property-for-every-case) | 70 |
 | N-class / multi-class classifier (decision = winning label) | `domains.build_ontology` → `platforms.create(verified_profile=True)` → `platforms.query` — **NOT `author()`** | 38 |
 | Custom decision vocabulary (verbs beyond permit/deny) | phrase the `build_ontology` / `author` description with your verbs; read `query().decision` | 19, 24, 38 |
 | Build a VERIFIED platform | `platforms.create(verified_profile=True, verified_min_confidence=…, invariant_manifest=…)` | 10, 11, 14 |
@@ -23,8 +29,8 @@ example that shows it). If you're unsure whether something is `author()`,
 | APG temporal / sequencing (precedence, rate, pairing) | `agent_policy.author("… preceded by …")` + `create_session` + `step` | 40 |
 | APG distinct-actor quorum + separation-of-duties | `agent_policy.author("… two DIFFERENT approvers, none the author …")` + `authorize_action(relations=…)` | 28 |
 | Explainable symbolic forecasting + WHY | `predictions.symbolic_forecast(...)` (`why` / `prediction_record`) | 23, 26 |
-| Per-fact confidence carrier (supplied observation certainty, tau-gated fail-closed) | `platforms.query(facts={"f": {"value": v, "confidence": c}})` or `authorize_action(args={"f": {"value": v, "confidence": c}})` -- requires `require_confidence=True` on the platform | 50 |
 | Neural-evidence retrieval breadth on a query | `platforms.query(..., top_k=N)` | -- |
+| Panel data-sufficiency BEFORE training (usable rows, binding-constraint column, stale/discontinued series) | `datasets.panel_report(dataset_id)` — also persisted at ingest on `schema_info["panel_sufficiency"]` | 44 |
 | Org-capability discovery + 403 handling | `GET /api/v1/capabilities` (user-scoped key) + branch on `AmbertraceError.code == "capability_disabled"` | 42 |
 
 Full method surface is in **Resources** below; the runnable demos are in `examples/`.
@@ -127,7 +133,7 @@ print(answer["explanation"])
 | Resource | Methods |
 |----------|---------|
 | `api.domains` | `list`, `create`, `get`, `update`, `delete`, `build_ontology`, `eval_config`, `set_eval_config`, `delete_eval_config`, `suggest_eval_config`, `list_templates`, `create_template`, `update_template`, `delete_template`, `feedback_stats` |
-| `api.datasets` | `list`, `get`, `upload` (incl. `decision_column`), `fetch`, `fetch_multi`, `quality`, `clean`, `preview`, `delete` |
+| `api.datasets` | `list`, `get`, `upload` (incl. `decision_column`), `fetch`, `fetch_multi`, `quality`, `panel_report`, `clean`, `preview`, `delete` |
 | `api.platforms` | `list`, `create`, `get`, `delete`, `status`, `query`, `verify_property`, `suggest_rules`, `list_suggestions`, `approve_suggestion`, `reject_suggestion`, `graph` |
 | `api.predictions` | `predict`, `list_configs`, `create_config`, `delete_config`, `train`, `list_predictions`, `discover_prediction_rules`, `discovered_prediction_rules`, `neurosymbolic_comparison`, `symbolic_forecast`, `residual_diagnosis` (preview) |
 | `api.connectors` | `list`, `test` |
@@ -159,7 +165,7 @@ print(res.witness)        # {'pref_1': 'A>B>C', 'pref_2': 'B>A>C', 'pref_3': 'C>
                           #  'agent': 3, 'misreport': 'B'}  -- agent 3 profits by voting B
 ```
 
-* `property` — `"strategy_proof"` (v1).
+* `property` — `"strategy_proof"` or `"exactly_one_verdict"` (see below).
 * `space.mechanism` — `"plurality"` (3–5 alternatives, ties break in `domain` order),
   `"majority"` (2 alternatives, tie → first), `"vickrey"` (2 bidders, second-price)
   or `"first_price"` (2 bidders; a manipulable control).
@@ -177,6 +183,42 @@ those same fields. The method needs the `query` capability (403 `capability_disa
 otherwise); the platform you pass scopes access and audit, the mechanism is declared
 in `space`. Reachable through this dedicated method only (it is not a `query` mode).
 See example `69_verify_property_strategy_proof.py`.
+
+### Regime-grid totality + exclusivity — `property="exactly_one_verdict"`
+
+For a platform whose decision rules classify a *regime grid* (e.g. priced move ×
+incentive sign × reaction function), `exactly_one_verdict` certifies that **every cell
+of the grid derives EXACTLY ONE verdict** from the platform's own active decision
+rules — no uncovered cell, no double-covered cell:
+
+```python
+res = api.platforms.verify_property(
+    pid, property="exactly_one_verdict",
+    space={"variables": [{"field": "priced",    "domain": ["neg", "zero", "pos"]},
+                         {"field": "incentive", "domain": ["neg", "zero", "pos"]},
+                         {"field": "reaction",  "domain": ["hawk", "dove"]}],
+           "bound": 18})
+print(res.answer)          # HOLDS (certified: exhaustive): ... all 18 members ...
+if res.result == "VIOLATED":
+    print(res.witness)         # {'priced': 'neg', 'incentive': 'zero', 'reaction': 'hawk'}
+    print(res.witness_detail)  # {'cell': {...}, 'verdicts': [], 'coverage': 'uncovered'}
+```
+
+* `space.variables` — the grid: each axis is a field named in your rule conditions with
+  its explicit finite `domain`; \|S\| is the product of the domain sizes (3 × 3 × 2 = 18
+  above). `space.bound` is required, as for every property. No `mechanism` / `agents` /
+  `domain` here.
+* `VIOLATED` returns the first violating cell in `witness` (`witness_index` = its position,
+  first axis slowest) and, in `witness_detail`, the `verdicts` that derive there (`[]` =
+  uncovered, two or more = double-covered) with `coverage` = `"uncovered"` |
+  `"double_covered"`.
+* A rule whose condition is not a scalar test (`eq`/`ne`/`gt`/`gte`/`lt`/`lte`/`in`) on a
+  declared grid field — an aggregate, temporal, graph or relational leaf, or a field you
+  did not put in the grid — makes the call `ABSTAIN` (`condition_out_of_fragment` /
+  `field_outside_grid`), never a guess. Rules concluding the same verdict count as one
+  verdict; inactive rules and non-verdict (`derive`/`flag`/`require`) rules are ignored.
+* Reachable only through `verify_property` (it is not a `query` mode). Example
+  `70_verify_property_regime_grid.py`.
 
 The search runs as an **async server-side job** (it drives external checker processes):
 the server answers `POST .../verify-property` with `202 {"job_id", "poll", ...}` and the
@@ -230,7 +272,7 @@ reachable at `api.agent_policy.*`:
 | Method | What it does |
 |--------|--------------|
 | `author(policy_text)` | Compile an English policy into a verified gate; returns `{platform, admitted, rejected, policy_text}` |
-| `status()` | The live gate: active policy, admitted controls (English), and the declared `input_fields` an action must supply |
+| `status()` | The live gate: active policy, admitted controls (English), the declared `input_fields` an action must supply, and advisory `findings`. Findings are computed when the policy is compiled, not on read: `findings_compiled_at` / `findings_compiler_build` / `running_build` say when and by which build, and `findings_stale` is `True` after a platform deploy — re-run `author(policy_text)` to regenerate them (a fix to the probe check, e.g. false `V6_probe_mismatch` on multi-action gates, only reaches an existing policy that way) |
 | `examples()` | The built-in example-policy library (`[{id, domain_label, title, policy_text, try_hint}, ...]`) — ready-to-author policies |
 | `authorize_action(platform_id, *, tool, args, context, relations, predictions)` | Gate ONE proposed tool-call — permit/deny **with proof**. `relations` supplies a per-request set (e.g. quorum sign-offs); `predictions={role: {model_id, as_of}}` fans a verified forecast in (fail-closed) |
 | `create_session(*, platform_id, goal)` | Open a mediated session (the gate is the sole executor) for a cumulative obligation |
@@ -389,6 +431,59 @@ yourself via `api.wait_for_job(job_id)`. Discovery is a **write** operation, so 
 needs a user-scoped (`at_...`) key. A runnable end-to-end demo is in
 [`examples/26_neurosymbolic_bond_yield.py`](examples/26_neurosymbolic_bond_yield.py).
 
+**"Don't just give me last month's number" — a forecast with NO last-value anchor.**
+Two knobs on `create_config`, and you need **both**:
+
+```python
+config = api.predictions.create_config(
+    platform_id, mode="timeseries", target_field="IG_SPREAD",
+    time_index_field="date", horizon=1, frequency="monthly", model_type="gbt",
+    autoregressive="none",                        # no target lag/roc/rolling features
+    feature_config={"target_transform": "none"},  # model the LEVEL directly — no last_value + Δ
+)
+```
+
+`autoregressive="none"` alone is **not** enough: `target_transform` defaults to
+`"auto"`, which differences a trending target, so the returned level is still
+`baseline + modelled change`. `target_transform="none"` is the knob that removes
+the anchor — `predict(...)["prediction"]["baseline"]` then comes back `null`.
+`skill_vs_persistence` is still reported either way (it is computed from the
+ground-truth series in the backtest window, so persistence stays the *benchmark*
+even when it is no longer a *component* of the model). Honest cost: a
+level-direct tree cannot extrapolate past its training range, so on a strongly
+**trending** target expect a negative level R² — which is exactly why `"auto"`
+differences such a target. Runnable contrast (both configs, side by side):
+[`examples/48_no_ar_level_direct_forecast.py`](examples/48_no_ar_level_direct_forecast.py).
+
+**Two equivalent spellings of `target_transform`.** It may be passed as a
+top-level `create_config` kwarg *or* nested inside `feature_config` — both are
+accepted and mean exactly the same thing:
+
+```python
+api.predictions.create_config(..., target_transform="difference")
+api.predictions.create_config(..., feature_config={"target_transform": "difference"})
+```
+
+Valid values are `"auto"` (the default when you omit it) | `"none"` |
+`"difference"`; anything else is rejected with **422** naming the valid set,
+never silently ignored — in **either** position. If you pass both spellings with
+**different** values the nested one wins and the SDK warns, but the losing value
+is still validated, so a wrong spelling can never disappear behind "the nested
+value won" (a bogus loser is a 422, not a warning). Timeseries mode only: like
+`feature_config`, the shorthand is ignored in `cross_sectional` mode. The
+created config echoes
+`resolved_target_transform` / `output_space` immediately, so
+`target_transform="difference"` comes back as
+`resolved_target_transform="difference"`, `output_space="change"` before you
+train. Omitting it echoes the `"auto"` default
+(`"auto (resolved at train time)"`) — the transform is chosen from the data at
+train time.
+
+> **Fixed in 1.0.16.** The top-level kwarg used to be silently dropped by the
+> server: `target_transform="difference"` (and even a bogus value) resolved to
+> `"none"` with no error, which on a trending target is the difference between a
+> level R² of −5.33 and +0.33. Use either spelling now.
+
 ### Predictions → Decision bridge — a verified forecast feeds a verified decision
 
 A `symbolic_forecast(verified=True, …)` call PERSISTS its `prediction_record`
@@ -449,6 +544,13 @@ config, then ingest it as a dataset linked to a domain:
 
 ```python
 api.connectors.list()   # discover connectors + their required config fields
+
+# Check a config WITHOUT fetching any data. Required for ASYNC connectors
+# (boe_yield_curves, swap_curves, sentiment, ...): a plain test() on one of
+# those returns 422 because it cannot be tested inline.
+api.connectors.test(connector_type="boe_yield_curves",
+                    config={"curve_types": ["nominal"]},
+                    validate_only=True)   # -> {"valid": True, "errors": []}
 
 # Stocks/ETFs and crypto are keyless:
 api.datasets.fetch(domain_id=1, connector_type="yahoo",
@@ -515,13 +617,71 @@ api.datasets.fetch(domain_id=1, connector_type="rest",
 | `ecb` | `series_keys` | none |
 | `oecd` | `dataflow` | none |
 | `rest` | `url`, `format`, `records_path`, `headers`, `params` | bring your own (via headers) |
-| `gdelt` | *(none)* | none |
-| `sentiment` | *(none)* | none |
+| `gdelt` | `topics` or `use_defaults`, `lookback_days`, `frequency`, `source_country` | none |
+| `sentiment` | `feeds`, `dimensions`, `lookback_days`, `frequency` | none |
+
+Every connector in this table publishes a machine-readable `config_schema`
+(field name, type, required, default, enum, example) via
+`api.connectors.list()` -- prefer reading it over hardcoding key names.
 
 **Bring your own provider keys.** Connectors that hit a credentialed provider require
 *your own* key, passed in `config` -- Ambertrace never uses a shared key on your behalf.
 For the IMF connector, set `IMF_API_KEY` in your environment (the `Ocp-Apim-Subscription-Key`
 header value from [idata.imf.org](https://idata.imf.org)).
+
+## Panel sufficiency — check before you train
+
+Broadening a forecast panel can silently and severely REDUCE the usable training
+sample. A row is usable only where **every** column is non-null, so one
+discontinued series truncates decades of history to a few years — and nothing
+errors. `datasets.panel_report()` makes that visible BEFORE you build or train.
+
+```python
+report = api.datasets.panel_report(dataset["id"], index_column="date")
+
+inter = report["intersection"]
+print(f"{report['column_count']} cols x {report['row_count']} rows "
+      f"-> {inter['usable_rows']} usable rows "
+      f"({inter['first_index']} .. {inter['last_index']})")
+
+b = report["binding_constraint"]
+print(f"Drop '{b['column']}' alone: +{b['rows_recovered_if_dropped']} rows "
+      f"({b['usable_rows_if_dropped']} usable, window to {b['last_index_if_dropped']})")
+
+# Columns that go missing TOGETHER. When two series die in the same window,
+# dropping either one ALONE recovers nothing -- only the group does.
+# HEURISTIC (g["heuristic"] == "observed_co_missing_sets"): candidates are the
+# co-missing sets actually observed as some row's exact missing set, not all
+# subsets, so the best set to drop may be a superset that never appears alone.
+for g in report["recovery_groups"]:
+    print(g["columns"], "->", g["usable_rows_if_all_dropped"], "usable")
+
+print("Stale/discontinued:", report["stale_columns"])
+```
+
+| Field | Meaning |
+|-------|---------|
+| `intersection` | `usable_rows`, `first_index`, `last_index`, `coverage_pct` for the all-columns-non-null intersection |
+| `binding_constraint` | the single costliest column: `column`, `rows_recovered_if_dropped`, `usable_rows_if_dropped`, `last_index_if_dropped` |
+| `recovery_groups` | small SETS of co-missing columns: `columns`, `rows_recovered_if_all_dropped`, `usable_rows_if_all_dropped`, `heuristic` |
+| `columns[]` | per column: `first_non_null`, `last_non_null`, `non_null_count`, `null_count`, `recency_lag_periods`, `stale`, `rows_recovered_if_dropped` |
+| `stale_columns` | names flagged stale — last value lags the panel by more than `stale_periods` cadence periods (cadence = median index spacing) |
+| `cadence_days` | inferred index spacing in days |
+| `caveats` | **read these** — `usable_rows` is the RAW intersection; training removes a further warmup of `horizon + max(lag, rolling window)` rows |
+| `skipped_reason` | non-null when the report could not be computed (no index column, unsupported format). Always present, so an uncomputable report can never read as a clean panel |
+
+`index_column` is optional: omit it and the first of
+`date`/`time`/`timestamp`/`datetime`/`period` present is used — the same
+detection the ingest-time block uses, so the two agree on a panel whose index is
+not literally called `date`. Naming a column that is absent gives
+`skipped_reason="index_column_not_found"`, never a silent fallback.
+
+The same summary (minus the per-column array) is persisted at ingest on
+`dataset["schema_info"]["panel_sufficiency"]`, and the per-column freshness
+fields are merged into `schema_info["columns"]` — so `datasets.get(id)` already
+shows first/last non-null and the staleness flag with no extra call. The block is
+recomputed by `datasets.clean()` as well, so it never describes the pre-clean
+bytes. Worked example: `44_public_data_connectors.py`.
 
 ## Agent Keys
 
@@ -597,6 +757,12 @@ job = api.wait_for_job(job_id, timeout=300, poll_interval=5)
 if job["status"] == "error":
     print(f"Failed: {job.get('error_message')}")
 ```
+
+**Long ontology builds.** Ontology builds on hard domains (ReAct-authored rules) can run
+15-20 minutes; the default `timeout=600` is not enough. Use
+`api.wait_for_job(job_id, timeout=1800, poll_interval=10, stall_timeout=300)` -- the job's
+`progress` rises throughout the build, so `stall_timeout` separates "slow but progressing"
+from "stuck".
 
 **Progress + stall detection.** `wait_for_job` takes two optional, back-compatible
 hooks so you can surface progress and catch a build that hangs without
@@ -747,11 +913,142 @@ This brings the query failure path to parity with
 `agent_policy.authorize_action()`, which already returns structured `rejected_facts`
 / `deciding_rule`.
 
+### `build_ontology` precondition errors
+
+`domains.build_ontology` validates the dataset state before queuing the build.
+Three outcomes:
+
+| HTTP | `e.code` | Meaning | Action |
+|------|----------|---------|--------|
+| 400 | `data_required` | No dataset is attached to the domain | Upload or fetch a dataset first |
+| 409 | `dataset_not_ready` | A dataset exists but is still processing (e.g. an async `fetch_multi` in progress) | **Retryable** -- poll `datasets.get(id)` until `status="ready"`, then retry |
+| 409 | `dataset_ingestion_failed` | A dataset exists but its ingestion terminated in a failure state (e.g. `status="error"`) | **Not retryable** -- delete the dataset and re-ingest (re-upload or re-fetch) |
+
+```python
+try:
+    onto = api.domains.build_ontology(domain_id=domain["id"])
+except AmbertraceError as e:
+    if e.code == "dataset_not_ready":
+        # wait and retry -- ingestion is still in progress
+        ...
+    elif e.code == "dataset_ingestion_failed":
+        # re-ingest: delete + re-upload/re-fetch
+        ...
+    elif e.code == "data_required":
+        # no dataset attached at all
+        ...
+```
+
 ## API Documentation
 
-Full API reference: [app.ambertrace.ai/openapi/redoc](https://app.ambertrace.ai/openapi/redoc)
+Machine-readable OpenAPI spec: [`app.ambertrace.ai/api/v1/openapi.json`](https://app.ambertrace.ai/api/v1/openapi.json)
+Interactive API reference (ReDoc): [`app.ambertrace.ai/docs`](https://app.ambertrace.ai/docs)
+Agent/LLM orientation: [`AGENTS.md`](AGENTS.md)
 
 ## Changelog
+
+### 2.9.0
+
+**`platforms.status()` now returns `decision_vocabulary`; `domains.create(decision_vocabulary=...)` is rejected.**
+`GET /api/v1/platforms/{id}/status` carries `decision_vocabulary` (`{"verbs":
+[{verb, rank, restrictive, default, label}, ...]}`, or `null` when the policy
+declares no custom verbs) -- previously only `name/platform_id/status/version`,
+though the docs pointed there. Existing keys are unchanged. `domains.create`
+never supported pinning a vocabulary and silently dropped the kwarg; it now
+returns HTTP 400. State the verbs in the description and read the minted
+vocabulary from `platforms.status(id)` or
+`domains.get(id)["ontology"]["decision_vocabulary"]`. Example
+`68_decision_verb_pinning.py` reads it from `platforms.status`.
+
+**`datasets.panel_report()` -- pre-training panel sufficiency + per-column
+freshness.** Broadening a forecast panel could silently and
+severely reduce the usable training sample: a row survives only where every
+column is non-null, so one discontinued series truncated decades of history with
+no signal anywhere (a 312-column panel that intersected to 76 rows where the
+curated 8-column version had 281). New
+`GET /api/v1/datasets/{id}/panel-report`, wrapped as
+`api.datasets.panel_report(dataset_id, index_column="date", stale_periods=3)`:
+usable rows over the all-columns-non-null intersection and its window, the
+**binding-constraint** column with the rows dropping it alone recovers,
+**recovery groups** of columns that go missing TOGETHER (two series dying in the
+same window recover nothing individually), and per-column `first_non_null` /
+`last_non_null` / `recency_lag_periods` / `stale`. The summary is also persisted
+at ingest (upload, `fetch`, `fetch_multi`) on
+`schema_info["panel_sufficiency"]` (and refreshed by `clean()`), with the
+freshness fields merged into `schema_info["columns"]`. `skipped_reason` is always
+present, so an uncomputable report can never be mistaken for a clean panel; and
+each recovery group carries `heuristic="observed_co_missing_sets"`, because the
+candidate sets are the ones observed in the data rather than all subsets. See the
+new
+[Panel sufficiency](#panel-sufficiency--check-before-you-train) section and
+`44_public_data_connectors.py`.
+
+**`connectors.test(..., validate_only=True)` -- config check without a fetch.**
+The backend has supported a `validate_only` dry-run on
+`POST /api/v1/connectors/test`, but the SDK wrapper hardcoded the
+request body and never forwarded it, so the capability was unreachable from the
+published package. `ConnectorResource.test()` now takes `validate_only: bool =
+False`. With it set, no data is fetched and the response is
+`{"valid": bool, "errors": [...]}` -- this is the ONLY way to check the config
+of an **asynchronous** connector (`boe_yield_curves`, `swap_curves`,
+`sentiment`, ...), which otherwise returns HTTP 422 because it cannot be tested
+inline. Default `False` preserves the existing sample-fetch behaviour.
+Demonstrated in `03_connectors.py`.
+
+**Org-capability gating -- the `capability_disabled` 403 contract.**
+Organisations can now have individual capabilities (`chat`, `query`,
+`predictions`) enabled or disabled by an administrator. All three default to
+ENABLED (the gate never silently locks out an existing org). When a capability
+is disabled, every gated endpoint returns HTTP 403 with error code
+`capability_disabled` and a top-level `capability` field naming the denied
+capability, so SDK callers can branch programmatically. A new
+`GET /api/v1/capabilities` endpoint (user-scoped / session callers only; part
+of the public OpenAPI spec) returns the caller's org effective capability set.
+Platform-scoped API keys get 403 `forbidden` on the discovery endpoint
+(scope-context precedent). New example `42_capability_gating.py` demonstrates
+discovery, 403 handling, and pre-flight checks. `platforms.query()`,
+`predictions.predict()`, and `predictions.symbolic_forecast()` docstrings now
+name the capability gate and the 403 code. See the new
+[Org-Capability Gating](#org-capability-gating) section.
+
+**Public-spec promotion (docs-only -- no SDK behaviour change).** The Agent
+Policy Gate and the `symbolic_forecast` / `residual_diagnosis` "why" layer were
+already reachable from this SDK but omitted from the public v1 OpenAPI spec, so a
+fresh agent reading ReDoc/the spec as the contract could not discover them. Both
+are now in `openapi/ambertrace-v1.json` (58 -> 69 public paths); no method
+signature changed.
+
+**Data redistribution gate -- `forbidden` 403 on non-redistributable sources.**
+`platforms.query()` and `export-report` now return HTTP 403 with error
+code `forbidden` if the platform's datasets include data sourced from a connector
+whose licence does not permit redistribution. This prevents silently re-serving
+licensed data downstream via the API. Check the connector's `redistributable`
+field via `connectors.list()` to determine which sources are permitted before
+building a platform. The gate is fail-closed: unknown connector types are treated
+as non-redistributable.
+
+**`explanation.confidence.decision_margin` now appears on verified (proof-checked)
+platforms and measures distance-to-flip.** Previously it was absent on every
+`proof_checked` result. It is now the minimum normalised distance over every numeric
+threshold leaf whose flip would change the decision: fired leaves, plus -- when no
+restrictive verdict fired -- the unfired leaves of restrictive (deny-family) rules (a
+default-allow policy with `deny credit_score < 500` queried at 760 gives 0.342).
+`decision_margin_basis` entries gain an additive `fired` boolean. `overall` is unchanged
+and remains a reasoning-quality score, not an input margin. The values are read from the
+proof's certified facts but the margin itself is not proof-carrying.
+
+### 2.8.0
+
+**Certified regime-grid totality + exclusivity --
+`platforms.verify_property(property="exactly_one_verdict")`.** For a platform whose
+decision rules classify a regime grid you declare in `space.variables`, certify that every
+cell derives EXACTLY ONE verdict: `HOLDS` (exhaustive) or `VIOLATED` with the uncovered /
+double-covered cell (`witness`, plus the new `witness_detail` = `{cell, verdicts,
+coverage}` on `VerifyPropertyResult`). A rule leaf outside the discrete scalar fragment
+is an explicit `ABSTAIN`. Same dedicated method as 2.7.0 (async job, polled for you);
+`space` now takes `variables` instead of `mechanism`/`agents`/`domain` for this property.
+Example `70_verify_property_regime_grid.py`; see [Certified
+search](#certified-search--prove-a-property-for-every-case).
 
 ### 2.7.0
 
@@ -771,7 +1068,7 @@ section.
 
 ### 1.0.10
 
-**Stated-constraint diagnostics (#1051 Leg D).** The domain detail response
+**Stated-constraint diagnostics.** The domain detail response
 (`domains.get()`) now documents the `ontology.stated_constraint_diagnostics`
 key -- an advisory list of constraints the domain description states but no
 built rule encodes. New `StatedConstraintFinding` TypedDict in `responses.py`.
@@ -779,7 +1076,7 @@ See "Stated-constraint diagnostics" under "Build diagnostics" above.
 
 ### 1.0.9
 
-**Public-data connector catalog (#955).** Six new connectors for public macro,
+**Public-data connector catalog.** Six new connectors for public macro,
 fiscal, and company-fundamentals data, plus ALFRED vintage support on the
 existing FRED connector:
 
@@ -809,53 +1106,9 @@ HTTP 202 with `status="processing"`; poll `datasets.get(id)` until
 `status="ready"`. New example `44_public_data_connectors.py` covers all six
 plus a `fetch_multi` merge.
 
-### 1.1.0
-
-**Per-fact supplied confidence -- `FactWithConfidence` carrier + fail-closed
-tau refusal (#1655).** Verified platforms built with `require_confidence=True`
-(in `neural_config`) now accept per-observation confidence via a
-`FactWithConfidence` carrier (`{"value": <v>, "confidence": <c>}`). Each
-fact's `confidence` is gated independently against the platform's verified
-`verified_min_confidence` (tau): a fact with `confidence < tau` is REFUSED and
-the whole decision fails closed (HTTP 503, `rejected_facts` in the body). The
-carried confidence is also surfaced into the certified EDB as a companion
-ground atom `_aria_confidence__{field}` (float [0, 1]) so authored rules can
-reason over observation certainty directly. Bare scalars sent to a
-`require_confidence` platform are refused (fail-closed on absent confidence).
-A confidence carrier sent to a non-verified platform is rejected with a clear
-error (fail-loud, not a silent no-op). New `FactWithConfidence` model in the
-generated client (`ambertraceai.models.FactWithConfidence`). Both
-`platforms.query()` and `agent_policy.authorize_action()` accept the carrier.
-New runnable demo `examples/50_supplied_confidence.py`.
-
-### Unreleased
-
-**Org-capability gating -- the `capability_disabled` 403 contract (#1005).**
-Organisations can now have individual capabilities (`chat`, `query`,
-`predictions`) enabled or disabled by an administrator. All three default to
-ENABLED (the gate never silently locks out an existing org). When a capability
-is disabled, every gated endpoint returns HTTP 403 with error code
-`capability_disabled` and a top-level `capability` field naming the denied
-capability, so SDK callers can branch programmatically. A new
-`GET /api/v1/capabilities` endpoint (user-scoped / session callers only; part
-of the public OpenAPI spec) returns the caller's org effective capability set.
-Platform-scoped API keys get 403 `forbidden` on the discovery endpoint
-(scope-context precedent). New example `42_capability_gating.py` demonstrates
-discovery, 403 handling, and pre-flight checks. `platforms.query()`,
-`predictions.predict()`, and `predictions.symbolic_forecast()` docstrings now
-name the capability gate and the 403 code. See the new
-[Org-Capability Gating](#org-capability-gating) section.
-
-**Public-spec promotion (#868, docs-only -- no SDK behaviour change).** The Agent
-Policy Gate and the `symbolic_forecast` / `residual_diagnosis` "why" layer were
-already reachable from this SDK but omitted from the public v1 OpenAPI spec, so a
-fresh agent reading ReDoc/the spec as the contract could not discover them. Both
-are now in `openapi/ambertrace-v1.json` (58 -> 69 public paths); no method
-signature changed.
-
 ### 1.0.7 — 2026-07-12
 
-**API-key rotation + customer-settable expiry (#667/#793).** `api.api_keys.create`
+**API-key rotation + customer-settable expiry.** `api.api_keys.create`
 gains an optional `expires_at` (ISO-8601; naive = UTC; must be in the future, else
 422). New `api.api_keys.rotate(key_id, *, grace_seconds=None, expires_at=None)`
 atomically mints a replacement key (inheriting org/owner/platform/scope/name/rate
@@ -867,7 +1120,7 @@ already-rotated key raises `AmbertraceError` (409). Key listings now also carry
 
 ### 1.0.6 (shipped within 1.0.7 — never released standalone)
 
-**Structured `rejected_facts` on the fail-closed error body (#652).** A verified
+**Structured `rejected_facts` on the fail-closed error body.** A verified
 `platforms.query` that fails closed (503) now carries a top-level, machine-readable
 `rejected_facts` list — the typed `RejectedFact` = `{field, value, reasons}` — read via
 `AmbertraceError.rejected_facts`. Previously the 503 surfaced only the prose `details`

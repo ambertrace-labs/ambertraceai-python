@@ -67,8 +67,9 @@ def sync_detailed(
 ) -> Response[PlatformStatusOut | list[ValidationErrorModel]]:
     """Get platform status
 
-     Returns a lightweight status check for a platform: its ID, name, status (building/active/error), and
-    version number.
+     Returns a lightweight status check for a platform: its ID, name, status (building/active/error),
+    version number, and the declared ``decision_vocabulary`` (null when the policy declares no custom
+    verbs).
 
     Args:
         id (int): Resource ID
@@ -99,8 +100,9 @@ def sync(
 ) -> PlatformStatusOut | list[ValidationErrorModel] | None:
     """Get platform status
 
-     Returns a lightweight status check for a platform: its ID, name, status (building/active/error), and
-    version number.
+     Returns a lightweight status check for a platform: its ID, name, status (building/active/error),
+    version number, and the declared ``decision_vocabulary`` (null when the policy declares no custom
+    verbs).
 
     Args:
         id (int): Resource ID
@@ -126,8 +128,9 @@ async def asyncio_detailed(
 ) -> Response[PlatformStatusOut | list[ValidationErrorModel]]:
     """Get platform status
 
-     Returns a lightweight status check for a platform: its ID, name, status (building/active/error), and
-    version number.
+     Returns a lightweight status check for a platform: its ID, name, status (building/active/error),
+    version number, and the declared ``decision_vocabulary`` (null when the policy declares no custom
+    verbs).
 
     Args:
         id (int): Resource ID
@@ -156,8 +159,9 @@ async def asyncio(
 ) -> PlatformStatusOut | list[ValidationErrorModel] | None:
     """Get platform status
 
-     Returns a lightweight status check for a platform: its ID, name, status (building/active/error), and
-    version number.
+     Returns a lightweight status check for a platform: its ID, name, status (building/active/error),
+    version number, and the declared ``decision_vocabulary`` (null when the policy declares no custom
+    verbs).
 
     Args:
         id (int): Resource ID
