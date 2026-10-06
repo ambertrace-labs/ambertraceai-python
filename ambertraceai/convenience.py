@@ -523,6 +523,15 @@ class DomainResource(_Resource):
         return self._request("GET", "/api/v1/domains")
 
     def create(self, *, name: str, description: str, **kwargs) -> DomainOut:
+        """Create a draft domain.
+
+        ``visibility`` / ``team_id`` are the supported extra fields. There is NO
+        ``decision_vocabulary`` create parameter: passing it is rejected with a
+        400 (it is never silently ignored). Decision verbs are minted from the
+        ``description`` at ``build_ontology`` -- state them there, then read the
+        result from ``platforms.status(id)["decision_vocabulary"]`` or
+        ``domains.get(id)["ontology"]["decision_vocabulary"]``.
+        """
         return self._request("POST", "/api/v1/domains", json={"name": name, "description": description, **kwargs})
 
     def get(self, domain_id: int) -> DomainOut:
@@ -584,7 +593,9 @@ class DomainResource(_Resource):
         domain-specific verbs (e.g. "clear / monitor / escalate", or the N class
         labels above) DECLARES those as the platform's decision vocabulary, with a
         restrictiveness rank. Read them back on ``query().decision`` /
-        ``status().decision_vocabulary``; you are not limited to permit/deny.
+        ``platforms.status(id)["decision_vocabulary"]`` (also on
+        ``domains.get(id)["ontology"]["decision_vocabulary"]``; ``None`` when the
+        policy declares no custom verbs); you are not limited to permit/deny.
         """
         body = {"relations": relations} if relations is not None else None
         return _normalise_envelope(self._request(

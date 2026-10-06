@@ -21,8 +21,8 @@ on ``outcome`` keep working.  The ``query`` endpoint returns the same
 three-field contract: ``decision`` (author verb), ``outcome`` (canonical),
 ``permitted`` (boolean).
 
-The ``status()`` endpoint's ``decision_vocabulary`` (when declared) lists every
-verb the policy uses; when verbs are from the built-in families (approve,
+``platforms.status(platform_id)["decision_vocabulary"]`` (when declared) lists
+every verb the policy uses (``None`` otherwise); when verbs are from the built-in families (approve,
 reject, etc.) no explicit vocabulary is needed -- the gate infers the mapping.
 
 This is a verified GATE, not a dataset-trained platform -- the policy is
@@ -75,7 +75,7 @@ def main(api, _args) -> None:
 
     # --- 2. Inspect the vocabulary -------------------------------------------
     print_section(2, 4, "Decision vocabulary / verb map")
-    status = api.agent_policy.status()
+    status = api.platforms.status(pid)
     vocab = status.get("decision_vocabulary")
     if vocab:
         print("  Declared decision_vocabulary:")

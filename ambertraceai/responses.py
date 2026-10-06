@@ -121,6 +121,9 @@ class PlatformStatusOut(TypedDict, total=False):
     name: Required[str]
     status: Required[str]
     version: int
+    # {"verbs": [{verb, rank, restrictive, default, label}, ...]} or None when the
+    # policy declares no custom verbs.
+    decision_vocabulary: dict | None
 
 
 class BuildQualityCheck(TypedDict, total=False):
@@ -330,25 +333,26 @@ class RejectedFact(TypedDict, total=False):
 class Confidence(TypedDict, total=False):
     """``explanation.confidence`` — fused neural+symbolic confidence.
 
-    ``overall`` measures reasoning completeness (rules fired + KB relevance)
-    and is approximately constant per platform.
+    ``overall`` measures REASONING quality (rules fired + KB relevance) and is
+    approximately constant per platform.  It says nothing about how close THIS
+    input is to a different answer -- use ``decision_margin`` for that.
 
-    ``decision_margin`` (when present) is the **per-call** boundary-margin
-    confidence: a value in [0, 1] measuring how far this input's facts are
-    from the nearest fired numeric threshold (the label-flip boundary).
-    0 = exactly at boundary, 1 = maximally far.  It varies with every call
-    and is certified (derived from the same facts/firings as the proof).
-    Present only when fired rules contain numeric threshold comparisons
-    (gt/lt/gte/lte).
+    ``decision_margin`` (when present) is the **per-call input margin**
+    (distance-to-flip): a value in [0, 1], the minimum scale-invariant distance
+    ``|actual - threshold| / max(|actual|, |threshold|, 1)`` over every numeric
+    threshold leaf (gt/lt/gte/lte) whose flip would change the decision --
+    (a) FIRED leaves (how far from un-firing) and (b) when no restrictive
+    verdict fired, the currently-FALSE leaves of restrictive verdict rules
+    (how far from firing, e.g. a default-allow policy with ``deny
+    credit_score < 500`` queried at 760 gives 0.342).  0 = exactly at the
+    boundary, 1 = maximally far.  Computed identically on verified
+    (``proof_checked``) and non-verified platforms; on verified platforms the
+    leaf values are read from the proof's certified facts.  Absent when no
+    such numeric leaf exists (categorical-only policies).
 
-    **Scope:** ``decision_margin`` is the tightest (minimum) boundary margin
-    across ALL fired numeric-threshold leaves, NOT restricted to the
-    decision-determining/binding rules.  A near-boundary fired-but-overridden
-    rule can lower the reported margin even when it did not determine the
-    final decision.
-
-    ``decision_margin_basis`` lists the per-leaf inputs used to compute the
-    margin (field, operator, actual value, threshold, leaf_margin).
+    ``decision_margin_basis`` lists the contributing leaves (field, operator,
+    actual, threshold, leaf_margin, ``fired``: True for a fired leaf, False for
+    an unfired leaf that would flip the decision if it fired).
     """
 
     overall: float
@@ -729,6 +733,10 @@ class SymbolicForecastResult(TypedDict, total=False):
     When ``include_fitted_series=True``, each point in
     ``fitted_series.series[i]`` carries:
 
+    ``forecast_tier`` (str) — on a trained-model series, ``'combined'`` on
+    points where at least one rule fired (neural prediction plus fired
+    effects) and ``'model'`` on points where none fired.
+
     ``fired_rules`` (list[str]) — the names of admitted driver-rules whose
     condition held on that holdout row. Empty on ``baseline_anchor`` points
     (no driver fired).
@@ -752,7 +760,10 @@ class SymbolicForecastResult(TypedDict, total=False):
     Three component-layer entries are added:
 
     ``composed`` — trading metrics computed over ALL holdout points using
-    the composed prediction (``predicted``).
+    the composed prediction: the per-point ``combined`` value (neural plus
+    fired rule effects) when present, else ``predicted``. On a config with a
+    trained model this differs from ``neural``; ``all_points`` scores the
+    same composed series.
 
     ``rule_layer`` — trading metrics computed over ALL holdout points using
     the symbolic rule-layer-only prediction (``rule_layer_predicted``).
@@ -763,7 +774,11 @@ class SymbolicForecastResult(TypedDict, total=False):
 
     The headline ``objective_value`` is aligned to the objective-dominant
     tier on the holdout (the ``served_tier`` key names which tier was
-    selected).  ``per_tier_skill['rule_layer']`` shows the symbolic rules'
+    selected). The served ``forecast`` value comes from that same tier's
+    series: the combined (neural plus fired effects) value for ``composed``,
+    the raw model value for ``neural``, and the rule layer's own forecast
+    for ``rule_layer``. Partial-coverage ``forecast_tier`` partitions are
+    never selected.  ``per_tier_skill['rule_layer']`` shows the symbolic rules'
     standalone trading performance, and ``per_tier_skill['neural']`` shows
     the GBT baseline's standalone trading performance.
 
