@@ -947,6 +947,40 @@ Agent/LLM orientation: [`AGENTS.md`](AGENTS.md)
 
 ## Changelog
 
+### 2.10.0
+
+**`domains.create(decision_table=...)` — ladder decision tables.** Declare how
+raw data-cell values map to decision outcomes with a ladder table: each row
+carries a `label` (what a query serves in `decision`), an `order` (higher wins),
+`permits` (whether the action may proceed), the `values` that match a data cell,
+and an optional `default` (the outcome when nothing else fires). The platform
+serves the highest-`order` matching row. New `71_decision_table_quickstart.py`;
+the domain examples (fraud, clinical, loan, access governance, recruitment, …)
+are refreshed to declare their tables.
+
+**`platforms.create(decision_posture=...)` — explicit no-verdict posture.** When
+a decision query is not covered by any fired rule, the platform ABSTAINS by
+default (fail-closed) rather than silently permitting. A platform opts into
+permissive handling with `decision_posture="default_allow"` — declared
+explicitly per platform, never inferred from the table. New
+`74_decision_posture.py`.
+
+**Forecast objectives `rmse` / `mae` / `r_squared`.** `configs.create(objective=…)`
+now accepts the regression-error objectives alongside the existing
+skill/ranking objectives. `rmse` is the lever for the maximally-explainable
+rules-fitted forecast — the S&P 500 (`22_sp500_macro_forecast.py`) and 10Y-UST
+(`26_neurosymbolic_bond_yield.py`) examples are refreshed to the `rmse` recipe.
+
+**Cross-sectional regression mode.** Per-row-feature panel regression (one-hot
+categoricals, mean-imputation, gradient-boosted-tree anchor) for cross-sectional
+forecasting. New `72_cross_sectional_regression.py`.
+
+**FX-forwards connector.** Covered-interest-parity-derived G4 3-month FX forwards
+(EURUSD / USDJPY / GBPUSD) from spot plus 3-month rates. New
+`73_fx_forwards_connector.py`.
+
+Regenerated client + examples sync.
+
 ### 2.9.0
 
 **`platforms.status()` now returns `decision_vocabulary`; `domains.create(decision_vocabulary=...)` is rejected.**

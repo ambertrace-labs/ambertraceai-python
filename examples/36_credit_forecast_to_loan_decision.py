@@ -133,6 +133,18 @@ LOAN_DOMAIN_DESCRIPTION = (
     "decision must be explainable and auditable for fair-lending compliance."
 )
 
+# The Decision Table: the lending outcomes, declared. `label` is served verbatim in `decision`;
+# higher `order` wins when several fire; `default` is the outcome when nothing fires; `permits`
+# says whether the loan may proceed (`refer` = a human reviews it first, so it does not).
+DECISION_TABLE = {
+    "mode": "ladder",
+    "rows": [
+        {"label": "deny", "order": 3, "permits": False},
+        {"label": "refer", "order": 2, "permits": False},
+        {"label": "approve", "order": 1, "default": True, "permits": True},
+    ],
+}
+
 # Showcase applicants (without the macro fact — it is attached at query time).
 # (label, expected_when_calm, expected_when_tightening, applicant_facts)
 SHOWCASE = [
@@ -267,7 +279,8 @@ def run_credit_to_loan(api, args: argparse.Namespace) -> None:
     print_section(2, total, "Building the macro-aware lending domain (features only)")
     if not LOAN_DATASET.exists():
         _generate_loan_dataset(LOAN_DATASET)
-    domain = api.domains.create(name=LOAN_DOMAIN_NAME, description=LOAN_DOMAIN_DESCRIPTION)
+    domain = api.domains.create(
+        name=LOAN_DOMAIN_NAME, description=LOAN_DOMAIN_DESCRIPTION, decision_table=DECISION_TABLE)
     dataset = api.datasets.upload(domain_id=domain["id"], file_path=str(LOAN_DATASET))
     print_dataset(dataset)
 
@@ -276,7 +289,9 @@ def run_credit_to_loan(api, args: argparse.Namespace) -> None:
     print_ontology(domain, limit=14)
     platform = build_platform(
         api, domain["id"], dataset["id"],
-        verified_profile=not args.standard, verified_min_confidence=args.tau)
+        verified_profile=not args.standard, verified_min_confidence=args.tau,
+        # The domain's table plants a default outcome: declare it (the platform default is fail-closed, see 72).
+        decision_posture="default_allow")
     lpid = platform["id"]
     print(f"  Platform {lpid}: {platform['name']} ({platform.get('status')})")
 

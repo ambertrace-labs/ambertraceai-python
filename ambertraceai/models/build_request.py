@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, TypeVar, cast
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
+from ..models.build_request_decision_posture_type_0 import BuildRequestDecisionPostureType0
 from ..types import UNSET, Unset
 
 if TYPE_CHECKING:
@@ -23,6 +24,10 @@ class BuildRequest:
     Attributes:
         domain_id (int):
         config (BuildRequestConfig | Unset):
+        decision_posture (BuildRequestDecisionPostureType0 | None | Unset): Decisions platforms only. What a query that
+            matches NO verdict rule returns. 'fail_closed' (the default when omitted) serves ``status='abstain'`` with
+            ``decision`` null and ``permitted`` false; 'default_allow' serves the domain's default outcome (e.g. 'permit')
+            and must be declared explicitly -- it is never inferred. Persisted to ``platform.config['decision_posture']``.
         invariant_manifest (list[Invariant] | None | Unset): Verified profile only. The required-invariant manifest — a
             list of forbid/require obligations enforced at build and on every query. See the Invariant schema.
         override_verification_gate (bool | Unset): Human-in-the-loop override. If the build-time verification gate is
@@ -59,6 +64,7 @@ class BuildRequest:
 
     domain_id: int
     config: BuildRequestConfig | Unset = UNSET
+    decision_posture: BuildRequestDecisionPostureType0 | None | Unset = UNSET
     invariant_manifest: list[Invariant] | None | Unset = UNSET
     override_verification_gate: bool | Unset = False
     require_confidence: bool | None | Unset = UNSET
@@ -77,6 +83,14 @@ class BuildRequest:
         config: dict[str, Any] | Unset = UNSET
         if not isinstance(self.config, Unset):
             config = self.config.to_dict()
+
+        decision_posture: None | str | Unset
+        if isinstance(self.decision_posture, Unset):
+            decision_posture = UNSET
+        elif isinstance(self.decision_posture, BuildRequestDecisionPostureType0):
+            decision_posture = self.decision_posture.value
+        else:
+            decision_posture = self.decision_posture
 
         invariant_manifest: list[dict[str, Any]] | None | Unset
         if isinstance(self.invariant_manifest, Unset):
@@ -135,6 +149,8 @@ class BuildRequest:
         )
         if config is not UNSET:
             field_dict["config"] = config
+        if decision_posture is not UNSET:
+            field_dict["decision_posture"] = decision_posture
         if invariant_manifest is not UNSET:
             field_dict["invariant_manifest"] = invariant_manifest
         if override_verification_gate is not UNSET:
@@ -169,6 +185,23 @@ class BuildRequest:
             config = UNSET
         else:
             config = BuildRequestConfig.from_dict(_config)
+
+        def _parse_decision_posture(data: object) -> BuildRequestDecisionPostureType0 | None | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            try:
+                if not isinstance(data, str):
+                    raise TypeError()
+                decision_posture_type_0 = BuildRequestDecisionPostureType0(data)
+
+                return decision_posture_type_0
+            except (TypeError, ValueError, AttributeError, KeyError):
+                pass
+            return cast(BuildRequestDecisionPostureType0 | None | Unset, data)
+
+        decision_posture = _parse_decision_posture(d.pop("decision_posture", UNSET))
 
         def _parse_invariant_manifest(data: object) -> list[Invariant] | None | Unset:
             if data is None:
@@ -252,6 +285,7 @@ class BuildRequest:
         build_request = cls(
             domain_id=domain_id,
             config=config,
+            decision_posture=decision_posture,
             invariant_manifest=invariant_manifest,
             override_verification_gate=override_verification_gate,
             require_confidence=require_confidence,

@@ -43,7 +43,21 @@ DOMAIN_DESCRIPTION = (
     "claims exceeding 90% of the policy limit must be flagged as high amount ratio; "
     "providers appearing on multiple flagged claims must be investigated for collusion. "
     "All decisions must be auditable and explainable for regulatory compliance."
+    " Decide each claim: deny, flag or approve; approve it otherwise."
 )
+
+# The Decision Table. The CSV's `outcome` cells (approved / flagged / denied) differ from the
+# labels declared here, so each row lists them in `values`: that is how a data cell maps to a
+# row. `label` is what a query serves in `decision`; higher `order` wins; `default` is the
+# outcome when nothing fires; `permits` says whether the action may proceed.
+DECISION_TABLE = {
+    "mode": "ladder",
+    "rows": [
+        {"label": "deny", "order": 3, "permits": False, "values": ["denied"]},
+        {"label": "flag", "order": 2, "permits": False, "values": ["flagged"]},
+        {"label": "approve", "order": 1, "default": True, "permits": True, "values": ["approved"]},
+    ],
+}
 
 FRAUD_QUERIES = [
     "A claimant is filing a property flood claim for £55,000 on a policy "
@@ -65,7 +79,9 @@ def run_fraud_demo(api, args: argparse.Namespace) -> None:
     total = 7
 
     print_section(1, total, "Creating fraud detection domain")
-    domain = api.domains.create(name=DOMAIN_NAME, description=DOMAIN_DESCRIPTION)
+    domain = api.domains.create(
+        name=DOMAIN_NAME, description=DOMAIN_DESCRIPTION,
+        decision_table=DECISION_TABLE)
     print(f"  Domain {domain['id']}: {domain['name']} ({domain.get('status')})")
 
     print_section(2, total, "Uploading insurance claims data")
@@ -84,6 +100,8 @@ def run_fraud_demo(api, args: argparse.Namespace) -> None:
         api, domain["id"], dataset["id"],
         verified_profile=not args.standard,
         verified_min_confidence=args.tau,
+        # The domain's table plants a default outcome: declare it (the platform default is fail-closed, see 72).
+        decision_posture="default_allow",
     )
     profile = "verified" if platform.get("verified_profile") else "standard"
     print(f"  Platform {platform['id']}: {platform['name']} ({platform.get('status')}, {profile})")

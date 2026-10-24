@@ -109,6 +109,17 @@ DOMAIN_DESCRIPTION = (
     "means the exchange is conformant and a deny verdict means it is non-conformant."
 )
 
+# The Decision Table: the two outcomes this gate decides. `label` is served verbatim in
+# `decision`; `permits` says whether the action may proceed; `default` is the outcome when no
+# deny rule fires. Declared at create => applied "confirmed".
+DECISION_TABLE = {
+    "mode": "ladder",
+    "rows": [
+        {"label": "deny", "order": 2, "permits": False},
+        {"label": "permit", "order": 1, "default": True, "permits": True},
+    ],
+}
+
 QUERY = "Is this control exchange conformant?"
 
 # A fully-conformant baseline exchange; each showcase case overrides one aspect.
@@ -255,7 +266,9 @@ def run_rf_rm_demo(api, args: argparse.Namespace) -> None:
     total = 5
 
     print_section(1, total, "Creating RF Resource Manager conformance domain")
-    domain = api.domains.create(name=DOMAIN_NAME, description=DOMAIN_DESCRIPTION)
+    domain = api.domains.create(
+        name=DOMAIN_NAME, description=DOMAIN_DESCRIPTION,
+        decision_table=DECISION_TABLE)
     print(f"  Domain {domain['id']}: {domain['name']} ({domain.get('status')})")
 
     print_section(2, total, "Uploading observed UUT exchanges (features only)")

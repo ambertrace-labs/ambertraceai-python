@@ -12,6 +12,9 @@ Everything below is under `api.agent_policy.*`. For full runnable demos see
 > **APG is *not* a dataset-trained platform.** There is no domain/data upload and no
 > `decision_column` — you author *English*, not a CSV. (If you came from the domain
 > ontology flow, that supervised/unsupervised distinction does not apply here.)
+> What the gate decides OVER is a **Decision Table** — the outcomes a verdict can take.
+> By default that is the product's binary table `{permit, deny}`; declare your own with
+> `author(policy_text, decision_table=...)` (see step 1b).
 
 ---
 
@@ -60,6 +63,38 @@ A requirement you expected but don't see in `admitted` will appear in `rejected`
 *why* it fell outside the verified fragment. An empty/vacuous policy fails closed (422)
 and leaves any existing gate unchanged.
 
+### 1b. Declare more outcomes than permit/deny — the Decision Table
+
+Without a table the gate decides over the product's binary `{permit, deny}`. To keep an
+open outcome vocabulary (`escalate`, `hold`, `review` …), pass a **Decision Table**:
+
+```python
+result = api.agent_policy.author(
+    "Escalate to a clinician any message that mentions self-harm. "
+    "Do not approve an opioid refill unless prior_authorization is present.",
+    decision_table={
+        "mode": "ladder",
+        "rows": [
+            {"label": "deny",     "order": 3, "permits": False},
+            {"label": "escalate", "order": 2, "permits": False},
+            {"label": "permit",   "order": 1, "default": True, "permits": True},
+        ],
+    },
+)
+result["decision_table"]    # the table the gate was built with (provenance, applied)
+result["warnings"]          # advisory text <-> table findings, each naming a row / sentence
+result["unreached_rows"]    # declared rows no authored probe reached
+```
+
+`label` is your word, served verbatim in `verdict["decision"]`; higher `order` wins when
+several rows fire; `default` is the outcome when nothing fires; `permits` says whether the
+action may proceed (declare it explicitly for a default-deny gate). A gate table is a
+ladder with at least one permitting and one non-permitting row. `escalate` above blocks
+execution (`permitted` is False) but stays distinct from `deny` — switch on `decision` to
+route it to a human. An invalid table is a 400 naming the offending field. See
+[`27_agent_policy_gate.py`](27_agent_policy_gate.py) and
+[`68_decision_verb_pinning.py`](68_decision_verb_pinning.py).
+
 ### What you can express (the supported obligation classes)
 
 | Class | English example |
@@ -98,10 +133,19 @@ or the gate returns a rejected/missing-fact (it never default-permits an unknown
 verdict = api.agent_policy.authorize_action(
     platform_id, tool="place_order", args={"qty": 100, "price": 400})
 
-verdict["decision"]       # "permit" | "deny" | a custom verb the policy declares
+verdict["decision"]       # a decision-table label: "permit" | "deny" | one you declared
+verdict["permitted"]      # True iff the deciding row permits — switch execute/block on this
+verdict["status"]         # "decided" | "indeterminate" | "unavailable"
+verdict["outcome"]        # "permit" | "deny" | None (None unless status == "decided")
 verdict["proof_checked"]  # True — the verified engine certified the firing set
 verdict["denied_reason"]  # on a deny, the specific requirement that failed
 ```
+
+Branch on `permitted` to execute or not, on `decision` for label-specific logic (e.g. route
+an `escalate` row to a human), and on `status` for "no verdict reached": `indeterminate`
+means a declared input was missing (**not** a denial — supply `verdict["missing_inputs"]`
+and retry) and `unavailable` means the engine could not run. Code that branched on
+`outcome == "indeterminate"` now branches on `status`.
 
 `args` are the action's intrinsic fields; pass ambient facts the policy reasons over
 as `context=` (args wins on a key collision). Fail-closed: a missing/rejected fact, a
@@ -122,8 +166,9 @@ sid = sess["id"]
 
 for order in proposed_orders:
     step = api.agent_policy.step(sid, tool="place_order", args=order)
-    if step["decision"] != "permit":
-        print("blocked at the cap:", step["denied_reason"])
+    verdict = step["step"]["verdict"]
+    if not verdict["permitted"]:
+        print("blocked at the cap:", verdict.get("denied_reason"))
         break   # the gate refused to execute it — the ledger is unchanged
 ```
 
@@ -147,8 +192,8 @@ for order in proposed_orders:
 
 ## The proof certificate is an output, not the kernel
 
-`authorize_action` / `step` return a proof *certificate*: `decision`, `proof_checked`,
-`deciding_rule`, `certified_facts`, `rejected_facts`, `denied_reason`. It demonstrates the
+`authorize_action` / `step` return a proof *certificate*: `decision`, `permitted`, `status`,
+`proof_checked`, `deciding_rule`, `certified_facts`, `rejected_facts`, `denied_reason`. It demonstrates the
 **result** (which facts were certified, which rule decided, that the firing set was
 machine-checked). It does **not** ship or reveal the kernel / Lean formalisation that
 produces it — you read the certificate; the engine stays internal.

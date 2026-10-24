@@ -72,6 +72,16 @@ DOMAIN_DESCRIPTION = (
     "escalate when the routine use is unverified; otherwise escalate."
 )
 
+# The Decision Table: "otherwise escalate" makes `escalate` the default row; `permits` is
+# declared explicitly so the default row blocks the action while `permit` allows it.
+DECISION_TABLE = {
+    "mode": "ladder",
+    "rows": [
+        {"label": "escalate", "order": 2, "default": True, "permits": False},
+        {"label": "permit", "order": 1, "permits": True},
+    ],
+}
+
 # The open-textured scored determination — the platform's runtime LLM scores the
 # compatibility predicate, admitted as a τ-gated fact keyed `compatibility_established`.
 SCORED_DETERMINATIONS = {
@@ -163,7 +173,9 @@ def run_records_gate(api, args: argparse.Namespace) -> None:
     total = 4
 
     print_section(1, total, "Creating the records-disclosure routine-use domain")
-    domain = api.domains.create(name=DOMAIN_NAME, description=DOMAIN_DESCRIPTION)
+    domain = api.domains.create(
+        name=DOMAIN_NAME, description=DOMAIN_DESCRIPTION,
+        decision_table=DECISION_TABLE)
     dataset = api.datasets.upload(domain_id=domain["id"], file_path=str(args.dataset))
     print_dataset(dataset)
 

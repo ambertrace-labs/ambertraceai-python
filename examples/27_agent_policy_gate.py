@@ -14,14 +14,22 @@ PER-ACTION obligations:
   - Do not approve an opioid refill unless prior_authorization is present.
   - Escalate any message that mentions self-harm.
 
-This demo gates TWO single proposed actions through ``authorize_action``:
+The gate decides over a DECISION TABLE you declare with ``author(...,
+decision_table=...)``: here ``permit`` / ``escalate`` / ``deny``. (Omit it and the
+product's binary table ``{permit, deny}`` applies.) ``escalate`` BLOCKS the action
+(``permitted`` is False) but is distinct from ``deny``: branch on ``permitted`` to
+execute or not, on ``decision`` to route an escalation to a human.
+
+This demo gates THREE single proposed actions through ``authorize_action``:
 
   1. A compliant action (a referral with prior authorization present) → expect
      PERMIT, with a certified proof.
   2. A non-compliant action (an opioid refill with NO prior authorization) →
      expect DENY, fail-closed, with the failing requirement named.
+  3. A message that mentions self-harm → expect ESCALATE (blocked, routed to a
+     clinician): ``decision == "escalate"``, ``permitted`` False.
 
-For each it prints the verdict's PROOF CERTIFICATE: decision, permitted,
+For each it prints the verdict's PROOF CERTIFICATE: decision, permitted, status,
 proof_checked, deciding_rule, certified_facts, rejected_facts, denied_reason.
 
 IP boundary: the proof certificate is an OUTPUT the verified engine produces — it
@@ -49,7 +57,7 @@ import argparse
 
 from ambertraceai import AmbertraceError
 
-from _common import add_common_args, print_section, run_demo
+from _common import add_common_args, print_decision_table, print_section, run_demo
 
 # The example-policy id we author (one of api.agent_policy.examples()). Falls back
 # to an inline copy of the same policy text if the deployment's library differs.
@@ -61,7 +69,20 @@ POLICY_TEXT_FALLBACK = (
     "Only allow actions of type triage, schedule, or refer."
 )
 
-# Two single proposed actions to gate. ``args`` are the action's intrinsic fields;
+# The Decision Table the gate decides over: the outcomes a verdict can take, declared.
+# `label` is served verbatim in `decision`; higher `order` wins when several fire; `default`
+# is the outcome when nothing fires; `permits` says whether the action may proceed. A gate
+# table is a ladder with at least one permitting and one non-permitting row.
+DECISION_TABLE = {
+    "mode": "ladder",
+    "rows": [
+        {"label": "deny", "order": 3, "permits": False},
+        {"label": "escalate", "order": 2, "permits": False},
+        {"label": "permit", "order": 1, "default": True, "permits": True},
+    ],
+}
+
+# Three single proposed actions to gate. ``args`` are the action's intrinsic fields;
 # ``context`` carries ambient facts the policy reasons over. We supply a value for
 # every declared input the gate reports, so it returns a real permit/deny rather
 # than rejecting an unknown/missing fact. (label, tool, args, context, expected)
@@ -80,6 +101,13 @@ ACTIONS = [
          "prior_authorization": False},
         {"message": "Requesting an early opioid refill."},
         "deny",
+    ),
+    (
+        "A message that mentions self-harm (policy escalates to a clinician)",
+        "triage",
+        {"action_type": "triage", "prior_authorization": True},
+        {"message": "The patient says they are thinking about self-harm."},
+        "escalate",
     ),
 ]
 
@@ -135,7 +163,9 @@ def _print_certificate(verdict: dict, expected: str) -> None:
     decision = verdict.get("decision")
     mark = "[OK]" if decision == expected else f"[!! expected {expected}]"
     print(f"    decision:       {str(decision).upper()}  {mark}")
-    print(f"    permitted:      {verdict.get('permitted')}")
+    print(f"    permitted:      {verdict.get('permitted')}  (switch execute/block on this)")
+    print(f"    status:         {verdict.get('status')}  "
+          "(decided | indeterminate | unavailable)")
     print(f"    proof_checked:  {verdict.get('proof_checked')}")
     if verdict.get("deciding_rule"):
         print(f"    deciding_rule:  {verdict.get('deciding_rule')}")
@@ -157,7 +187,7 @@ def run_agent_policy_gate_demo(api, args: argparse.Namespace) -> None:
     print(f"  POLICY:\n    {policy_text}\n")
 
     try:
-        result = api.agent_policy.author(policy_text)
+        result = api.agent_policy.author(policy_text, decision_table=DECISION_TABLE)
     except AmbertraceError as exc:
         if getattr(exc, "status_code", None) == 404:
             print("  The Agent Policy Gate is not enabled on this deployment "
@@ -169,6 +199,11 @@ def run_agent_policy_gate_demo(api, args: argparse.Namespace) -> None:
     platform_id = platform.get("id")
     print(f"  Authored verified policy -> platform {platform_id} "
           f"({platform.get('status')}, verified={platform.get('verified_profile')})")
+    print_decision_table(result.get("decision_table"))
+    for warning in result.get("warnings") or []:
+        print(f"  [warning] {warning.get('check', '?')}: {warning.get('message')}")
+    for row in result.get("unreached_rows") or []:
+        print(f"  [unreached] {row}")
     _print_admitted(result)
 
     print_section(2, 3, "Reviewing the declared input fields")

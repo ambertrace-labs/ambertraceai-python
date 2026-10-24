@@ -86,6 +86,11 @@ def sync_detailed(
     Example invariant_manifest: [{\"name\":\"no_unconditional_delete\",\"kind\":\"forbid\",\"target\":\"
     permit_delete\",\"assumed_absent\":[\"permit_delete\"]}].
 
+    Decision table: the build is refused with 409 when a value of the dataset's decision column maps to
+    no decision table row (or a row has no value), or the stored table is invalid; the details name each
+    value. Advisory findings (C1, C3, C4, C6) are recorded on the platform and returned by
+    platforms.status as decision_table_warnings.
+
     Args:
         body (BuildRequest):
 
@@ -129,6 +134,11 @@ def sync(
     Example invariant_manifest: [{\"name\":\"no_unconditional_delete\",\"kind\":\"forbid\",\"target\":\"
     permit_delete\",\"assumed_absent\":[\"permit_delete\"]}].
 
+    Decision table: the build is refused with 409 when a value of the dataset's decision column maps to
+    no decision table row (or a row has no value), or the stored table is invalid; the details name each
+    value. Advisory findings (C1, C3, C4, C6) are recorded on the platform and returned by
+    platforms.status as decision_table_warnings.
+
     Args:
         body (BuildRequest):
 
@@ -166,6 +176,11 @@ async def asyncio_detailed(
     standard (non-verified) platform and records the violations in config.verification_gate_violations.
     Example invariant_manifest: [{\"name\":\"no_unconditional_delete\",\"kind\":\"forbid\",\"target\":\"
     permit_delete\",\"assumed_absent\":[\"permit_delete\"]}].
+
+    Decision table: the build is refused with 409 when a value of the dataset's decision column maps to
+    no decision table row (or a row has no value), or the stored table is invalid; the details name each
+    value. Advisory findings (C1, C3, C4, C6) are recorded on the platform and returned by
+    platforms.status as decision_table_warnings.
 
     Args:
         body (BuildRequest):
@@ -207,6 +222,11 @@ async def asyncio(
     standard (non-verified) platform and records the violations in config.verification_gate_violations.
     Example invariant_manifest: [{\"name\":\"no_unconditional_delete\",\"kind\":\"forbid\",\"target\":\"
     permit_delete\",\"assumed_absent\":[\"permit_delete\"]}].
+
+    Decision table: the build is refused with 409 when a value of the dataset's decision column maps to
+    no decision table row (or a row has no value), or the stored table is invalid; the details name each
+    value. Advisory findings (C1, C3, C4, C6) are recorded on the platform and returned by
+    platforms.status as decision_table_warnings.
 
     Args:
         body (BuildRequest):

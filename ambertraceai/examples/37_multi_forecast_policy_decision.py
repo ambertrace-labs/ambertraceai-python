@@ -146,6 +146,18 @@ POLICY_DOMAIN_DESCRIPTION = (
     "rate cut is not warranted. Every policy decision must be explainable and auditable."
 )
 
+# The Decision Table: the policy stances, declared. Read the stance from `decision`; `permits`
+# is left to its default (it is only meaningful for an allow/block gate, not a rate stance).
+# `hold` is the default: the stance when no hike/cut rule fires.
+DECISION_TABLE = {
+    "mode": "ladder",
+    "rows": [
+        {"label": "hike", "order": 3},
+        {"label": "cut", "order": 2},
+        {"label": "hold", "order": 1, "default": True},
+    ],
+}
+
 # Showcase macro scenarios (label, expected stance, {fact field: forecast value}).
 SHOWCASE = [
     ("overheating — inflation 3.5 (hot), growth 2.8 (strong), spread 0.7", "hike",
@@ -262,7 +274,8 @@ def run_multi_forecast_policy(api, args: argparse.Namespace) -> None:
     print_section(2, total, "Building the policy-stance domain (3 forecast fields)")
     if not POLICY_DATASET.exists():
         _generate_policy_dataset(POLICY_DATASET)
-    domain = api.domains.create(name=POLICY_DOMAIN_NAME, description=POLICY_DOMAIN_DESCRIPTION)
+    domain = api.domains.create(
+        name=POLICY_DOMAIN_NAME, description=POLICY_DOMAIN_DESCRIPTION, decision_table=DECISION_TABLE)
     dataset = api.datasets.upload(domain_id=domain["id"], file_path=str(POLICY_DATASET))
     print_dataset(dataset)
 
@@ -271,7 +284,9 @@ def run_multi_forecast_policy(api, args: argparse.Namespace) -> None:
     print_ontology(domain, limit=16)
     platform = build_platform(
         api, domain["id"], dataset["id"],
-        verified_profile=not args.standard, verified_min_confidence=args.tau)
+        verified_profile=not args.standard, verified_min_confidence=args.tau,
+        # The domain's table plants a default outcome: declare it (the platform default is fail-closed, see 72).
+        decision_posture="default_allow")
     ppid = platform["id"]
     print(f"  Platform {ppid}: {platform['name']} ({platform.get('status')})")
 

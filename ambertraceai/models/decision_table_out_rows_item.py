@@ -6,11 +6,11 @@ from typing import Any, TypeVar
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
-T = TypeVar("T", bound="PlatformStatusOutDecisionVocabularyType0")
+T = TypeVar("T", bound="DecisionTableOutRowsItem")
 
 
 @_attrs_define
-class PlatformStatusOutDecisionVocabularyType0:
+class DecisionTableOutRowsItem:
     """ """
 
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
@@ -25,10 +25,10 @@ class PlatformStatusOutDecisionVocabularyType0:
     @classmethod
     def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
         d = dict(src_dict)
-        platform_status_out_decision_vocabulary_type_0 = cls()
+        decision_table_out_rows_item = cls()
 
-        platform_status_out_decision_vocabulary_type_0.additional_properties = d
-        return platform_status_out_decision_vocabulary_type_0
+        decision_table_out_rows_item.additional_properties = d
+        return decision_table_out_rows_item
 
     @property
     def additional_keys(self) -> list[str]:

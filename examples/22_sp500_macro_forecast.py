@@ -9,17 +9,22 @@ macro series and let it tell you which ones move the S&P 500 — with the rules 
   2. Build a verified platform and train a forecaster on SP500 with autoregression turned
      OFF (``autoregressive="none"``) — so the model must explain the index through the
      macro drivers instead of leaning on its own recent value, and so the symbolic
-     correction layer has residual structure to add value to.
+     correction layer has residual structure to add value to. ``objective="rmse"`` governs
+     which driver rules are admitted (the default ``sharpe_ratio`` is strict on a ~120-row
+     monthly history and admits only a handful); ``model_type="auto"`` trains the candidate
+     models and serves the objective winner; no ``feature_fields`` = discovery mode.
   3. Read back what the SYSTEM selected:
        - neural feature importance, aggregated by base series (which macro series it keeps);
-       - the symbolic forecaster's induced WHEN->THEN driver rules (the WHY);
+       - the verified symbolic forecaster's WHEN->THEN driver rules (the WHY): how many
+         are kernel-certified and active now, and how often they fired out-of-sample;
        - the neuro-symbolic discovery pass (does a correction layer beat the neural model?).
 
 Honest framing: the value is the EXPLANATION — which macro drivers the platform selected,
 the readable rules over them, and whether the symbolic layer adds value to the neural model.
 It is not about beating a persistence baseline (on a monthly level forecast that is trivial
 autocorrelation, which is exactly why we turn autoregression off). Fit is read as level-space
-R^2; skill_vs_persistence is shown only as context. With only ~10 years of S&P 500 history on
+R^2; the configured ``objective`` governs rule acceptance and skill_vs_persistence is a
+reference metric only (it is not an acceptance gate or an anchor choice). With only ~10 years of S&P 500 history on
 FRED (~118 monthly rows), treat the selection as suggestive, not definitive.
 
 DATA / LICENSING: the S&P 500 series on FRED is S&P Dow Jones Indices copyrighted and
@@ -96,7 +101,8 @@ def _print_fit(prediction: dict[str, Any]) -> None:
     Reads ``explanation.model.metrics`` (see ``predictions.create_config`` docs). For
     AmberTrace the relevant question is whether the model achieves a reasonable,
     EXPLAINABLE fit — not whether it beats persistence: on infrequent freely-available
-    series nobody does, so skill_vs_persistence is honest context, never a pass/fail gate.
+    series nobody does, so skill_vs_persistence is a reference metric, never a gate (the
+    configured ``objective`` governs acceptance).
     """
     model = (prediction.get("explanation") or {}).get("model") or {}
     metrics = model.get("metrics") or {}
@@ -110,8 +116,9 @@ def _print_fit(prediction: dict[str, Any]) -> None:
         print(f"  fit (month-to-month change): R^2={transformed.get('r2')} — the hard part; "
               "most of the level is just last month's value.")
     if isinstance(skill, (int, float)):
-        print(f"  (skill_vs_persistence={skill:+.3f} — context only: on infrequent, freely "
-              "available series nobody beats a last-value baseline; that is not the goal.)")
+        print(f"  (reference metric skill_vs_persistence={skill:+.3f} — not an acceptance gate: "
+              "the configured objective governs; on infrequent, freely available series "
+              "nobody beats a last-value baseline, and that is not the goal.)")
 
 
 def _wait_dataset_ready(api, dataset_id: int, *, timeout: int = 300, poll: int = 4) -> dict:
@@ -159,8 +166,8 @@ def run_sp500_forecast(api, args: argparse.Namespace) -> None:
     # and so residual structure is left for the symbolic correction layer to add value to.
     cfg = api.predictions.create_config(
         pid, mode="timeseries", target_field=TARGET, time_index_field="date",
-        horizon=args.horizon, frequency="monthly", model_type="gbt",
-        autoregressive=args.autoregressive)
+        horizon=args.horizon, frequency="monthly", model_type="auto",
+        autoregressive=args.autoregressive, objective="rmse")
     cfg = train_prediction_model(api, pid, cfg["id"])
 
     print_section(3, total, "What the SYSTEM selected — neural feature importance")
@@ -178,11 +185,21 @@ def run_sp500_forecast(api, args: argparse.Namespace) -> None:
 
     print_section(4, total, "Symbolic forecaster — induced WHEN-THEN driver rules")
     sf = api.predictions.symbolic_forecast(
-        pid, prediction_config_id=cfg["id"], verified=not args.standard)
+        pid, prediction_config_id=cfg["id"], verified=not args.standard,
+        include_fitted_series=True)
     why = sf.get("why") or []
-    print(f"  {len(why)} driver rules induced; baseline={sf.get('baseline')} "
-          f"forecast={(sf.get('forecast') or {}).get('value')} "
-          f"skill_vs_persistence={sf.get('skill_vs_persistence')}")
+    n_active = sum(1 for w in why if w.get("fired_on_latest_row"))
+    n_certified = sum(1 for w in why if w.get("proof_checked"))
+    series = (sf.get("fitted_series") or {}).get("series") or []
+    n_fired = sum(1 for pt in series if pt.get("fired_rules"))
+    print(f"  {len(why)} driver rules induced ({n_active} active now, {n_certified} "
+          f"kernel-certified); baseline={sf.get('baseline')} "
+          f"forecast={(sf.get('forecast') or {}).get('value')}")
+    print(f"  objective={sf.get('objective')} value={sf.get('objective_value')}  "
+          f"[reference: skill_vs_persistence={sf.get('skill_vs_persistence')}]")
+    if series:
+        print(f"  rules fired on {n_fired} of {len(series)} out-of-sample backtest points "
+              f"({n_fired / len(series):.0%})")
     for w in sorted(why, key=lambda x: -abs(x.get("contribution") or 0))[:8]:
         d = str(w.get("driver"))[:66]
         print(f"    {w.get('direction')} {w.get('contribution'):+} | {d}")

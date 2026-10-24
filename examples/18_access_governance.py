@@ -54,6 +54,17 @@ DOMAIN_DESCRIPTION = (
     "there is no change ticket; otherwise permit. Every decision must be auditable."
 )
 
+# The Decision Table: the two outcomes this gate decides. `label` is served verbatim in
+# `decision`; `permits` says whether the action may proceed; `default` is the outcome when no
+# deny rule fires. Declared at create => applied "confirmed".
+DECISION_TABLE = {
+    "mode": "ladder",
+    "rows": [
+        {"label": "deny", "order": 2, "permits": False},
+        {"label": "permit", "order": 1, "default": True, "permits": True},
+    ],
+}
+
 SHOWCASE_REQUESTS = [
     ("untrusted device → OT network", {
         "requester_role": "contractor", "clearance_level": 2, "device_managed": False,
@@ -99,7 +110,9 @@ def run_access_pdp_demo(api, args: argparse.Namespace) -> None:
     total = 5
 
     print_section(1, total, "Creating access-governance PDP domain")
-    domain = api.domains.create(name=DOMAIN_NAME, description=DOMAIN_DESCRIPTION)
+    domain = api.domains.create(
+        name=DOMAIN_NAME, description=DOMAIN_DESCRIPTION,
+        decision_table=DECISION_TABLE)
     print(f"  Domain {domain['id']}: {domain['name']} ({domain.get('status')})")
 
     print_section(2, total, "Uploading access-request data")
@@ -115,6 +128,8 @@ def run_access_pdp_demo(api, args: argparse.Namespace) -> None:
         api, domain["id"], dataset["id"],
         verified_profile=not args.standard,
         verified_min_confidence=args.tau,
+        # The domain's table plants a default outcome: declare it (the platform default is fail-closed, see 72).
+        decision_posture="default_allow",
     )
     profile = "verified" if platform.get("verified_profile") else "standard"
     print(f"  Platform {platform['id']}: {platform['name']} ({platform.get('status')}, {profile})")

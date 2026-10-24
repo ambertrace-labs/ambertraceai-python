@@ -4,6 +4,9 @@ from enum import Enum
 class PredictionConfigOutObjectiveType0(str, Enum):
     DIRECTIONAL_PNL = "directional_pnl"
     HIT_RATE = "hit_rate"
+    MAE = "mae"
+    RMSE = "rmse"
+    R_SQUARED = "r_squared"
     SHARPE_RATIO = "sharpe_ratio"
     SKILL_VS_PERSISTENCE = "skill_vs_persistence"
 

@@ -56,10 +56,12 @@ class SymbolicForecastRequest:
                 contributions), persistence (the predict-last-level baseline)}. HONEST LABEL: the series 'basis' is
                 'walk_forward_out_of_sample_one_step' — the drivers were induced + accepted on the FIT window only and held
                 FROZEN across the holdout, so each period's prediction never saw that period's outcome (the rigorous out-of-
-                sample fit, NOT an in-sample fit). The response also carries a 'coverage_certificate' whose TOTALITY claim
-                (every holdout point served by a named tier with a finite value) is KERNEL-CERTIFIED: 'proof_ref' carries the
-                trusted symbolic kernel's verdict with claim='coverage_totality' — an uncovered point fails the proof closed.
-                Values remain fitted-not-proven. Off by default so the standard response is not bloated. Default: False.
+                sample fit, NOT an in-sample fit). For a cross_sectional config rows are independent: the basis is
+                'k_fold_cross_validation' (one held-out K-fold fold; no lag/rolling drivers, no persistence,
+                skill_vs_persistence is null). The response also carries a 'coverage_certificate' whose TOTALITY claim (every
+                holdout point served by a named tier with a finite value) is KERNEL-CERTIFIED: 'proof_ref' carries the trusted
+                symbolic kernel's verdict with claim='coverage_totality' — an uncovered point fails the proof closed. Values
+                remain fitted-not-proven. Off by default so the standard response is not bloated. Default: False.
             period (None | str | Unset): Optional join key on the PredictionRecord (period).
             prediction_model_id (None | str | Unset): Stable id for the emitted PredictionRecord (defaults to
                 prediction_name / target_field). Used with as_of as the persisted-record key.

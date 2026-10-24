@@ -76,11 +76,11 @@ def sync_detailed(
     effect (mock echo) and records it; otherwise it blocks and records — with proof either way. The
     harness is the sole executor: no effect occurs without a prior certified permit.
 
-    The recorded `step.verdict` carries the same `outcome` enum as /authorize-action — `permit` | `deny`
-    | `indeterminate` | `unavailable` — plus `missing_inputs` / `stalled_stage` / `query_diagnostics` on
-    an `indeterminate` outcome. A step executes ONLY on a certified permit (`permitted` AND
-    `proof_checked`); `indeterminate` / `unavailable` are fail-closed non-permits that never execute
-    (`executed=false`). Feature-flagged.
+    The recorded `step.verdict` carries the same `status` and `outcome` as /authorize-action — `status`
+    `decided` | `indeterminate` | `unavailable`, `outcome` `permit` | `deny` | null — plus
+    `missing_inputs` / `stalled_stage` / `query_diagnostics` on an `indeterminate` status. A step
+    executes ONLY on a certified permit (`permitted` AND `proof_checked`); `indeterminate` /
+    `unavailable` are fail-closed non-permits that never execute (`executed=false`). Feature-flagged.
 
     Args:
         sid (str): Agent session id
@@ -119,11 +119,11 @@ def sync(
     effect (mock echo) and records it; otherwise it blocks and records — with proof either way. The
     harness is the sole executor: no effect occurs without a prior certified permit.
 
-    The recorded `step.verdict` carries the same `outcome` enum as /authorize-action — `permit` | `deny`
-    | `indeterminate` | `unavailable` — plus `missing_inputs` / `stalled_stage` / `query_diagnostics` on
-    an `indeterminate` outcome. A step executes ONLY on a certified permit (`permitted` AND
-    `proof_checked`); `indeterminate` / `unavailable` are fail-closed non-permits that never execute
-    (`executed=false`). Feature-flagged.
+    The recorded `step.verdict` carries the same `status` and `outcome` as /authorize-action — `status`
+    `decided` | `indeterminate` | `unavailable`, `outcome` `permit` | `deny` | null — plus
+    `missing_inputs` / `stalled_stage` / `query_diagnostics` on an `indeterminate` status. A step
+    executes ONLY on a certified permit (`permitted` AND `proof_checked`); `indeterminate` /
+    `unavailable` are fail-closed non-permits that never execute (`executed=false`). Feature-flagged.
 
     Args:
         sid (str): Agent session id
@@ -157,11 +157,11 @@ async def asyncio_detailed(
     effect (mock echo) and records it; otherwise it blocks and records — with proof either way. The
     harness is the sole executor: no effect occurs without a prior certified permit.
 
-    The recorded `step.verdict` carries the same `outcome` enum as /authorize-action — `permit` | `deny`
-    | `indeterminate` | `unavailable` — plus `missing_inputs` / `stalled_stage` / `query_diagnostics` on
-    an `indeterminate` outcome. A step executes ONLY on a certified permit (`permitted` AND
-    `proof_checked`); `indeterminate` / `unavailable` are fail-closed non-permits that never execute
-    (`executed=false`). Feature-flagged.
+    The recorded `step.verdict` carries the same `status` and `outcome` as /authorize-action — `status`
+    `decided` | `indeterminate` | `unavailable`, `outcome` `permit` | `deny` | null — plus
+    `missing_inputs` / `stalled_stage` / `query_diagnostics` on an `indeterminate` status. A step
+    executes ONLY on a certified permit (`permitted` AND `proof_checked`); `indeterminate` /
+    `unavailable` are fail-closed non-permits that never execute (`executed=false`). Feature-flagged.
 
     Args:
         sid (str): Agent session id
@@ -198,11 +198,11 @@ async def asyncio(
     effect (mock echo) and records it; otherwise it blocks and records — with proof either way. The
     harness is the sole executor: no effect occurs without a prior certified permit.
 
-    The recorded `step.verdict` carries the same `outcome` enum as /authorize-action — `permit` | `deny`
-    | `indeterminate` | `unavailable` — plus `missing_inputs` / `stalled_stage` / `query_diagnostics` on
-    an `indeterminate` outcome. A step executes ONLY on a certified permit (`permitted` AND
-    `proof_checked`); `indeterminate` / `unavailable` are fail-closed non-permits that never execute
-    (`executed=false`). Feature-flagged.
+    The recorded `step.verdict` carries the same `status` and `outcome` as /authorize-action — `status`
+    `decided` | `indeterminate` | `unavailable`, `outcome` `permit` | `deny` | null — plus
+    `missing_inputs` / `stalled_stage` / `query_diagnostics` on an `indeterminate` status. A step
+    executes ONLY on a certified permit (`permitted` AND `proof_checked`); `indeterminate` /
+    `unavailable` are fail-closed non-permits that never execute (`executed=false`). Feature-flagged.
 
     Args:
         sid (str): Agent session id

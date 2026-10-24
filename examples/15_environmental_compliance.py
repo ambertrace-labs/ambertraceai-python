@@ -51,7 +51,20 @@ DOMAIN_DESCRIPTION = (
     "for any pollutant; "
     "three or more consecutive breaches by the same facility triggers licence suspension; "
     "all compliance decisions must be auditable for environmental regulatory reporting."
+    " Decide each reading: suspend, enforce or compliant; it is compliant otherwise."
 )
+
+# The Decision Table: the outcomes a compliance decision can take. `label` is served verbatim
+# in `decision`; higher `order` wins when several fire; `default` is the outcome when nothing
+# fires; `permits` says whether the facility may proceed. Declared at create => "confirmed".
+DECISION_TABLE = {
+    "mode": "ladder",
+    "rows": [
+        {"label": "suspend", "order": 3, "permits": False},
+        {"label": "enforce", "order": 2, "permits": False},
+        {"label": "compliant", "order": 1, "default": True, "permits": True},
+    ],
+}
 
 ENVIRONMENTAL_QUERIES = [
     "Riverside Chemical Works recorded nitrogen dioxide at 44.8 ug/m3 against "
@@ -79,7 +92,9 @@ def run_environmental_demo(api, args: argparse.Namespace) -> None:
     total = 7
 
     print_section(1, total, "Creating environmental compliance domain")
-    domain = api.domains.create(name=DOMAIN_NAME, description=DOMAIN_DESCRIPTION)
+    domain = api.domains.create(
+        name=DOMAIN_NAME, description=DOMAIN_DESCRIPTION,
+        decision_table=DECISION_TABLE)
     print(f"  Domain {domain['id']}: {domain['name']} ({domain.get('status')})")
 
     print_section(2, total, "Uploading facility monitoring data")
@@ -98,6 +113,8 @@ def run_environmental_demo(api, args: argparse.Namespace) -> None:
         api, domain["id"], dataset["id"],
         verified_profile=not args.standard,
         verified_min_confidence=args.tau,
+        # The domain's table plants a default outcome: declare it (the platform default is fail-closed, see 72).
+        decision_posture="default_allow",
     )
     profile = "verified" if platform.get("verified_profile") else "standard"
     print(f"  Platform {platform['id']}: {platform['name']} ({platform.get('status')}, {profile})")

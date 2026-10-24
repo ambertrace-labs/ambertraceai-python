@@ -88,11 +88,25 @@ DOMAIN_DESCRIPTION = (
     "Triage each track by the first matching rule: escalate to an operator for an "
     "emergency track; escalate for a zone breach; escalate for an unidentified track "
     "when it is not identified and its IFF mode is no_response or mode3_invalid; monitor "
-    "a kinematically implausible track; monitor an unidentified track otherwise; clear "
+    "a kinematically implausible track; monitor any other unidentified track; clear "
     "the track when none of the above apply. Every triage decision must be auditable, "
     "and emergency tracks must always be escalated to a human operator and never "
     "suppressed."
 )
+
+# The Decision Table: the outcomes a triage decision can take, declared (not guessed from
+# the description's verbs). `label` is served verbatim in `decision`; higher `order` wins when
+# several fire; `default` is the outcome when nothing fires; `permits` says whether the action
+# may proceed. Declared at create => applied "confirmed". Read it back on
+# platforms.status(id)["decision_table"].
+DECISION_TABLE = {
+    "mode": "ladder",
+    "rows": [
+        {"label": "escalate", "order": 3, "permits": False},
+        {"label": "monitor", "order": 2, "permits": False},
+        {"label": "clear", "order": 1, "default": True, "permits": True},
+    ],
+}
 
 # A standardised track is many fields; start from a clean baseline and override.
 _BASE_TRACK = {
@@ -177,7 +191,9 @@ def run_air_track_hispec_demo(api, args: argparse.Namespace) -> None:
     total = 5
 
     print_section(1, total, "Creating high-spec air-track triage domain")
-    domain = api.domains.create(name=DOMAIN_NAME, description=DOMAIN_DESCRIPTION)
+    domain = api.domains.create(
+        name=DOMAIN_NAME, description=DOMAIN_DESCRIPTION,
+        decision_table=DECISION_TABLE)
     print(f"  Domain {domain['id']}: {domain['name']} ({domain.get('status')})")
 
     print_section(2, total, "Uploading standardised track data (features only)")
@@ -193,6 +209,8 @@ def run_air_track_hispec_demo(api, args: argparse.Namespace) -> None:
         api, domain["id"], dataset["id"],
         verified_profile=not args.standard,
         verified_min_confidence=args.tau,
+        # The domain's table plants a default outcome: declare it (the platform default is fail-closed, see 72).
+        decision_posture="default_allow",
     )
     profile = "verified" if platform.get("verified_profile") else "standard"
     print(f"  Platform {platform['id']}: {platform['name']} ({platform.get('status')}, {profile})")
