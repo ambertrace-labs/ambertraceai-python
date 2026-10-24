@@ -68,8 +68,7 @@ def sync_detailed(
     """Get platform status
 
      Returns a lightweight status check for a platform: its ID, name, status (building/active/error),
-    version number, and the declared ``decision_vocabulary`` (null when the policy declares no custom
-    verbs).
+    version number, and the ``decision_table`` the platform was built with (with provenance/applied).
 
     Args:
         id (int): Resource ID
@@ -101,8 +100,7 @@ def sync(
     """Get platform status
 
      Returns a lightweight status check for a platform: its ID, name, status (building/active/error),
-    version number, and the declared ``decision_vocabulary`` (null when the policy declares no custom
-    verbs).
+    version number, and the ``decision_table`` the platform was built with (with provenance/applied).
 
     Args:
         id (int): Resource ID
@@ -129,8 +127,7 @@ async def asyncio_detailed(
     """Get platform status
 
      Returns a lightweight status check for a platform: its ID, name, status (building/active/error),
-    version number, and the declared ``decision_vocabulary`` (null when the policy declares no custom
-    verbs).
+    version number, and the ``decision_table`` the platform was built with (with provenance/applied).
 
     Args:
         id (int): Resource ID
@@ -160,8 +157,7 @@ async def asyncio(
     """Get platform status
 
      Returns a lightweight status check for a platform: its ID, name, status (building/active/error),
-    version number, and the declared ``decision_vocabulary`` (null when the policy declares no custom
-    verbs).
+    version number, and the ``decision_table`` the platform was built with (with provenance/applied).
 
     Args:
         id (int): Resource ID

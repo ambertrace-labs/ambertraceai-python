@@ -75,15 +75,17 @@ def sync_detailed(
     over, returning a certified permit/deny verdict with its machine-checked proof. Fail-closed: a
     rejected fact, proof-check failure, or unavailable engine yields no permit.
 
-    The verdict carries an `outcome` field: `permit` (proven within policy), `deny` (a restrictive
-    verdict fired on the supplied facts), `indeterminate` (a REQUIRED input was missing/underivable —
-    fail-closed, NOT a denial; the remedy is to supply the named field), and `unavailable` (the verified
-    reasoning engine is temporarily down). For `indeterminate` the verdict also carries `missing_inputs`
-    (the declared field name(s) the chain needed but were neither supplied nor derived),
-    `stalled_stage`, and a `query_diagnostics` block (identical shape to the query route:
-    `missing_atoms`, `deciding_rule`, `rejected_facts`, `stalled_stage`). INVARIANT: for `indeterminate`
-    and `unavailable` the `permitted` flag stays false, `proof_checked` stays false, and `decision`
-    stays \"deny\" — `outcome`/`missing_inputs` are DESCRIPTIVE ONLY and never authorize execution.
+    The verdict carries a `status` — `decided` (a decision-table row decided), `indeterminate` (a
+    REQUIRED input was missing/underivable — fail-closed, NOT a denial; the remedy is to supply the
+    named field) or `unavailable` (the verified reasoning engine is temporarily down) — and an `outcome`
+    narrowed to `permit` | `deny` | null: `permit` iff the deciding row `permits`, null when nothing was
+    decided. `decision` is the deciding row's label and `permitted` is `outcome == \"permit\"`. For
+    `indeterminate` the verdict also carries `missing_inputs` (the declared field name(s) the chain
+    needed but were neither supplied nor derived), `stalled_stage`, and a `query_diagnostics` block
+    (identical shape to the query route: `missing_atoms`, `deciding_rule`, `rejected_facts`,
+    `stalled_stage`). INVARIANT: for `indeterminate` and `unavailable` the `permitted` flag stays false
+    and `proof_checked` stays false — `status`/`missing_inputs` are DESCRIPTIVE ONLY and never authorize
+    execution.
 
     Feature-flagged (AMBERTRACE_AGENT_POLICY_GATE); 404 when disabled.
 
@@ -123,15 +125,17 @@ def sync(
     over, returning a certified permit/deny verdict with its machine-checked proof. Fail-closed: a
     rejected fact, proof-check failure, or unavailable engine yields no permit.
 
-    The verdict carries an `outcome` field: `permit` (proven within policy), `deny` (a restrictive
-    verdict fired on the supplied facts), `indeterminate` (a REQUIRED input was missing/underivable —
-    fail-closed, NOT a denial; the remedy is to supply the named field), and `unavailable` (the verified
-    reasoning engine is temporarily down). For `indeterminate` the verdict also carries `missing_inputs`
-    (the declared field name(s) the chain needed but were neither supplied nor derived),
-    `stalled_stage`, and a `query_diagnostics` block (identical shape to the query route:
-    `missing_atoms`, `deciding_rule`, `rejected_facts`, `stalled_stage`). INVARIANT: for `indeterminate`
-    and `unavailable` the `permitted` flag stays false, `proof_checked` stays false, and `decision`
-    stays \"deny\" — `outcome`/`missing_inputs` are DESCRIPTIVE ONLY and never authorize execution.
+    The verdict carries a `status` — `decided` (a decision-table row decided), `indeterminate` (a
+    REQUIRED input was missing/underivable — fail-closed, NOT a denial; the remedy is to supply the
+    named field) or `unavailable` (the verified reasoning engine is temporarily down) — and an `outcome`
+    narrowed to `permit` | `deny` | null: `permit` iff the deciding row `permits`, null when nothing was
+    decided. `decision` is the deciding row's label and `permitted` is `outcome == \"permit\"`. For
+    `indeterminate` the verdict also carries `missing_inputs` (the declared field name(s) the chain
+    needed but were neither supplied nor derived), `stalled_stage`, and a `query_diagnostics` block
+    (identical shape to the query route: `missing_atoms`, `deciding_rule`, `rejected_facts`,
+    `stalled_stage`). INVARIANT: for `indeterminate` and `unavailable` the `permitted` flag stays false
+    and `proof_checked` stays false — `status`/`missing_inputs` are DESCRIPTIVE ONLY and never authorize
+    execution.
 
     Feature-flagged (AMBERTRACE_AGENT_POLICY_GATE); 404 when disabled.
 
@@ -166,15 +170,17 @@ async def asyncio_detailed(
     over, returning a certified permit/deny verdict with its machine-checked proof. Fail-closed: a
     rejected fact, proof-check failure, or unavailable engine yields no permit.
 
-    The verdict carries an `outcome` field: `permit` (proven within policy), `deny` (a restrictive
-    verdict fired on the supplied facts), `indeterminate` (a REQUIRED input was missing/underivable —
-    fail-closed, NOT a denial; the remedy is to supply the named field), and `unavailable` (the verified
-    reasoning engine is temporarily down). For `indeterminate` the verdict also carries `missing_inputs`
-    (the declared field name(s) the chain needed but were neither supplied nor derived),
-    `stalled_stage`, and a `query_diagnostics` block (identical shape to the query route:
-    `missing_atoms`, `deciding_rule`, `rejected_facts`, `stalled_stage`). INVARIANT: for `indeterminate`
-    and `unavailable` the `permitted` flag stays false, `proof_checked` stays false, and `decision`
-    stays \"deny\" — `outcome`/`missing_inputs` are DESCRIPTIVE ONLY and never authorize execution.
+    The verdict carries a `status` — `decided` (a decision-table row decided), `indeterminate` (a
+    REQUIRED input was missing/underivable — fail-closed, NOT a denial; the remedy is to supply the
+    named field) or `unavailable` (the verified reasoning engine is temporarily down) — and an `outcome`
+    narrowed to `permit` | `deny` | null: `permit` iff the deciding row `permits`, null when nothing was
+    decided. `decision` is the deciding row's label and `permitted` is `outcome == \"permit\"`. For
+    `indeterminate` the verdict also carries `missing_inputs` (the declared field name(s) the chain
+    needed but were neither supplied nor derived), `stalled_stage`, and a `query_diagnostics` block
+    (identical shape to the query route: `missing_atoms`, `deciding_rule`, `rejected_facts`,
+    `stalled_stage`). INVARIANT: for `indeterminate` and `unavailable` the `permitted` flag stays false
+    and `proof_checked` stays false — `status`/`missing_inputs` are DESCRIPTIVE ONLY and never authorize
+    execution.
 
     Feature-flagged (AMBERTRACE_AGENT_POLICY_GATE); 404 when disabled.
 
@@ -212,15 +218,17 @@ async def asyncio(
     over, returning a certified permit/deny verdict with its machine-checked proof. Fail-closed: a
     rejected fact, proof-check failure, or unavailable engine yields no permit.
 
-    The verdict carries an `outcome` field: `permit` (proven within policy), `deny` (a restrictive
-    verdict fired on the supplied facts), `indeterminate` (a REQUIRED input was missing/underivable —
-    fail-closed, NOT a denial; the remedy is to supply the named field), and `unavailable` (the verified
-    reasoning engine is temporarily down). For `indeterminate` the verdict also carries `missing_inputs`
-    (the declared field name(s) the chain needed but were neither supplied nor derived),
-    `stalled_stage`, and a `query_diagnostics` block (identical shape to the query route:
-    `missing_atoms`, `deciding_rule`, `rejected_facts`, `stalled_stage`). INVARIANT: for `indeterminate`
-    and `unavailable` the `permitted` flag stays false, `proof_checked` stays false, and `decision`
-    stays \"deny\" — `outcome`/`missing_inputs` are DESCRIPTIVE ONLY and never authorize execution.
+    The verdict carries a `status` — `decided` (a decision-table row decided), `indeterminate` (a
+    REQUIRED input was missing/underivable — fail-closed, NOT a denial; the remedy is to supply the
+    named field) or `unavailable` (the verified reasoning engine is temporarily down) — and an `outcome`
+    narrowed to `permit` | `deny` | null: `permit` iff the deciding row `permits`, null when nothing was
+    decided. `decision` is the deciding row's label and `permitted` is `outcome == \"permit\"`. For
+    `indeterminate` the verdict also carries `missing_inputs` (the declared field name(s) the chain
+    needed but were neither supplied nor derived), `stalled_stage`, and a `query_diagnostics` block
+    (identical shape to the query route: `missing_atoms`, `deciding_rule`, `rejected_facts`,
+    `stalled_stage`). INVARIANT: for `indeterminate` and `unavailable` the `permitted` flag stays false
+    and `proof_checked` stays false — `status`/`missing_inputs` are DESCRIPTIVE ONLY and never authorize
+    execution.
 
     Feature-flagged (AMBERTRACE_AGENT_POLICY_GATE); 404 when disabled.
 

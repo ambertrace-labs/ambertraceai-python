@@ -87,6 +87,20 @@ DOMAIN_DESCRIPTION = (
     "above apply."
 )
 
+# The Decision Table: the outcomes a triage decision can take, declared (not guessed from
+# the description's verbs). `label` is served verbatim in `decision`; higher `order` wins when
+# several fire; `default` is the outcome when nothing fires; `permits` says whether the action
+# may proceed. Declared at create => applied "confirmed". Read it back on
+# platforms.status(id)["decision_table"].
+DECISION_TABLE = {
+    "mode": "ladder",
+    "rows": [
+        {"label": "escalate", "order": 3, "permits": False},
+        {"label": "monitor", "order": 2, "permits": False},
+        {"label": "clear", "order": 1, "default": True, "permits": True},
+    ],
+}
+
 # The certified relation schemas (Tier-1). Declared at build time so the
 # existsRelated cue rules ground against them; rows are attached per query.
 RELATIONS = [
@@ -236,7 +250,9 @@ def run_tier1_demo(api, args: argparse.Namespace) -> None:
     total = 5
 
     print_section(1, total, "Creating the Tier-1 domain (declares maritime_track + cyber_event relations)")
-    domain = api.domains.create(name=DOMAIN_NAME, description=DOMAIN_DESCRIPTION)
+    domain = api.domains.create(
+        name=DOMAIN_NAME, description=DOMAIN_DESCRIPTION,
+        decision_table=DECISION_TABLE)
     print(f"  Domain {domain['id']}: {domain['name']} ({domain.get('status')})")
 
     print_section(2, total, "Uploading FOCAL-ONLY data (cue booleans dropped)")
@@ -253,7 +269,9 @@ def run_tier1_demo(api, args: argparse.Namespace) -> None:
     print_section(4, total, "Building verified platform")
     platform = build_platform(
         api, domain["id"], dataset["id"],
-        verified_profile=not args.standard, verified_min_confidence=args.tau)
+        verified_profile=not args.standard, verified_min_confidence=args.tau,
+        # The domain's table plants a default outcome: declare it (the platform default is fail-closed, see 72).
+        decision_posture="default_allow")
     profile = "verified" if platform.get("verified_profile") else "standard"
     print(f"  Platform {platform['id']}: {platform['name']} ({platform.get('status')}, {profile})")
 

@@ -29,6 +29,7 @@ from .batch_query_request import BatchQueryRequest
 from .batch_query_response import BatchQueryResponse
 from .build_request import BuildRequest
 from .build_request_config import BuildRequestConfig
+from .build_request_decision_posture_type_0 import BuildRequestDecisionPostureType0
 from .build_request_scored_determinations_type_0 import BuildRequestScoredDeterminationsType0
 from .compile_policy_request import CompilePolicyRequest
 from .config_field_out import ConfigFieldOut
@@ -64,12 +65,19 @@ from .decision_logic_node import DecisionLogicNode
 from .decision_logic_summary import DecisionLogicSummary
 from .decision_provenance_response import DecisionProvenanceResponse
 from .decision_provenance_response_decision import DecisionProvenanceResponseDecision
+from .decision_table_in import DecisionTableIn
+from .decision_table_in_mode import DecisionTableInMode
+from .decision_table_out import DecisionTableOut
+from .decision_table_out_rows_item import DecisionTableOutRowsItem
+from .decision_table_row_in import DecisionTableRowIn
 from .discover_prediction_rules_request import DiscoverPredictionRulesRequest
 from .domain_create import DomainCreate
 from .domain_detail import DomainDetail
+from .domain_detail_decision_table_type_0 import DomainDetailDecisionTableType0
 from .domain_detail_eval_config_type_0 import DomainDetailEvalConfigType0
 from .domain_detail_ontology_type_0 import DomainDetailOntologyType0
 from .domain_out import DomainOut
+from .domain_out_decision_table_type_0 import DomainOutDecisionTableType0
 from .domain_update import DomainUpdate
 from .drift_alert import DriftAlert
 from .drift_baseline_out import DriftBaselineOut
@@ -141,7 +149,8 @@ from .platform_out_build_quality_type_0 import PlatformOutBuildQualityType0
 from .platform_out_config_type_0 import PlatformOutConfigType0
 from .platform_out_neural_config_type_0 import PlatformOutNeuralConfigType0
 from .platform_status_out import PlatformStatusOut
-from .platform_status_out_decision_vocabulary_type_0 import PlatformStatusOutDecisionVocabularyType0
+from .platform_status_out_decision_table_type_0 import PlatformStatusOutDecisionTableType0
+from .platform_status_out_decision_table_warnings_item import PlatformStatusOutDecisionTableWarningsItem
 from .platform_update_request import PlatformUpdateRequest
 from .platform_update_request_scored_determinations_type_0 import PlatformUpdateRequestScoredDeterminationsType0
 from .predict_request import PredictRequest
@@ -167,6 +176,7 @@ from .provenance_item_node import ProvenanceItemNode
 from .quality_report_out import QualityReportOut
 from .quality_report_out_completeness import QualityReportOutCompleteness
 from .quality_report_out_consistency import QualityReportOutConsistency
+from .quality_report_out_decision_table_type_0 import QualityReportOutDecisionTableType0
 from .quality_report_out_uniqueness import QualityReportOutUniqueness
 from .quality_report_out_warnings_item import QualityReportOutWarningsItem
 from .query_request import QueryRequest
@@ -176,6 +186,7 @@ from .query_request_predictions_type_0_additional_property import QueryRequestPr
 from .query_request_relations_type_0 import QueryRequestRelationsType0
 from .query_request_relations_type_0_additional_property_item import QueryRequestRelationsType0AdditionalPropertyItem
 from .query_response import QueryResponse
+from .query_response_decision_table_type_0 import QueryResponseDecisionTableType0
 from .query_response_explanation_type_0 import QueryResponseExplanationType0
 from .reject_request import RejectRequest
 from .relationship_out import RelationshipOut
@@ -259,6 +270,7 @@ __all__ = (
     "BatchQueryResponse",
     "BuildRequest",
     "BuildRequestConfig",
+    "BuildRequestDecisionPostureType0",
     "BuildRequestScoredDeterminationsType0",
     "CompilePolicyRequest",
     "ConfigFieldOut",
@@ -292,12 +304,19 @@ __all__ = (
     "DecisionLogicSummary",
     "DecisionProvenanceResponse",
     "DecisionProvenanceResponseDecision",
+    "DecisionTableIn",
+    "DecisionTableInMode",
+    "DecisionTableOut",
+    "DecisionTableOutRowsItem",
+    "DecisionTableRowIn",
     "DiscoverPredictionRulesRequest",
     "DomainCreate",
     "DomainDetail",
+    "DomainDetailDecisionTableType0",
     "DomainDetailEvalConfigType0",
     "DomainDetailOntologyType0",
     "DomainOut",
+    "DomainOutDecisionTableType0",
     "DomainUpdate",
     "DriftAlert",
     "DriftBaselineOut",
@@ -369,7 +388,8 @@ __all__ = (
     "PlatformOutConfigType0",
     "PlatformOutNeuralConfigType0",
     "PlatformStatusOut",
-    "PlatformStatusOutDecisionVocabularyType0",
+    "PlatformStatusOutDecisionTableType0",
+    "PlatformStatusOutDecisionTableWarningsItem",
     "PlatformUpdateRequest",
     "PlatformUpdateRequestScoredDeterminationsType0",
     "PredictionConfigCreate",
@@ -395,6 +415,7 @@ __all__ = (
     "QualityReportOut",
     "QualityReportOutCompleteness",
     "QualityReportOutConsistency",
+    "QualityReportOutDecisionTableType0",
     "QualityReportOutUniqueness",
     "QualityReportOutWarningsItem",
     "QueryRequest",
@@ -404,6 +425,7 @@ __all__ = (
     "QueryRequestRelationsType0",
     "QueryRequestRelationsType0AdditionalPropertyItem",
     "QueryResponse",
+    "QueryResponseDecisionTableType0",
     "QueryResponseExplanationType0",
     "RejectRequest",
     "RelationshipOut",

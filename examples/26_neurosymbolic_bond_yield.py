@@ -8,20 +8,32 @@ neural-only and neurosymbolic models head to head so you can see — honestly �
 whether the symbolic layer earns its place.
 
 The six steps:
-  1. Create the domain + upload FRED macro data (GS10 + CPI / FedFunds / oil /
-     unemployment / M2). Set ``FRED_API_KEY`` to pull live data instead.
+  1. Create the domain + upload FRED macro data (GS10 + a 24-series macro panel:
+     rates, inflation, labour, money/credit, activity, sentiment, oil). Set
+     ``FRED_API_KEY`` to pull live data instead.
   2. Build the ontology + platform (symbolic rules over macro regimes).
-  3. Create a Time-Series prediction config (target = GS10).
+  3. Create a Time-Series prediction config (target = GS10) with the recipe that
+     lets the symbolic layer fire: ``model_type="auto"``, ``autoregressive="none"``
+     (explain the yield through the drivers, not its own lags), ``objective="rmse"``
+     (the configured ``objective`` governs which driver rules are admitted; the
+     default ``sharpe_ratio`` is strict on short monthly macro data), and discovery
+     mode (no ``feature_fields`` -- the platform selects the drivers).
   4. Train the model, then DISCOVER correction rules and print each accepted
      rule with its fire-rate and backtest delta.
-  5. Run the symbolic forecast (``include_fitted_series=True``) and print the
-     driver-rules (WHY) behind the number.
+  5. Run the verified symbolic forecast (``verified=True``,
+     ``include_fitted_series=True``) and print the driver-rules (WHY) behind the
+     number, how many are certified + active, and how often they fired on the
+     out-of-sample backtest.
   6. Compare neural vs neurosymbolic R² / RMSE — the "does the symbolic layer
      earn its place?" moment.
 
-Dataset: data/fred_economic_data.csv (monthly, 2015 onwards). Columns: GS10
-(10y Treasury yield, the target), FEDFUNDS, CPIAUCSL, DCOILWTICO (WTI oil),
-UNRATE, M2SL.
+Dataset: data/gs10_macro_panel.csv (monthly, 2015-2024, public-domain FRED data).
+Columns: GS10 (10y Treasury yield, the target) plus 24 macro drivers -- rates and
+credit (FEDFUNDS, GS2, GS1, TB3MS, AAA, BAA), inflation (CPIAUCSL, CPILFESL, PPIACO,
+PCEPI), labour (UNRATE, PAYEMS, CIVPART), money and credit (M2SL, M1SL, TOTALSL,
+BUSLOANS), activity (INDPRO, RSAFS, HOUST, PERMIT, TCU), sentiment (UMCSENT) and oil
+(MCOILWTICO). A broad panel matters: the same recipe on only six series admits
+few driver rules.
 
 Creates resources on your account. Needs a user-scoped key (at_...): discovery
 is a WRITE operation. Run with --help for options.
@@ -52,21 +64,31 @@ from _common import (
 )
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
-DEFAULT_DATASET = DATA_DIR / "fred_economic_data.csv"
+DEFAULT_DATASET = DATA_DIR / "gs10_macro_panel.csv"
 
 DOMAIN_NAME = "Neurosymbolic Bond Yield Forecasting"
 DOMAIN_DESCRIPTION = (
-    "Macroeconomic forecasting of the US 10-year Treasury yield (GS10). "
-    "Each monthly observation includes the federal funds rate (FEDFUNDS), "
-    "the consumer price index (CPIAUCSL), the WTI crude oil price "
-    "(DCOILWTICO), the unemployment rate (UNRATE), and the M2 money supply "
-    "(M2SL). The 10-year yield generally rises with the policy rate and "
-    "inflation expectations and falls when growth weakens or investors seek "
-    "safety. The goal is to forecast GS10 from these macro drivers and to learn "
-    "transparent correction rules that adjust the forecast in known macro regimes."
+    "Macroeconomic forecasting of the US 10-year Treasury yield (GS10) from a "
+    "broad monthly panel: rates and credit (FEDFUNDS, GS2, GS1, TB3MS, AAA, BAA), "
+    "inflation (CPIAUCSL, CPILFESL, PPIACO, PCEPI), labour (UNRATE, PAYEMS, "
+    "CIVPART), money and credit (M2SL, M1SL, TOTALSL, BUSLOANS), activity "
+    "(INDPRO, RSAFS, HOUST, PERMIT, TCU), consumer sentiment (UMCSENT) and the "
+    "oil price (MCOILWTICO). The 10-year yield generally rises with the policy "
+    "rate and inflation expectations and falls when growth weakens or investors "
+    "seek safety. The goal is to forecast GS10 from these macro drivers and to "
+    "learn transparent correction rules that adjust the forecast in known macro "
+    "regimes."
 )
 
-FRED_SERIES = ["GS10", "FEDFUNDS", "CPIAUCSL", "DCOILWTICO", "UNRATE", "M2SL"]
+FRED_SERIES = [
+    "GS10",
+    "FEDFUNDS", "GS2", "GS1", "TB3MS", "AAA", "BAA",   # rates / credit
+    "CPIAUCSL", "CPILFESL", "PPIACO", "PCEPI",          # inflation
+    "UNRATE", "PAYEMS", "CIVPART",                      # labour
+    "M2SL", "M1SL", "TOTALSL", "BUSLOANS",              # money / credit
+    "INDPRO", "RSAFS", "HOUST", "PERMIT", "TCU",        # activity
+    "UMCSENT", "MCOILWTICO",                            # sentiment / oil
+]
 
 
 def _fmt(value: Any, spec: str = ".4f") -> str:
@@ -101,12 +123,18 @@ def print_why(forecast: dict[str, Any]) -> None:
     fc = forecast.get("forecast", {}) or {}
     print(f"  Forecast GS10: {_fmt(fc.get('value'), '.2f')}%  "
           f"[{_fmt(fc.get('lower'), '.2f')}%, {_fmt(fc.get('upper'), '.2f')}%]")
-    print(f"  Baseline (persistence): {_fmt(forecast.get('baseline'), '.2f')}%   "
-          f"skill_vs_persistence={_fmt(forecast.get('skill_vs_persistence'))}")
+    # `objective` (set on the config) governs which driver rules are admitted;
+    # skill_vs_persistence is a REFERENCE metric only, never the acceptance gate.
+    print(f"  Baseline anchor: {_fmt(forecast.get('baseline'), '.2f')}%   "
+          f"objective={forecast.get('objective')} "
+          f"(value={_fmt(forecast.get('objective_value'))})   "
+          f"[reference: skill_vs_persistence={_fmt(forecast.get('skill_vs_persistence'))}]")
 
     why = forecast.get("why") or []
     n_active = sum(1 for w in why if w.get("fired_on_latest_row"))
-    print(f"\n  WHY — {len(why)} driver-rule(s) ({n_active} active on the latest row):")
+    n_certified = sum(1 for w in why if w.get("proof_checked"))
+    print(f"\n  WHY — {len(why)} driver-rule(s): {n_active} active on the latest row, "
+          f"{n_certified} kernel-certified (proof_checked):")
     for w in why:
         active = "active-now" if w.get("fired_on_latest_row") else "latent"
         named = ", ".join(w.get("base_features") or []) or "—"
@@ -117,6 +145,9 @@ def print_why(forecast: dict[str, Any]) -> None:
 
     series = (forecast.get("fitted_series") or {}).get("series") or []
     if series:
+        n_fired = sum(1 for pt in series if pt.get("fired_rules"))
+        print(f"\n  Rules FIRED on {n_fired} of {len(series)} out-of-sample backtest points "
+              f"({n_fired / len(series):.0%}).")
         print(f"\n  Fitted-vs-actual backtest: {len(series)} out-of-sample points "
               f"({forecast['fitted_series'].get('basis')}).")
         last = series[-1]
@@ -184,7 +215,9 @@ def run_neurosymbolic_bond_yield(api, args: argparse.Namespace) -> None:
         time_index_field="date",
         horizon=1,
         frequency="monthly",
-        model_type="gbt",
+        model_type="auto",       # trains the candidates, serves the objective winner
+        autoregressive="none",   # drivers only: no GS10 own-lag features
+        objective="rmse",        # governs rule admission (default sharpe_ratio is strict)
     )
     print(f"  Config {config['id']}: target={config.get('target_field')}, "
           f"model={config.get('model_type')} ({config.get('status')})")
@@ -213,7 +246,7 @@ def run_neurosymbolic_bond_yield(api, args: argparse.Namespace) -> None:
     try:
         forecast = api.predictions.symbolic_forecast(
             platform["id"], prediction_config_id=config["id"],
-            include_fitted_series=True,
+            verified=True, include_fitted_series=True,
         )
         print_why(forecast)
     except AmbertraceError as exc:

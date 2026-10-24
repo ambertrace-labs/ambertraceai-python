@@ -9,6 +9,7 @@ from attrs import field as _attrs_field
 from ..types import UNSET, Unset
 
 if TYPE_CHECKING:
+    from ..models.domain_detail_decision_table_type_0 import DomainDetailDecisionTableType0
     from ..models.domain_detail_eval_config_type_0 import DomainDetailEvalConfigType0
     from ..models.domain_detail_ontology_type_0 import DomainDetailOntologyType0
     from ..models.entity_out import EntityOut
@@ -27,6 +28,9 @@ class DomainDetail:
         organisation_id (str):
         status (str):
         created_at (None | str | Unset):
+        decision_table (DomainDetailDecisionTableType0 | None | Unset): The declared Decision Table {mode, rows: [{id,
+            label, order, default, permits, values}], provenance, applied}; null until declared (PUT /domains/{id}/decision-
+            table or create(decision_table=)).
         description (None | str | Unset):
         entities (list[EntityOut] | Unset):
         eval_config (DomainDetailEvalConfigType0 | None | Unset):
@@ -44,6 +48,7 @@ class DomainDetail:
     organisation_id: str
     status: str
     created_at: None | str | Unset = UNSET
+    decision_table: DomainDetailDecisionTableType0 | None | Unset = UNSET
     description: None | str | Unset = UNSET
     entities: list[EntityOut] | Unset = UNSET
     eval_config: DomainDetailEvalConfigType0 | None | Unset = UNSET
@@ -57,6 +62,7 @@ class DomainDetail:
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        from ..models.domain_detail_decision_table_type_0 import DomainDetailDecisionTableType0
         from ..models.domain_detail_eval_config_type_0 import DomainDetailEvalConfigType0
         from ..models.domain_detail_ontology_type_0 import DomainDetailOntologyType0
 
@@ -73,6 +79,14 @@ class DomainDetail:
             created_at = UNSET
         else:
             created_at = self.created_at
+
+        decision_table: dict[str, Any] | None | Unset
+        if isinstance(self.decision_table, Unset):
+            decision_table = UNSET
+        elif isinstance(self.decision_table, DomainDetailDecisionTableType0):
+            decision_table = self.decision_table.to_dict()
+        else:
+            decision_table = self.decision_table
 
         description: None | str | Unset
         if isinstance(self.description, Unset):
@@ -144,6 +158,8 @@ class DomainDetail:
         )
         if created_at is not UNSET:
             field_dict["created_at"] = created_at
+        if decision_table is not UNSET:
+            field_dict["decision_table"] = decision_table
         if description is not UNSET:
             field_dict["description"] = description
         if entities is not UNSET:
@@ -169,6 +185,7 @@ class DomainDetail:
 
     @classmethod
     def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
+        from ..models.domain_detail_decision_table_type_0 import DomainDetailDecisionTableType0
         from ..models.domain_detail_eval_config_type_0 import DomainDetailEvalConfigType0
         from ..models.domain_detail_ontology_type_0 import DomainDetailOntologyType0
         from ..models.entity_out import EntityOut
@@ -191,6 +208,23 @@ class DomainDetail:
             return cast(None | str | Unset, data)
 
         created_at = _parse_created_at(d.pop("created_at", UNSET))
+
+        def _parse_decision_table(data: object) -> DomainDetailDecisionTableType0 | None | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            try:
+                if not isinstance(data, dict):
+                    raise TypeError()
+                decision_table_type_0 = DomainDetailDecisionTableType0.from_dict(data)
+
+                return decision_table_type_0
+            except (TypeError, ValueError, AttributeError, KeyError):
+                pass
+            return cast(DomainDetailDecisionTableType0 | None | Unset, data)
+
+        decision_table = _parse_decision_table(d.pop("decision_table", UNSET))
 
         def _parse_description(data: object) -> None | str | Unset:
             if data is None:
@@ -290,6 +324,7 @@ class DomainDetail:
             organisation_id=organisation_id,
             status=status,
             created_at=created_at,
+            decision_table=decision_table,
             description=description,
             entities=entities,
             eval_config=eval_config,

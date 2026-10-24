@@ -102,8 +102,10 @@ def sync_detailed(
             - **cross_sectional**: Overrides ARE the input row. Each key-value pair
               maps directly to a model feature. For example,
               ``{"credit_score": 720, "debt_to_income": 0.35}`` provides the exact
-              feature values for prediction. You should supply all feature_fields
-              defined in the config for best results.
+              feature values for prediction. String-categorical columns are one-hot
+              encoded as at training (``{"domain": "Language"}``; an unseen level is
+              reported in ``unmatched_overrides``). Features you omit are imputed with
+              the TRAINING mean (a neutral value), not 0.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -158,8 +160,10 @@ def sync(
             - **cross_sectional**: Overrides ARE the input row. Each key-value pair
               maps directly to a model feature. For example,
               ``{"credit_score": 720, "debt_to_income": 0.35}`` provides the exact
-              feature values for prediction. You should supply all feature_fields
-              defined in the config for best results.
+              feature values for prediction. String-categorical columns are one-hot
+              encoded as at training (``{"domain": "Language"}``; an unseen level is
+              reported in ``unmatched_overrides``). Features you omit are imputed with
+              the TRAINING mean (a neutral value), not 0.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -209,8 +213,10 @@ async def asyncio_detailed(
             - **cross_sectional**: Overrides ARE the input row. Each key-value pair
               maps directly to a model feature. For example,
               ``{"credit_score": 720, "debt_to_income": 0.35}`` provides the exact
-              feature values for prediction. You should supply all feature_fields
-              defined in the config for best results.
+              feature values for prediction. String-categorical columns are one-hot
+              encoded as at training (``{"domain": "Language"}``; an unseen level is
+              reported in ``unmatched_overrides``). Features you omit are imputed with
+              the TRAINING mean (a neutral value), not 0.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -263,8 +269,10 @@ async def asyncio(
             - **cross_sectional**: Overrides ARE the input row. Each key-value pair
               maps directly to a model feature. For example,
               ``{"credit_score": 720, "debt_to_income": 0.35}`` provides the exact
-              feature values for prediction. You should supply all feature_fields
-              defined in the config for best results.
+              feature values for prediction. String-categorical columns are one-hot
+              encoded as at training (``{"domain": "Language"}``; an unseen level is
+              reported in ``unmatched_overrides``). Features you omit are imputed with
+              the TRAINING mean (a neutral value), not 0.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.

@@ -26,8 +26,10 @@ from .responses import (
     BuildQuality,
     BuildQualityCheck,
     DatasetOut,
+    DecisionTable,
     DiscoveredRules,
     DiscoverySummary,
+    DomainDetail,
     DomainOut,
     FindDriversResult,
     ForecastOut,
@@ -37,6 +39,7 @@ from .responses import (
     PlatformStatusOut,
     PredictResult,
     PredictionConfigOut,
+    QualityReport,
     ResidualDiagnosis,
     SessionResult,
     StepResult,
@@ -522,20 +525,93 @@ class DomainResource(_Resource):
     def list(self) -> list[DomainOut]:
         return self._request("GET", "/api/v1/domains")
 
-    def create(self, *, name: str, description: str, **kwargs) -> DomainOut:
+    def create(self, *, name: str, description: str,
+               decision_table: DecisionTable | None = None, **kwargs) -> DomainOut:
         """Create a draft domain.
 
-        ``visibility`` / ``team_id`` are the supported extra fields. There is NO
-        ``decision_vocabulary`` create parameter: passing it is rejected with a
-        400 (it is never silently ignored). Decision verbs are minted from the
-        ``description`` at ``build_ontology`` -- state them there, then read the
-        result from ``platforms.status(id)["decision_vocabulary"]`` or
-        ``domains.get(id)["ontology"]["decision_vocabulary"]``.
-        """
-        return self._request("POST", "/api/v1/domains", json={"name": name, "description": description, **kwargs})
+        ``visibility`` / ``team_id`` are the supported extra fields.
 
-    def get(self, domain_id: int) -> DomainOut:
+        ``decision_table`` (optional) declares the domain's Decision Table at
+        creation -- shorthand for ``create`` followed by :meth:`set_decision_table`
+        (same validation, stored as ``applied: "confirmed"``; an invalid table is
+        rejected with a 400 and NO domain is created). Without one, the platform
+        proposes a table from your data's label column or your description (see
+        :meth:`set_decision_table`). ``decision_vocabulary`` is NOT a create
+        parameter: passing it is rejected with a 400 -- use ``decision_table``.
+        """
+        body: dict[str, Any] = {"name": name, "description": description, **kwargs}
+        if decision_table is not None:
+            body["decision_table"] = decision_table
+        return self._request("POST", "/api/v1/domains", json=body)
+
+    def set_decision_table(self, domain_id: int, table: DecisionTable) -> DecisionTable:
+        """Declare or replace the domain's **Decision Table** (the outcomes a
+        decision can take) and mark it ``applied: "confirmed"``.
+
+        The Decision Table is the single source of decision semantics: the labels
+        a query serves in ``decision``, their precedence, the outcome when nothing
+        fires, and whether each outcome permits the action. Three inputs must agree
+        before a platform builds -- your data (mandatory), the domain description,
+        and this table. You supply the data; the platform PROPOSES the other two
+        from it (``datasets.quality(id)["decision_table"]`` shows the proposal, its
+        ``provenance`` and the consistency findings) and you refine either. Call
+        this to confirm or edit the table; nothing else needs calling for a
+        platform that is happy with the proposed one. ``datasets.upload(...,
+        decision_column=...)`` names the label column and seeds the table from its
+        distinct values; ``domains.create(decision_table=...)`` is the shorthand
+        for create + this call.
+
+        ``table`` is a :class:`~ambertraceai.responses.DecisionTable`::
+
+            api.domains.set_decision_table(domain_id, {
+                "mode": "ladder",                    # or "partition"
+                "rows": [
+                    {"label": "escalate", "order": 3, "permits": False},
+                    {"label": "monitor",  "order": 2, "permits": False},
+                    {"label": "clear",    "order": 1, "permits": True,
+                     "default": True, "values": ["cleared", "ok"]},
+                ],
+            })
+
+        * ``label`` -- your word, served as written in ``query().decision``;
+          opaque to the platform (no synonyms or stemming), unique within the table
+          (case-insensitive), not ``"derive"``.
+        * ``order`` (ladder) -- precedence among rows that fire; higher wins.
+        * ``default`` (ladder) -- exactly one row: the outcome when no rule fires.
+        * ``permits`` (ladder) -- may the action proceed. Omitted, it defaults to
+          ``order <= order(default row)``; declare it explicitly for a default-deny
+          policy.
+        * ``values`` -- the cells of your data's decision column that denote this
+          row when they differ from the label (e.g. column cells ``approved`` /
+          ``denied`` against rows ``permit`` / ``deny``). Exact match; every
+          distinct cell must map to exactly one row or the build is refused (409,
+          naming each unmapped value).
+        * ``mode: "partition"`` -- mutually exclusive cells (a multi-class
+          classifier): no ``default`` / ``order`` / ``permits``; zero or several
+          cells firing is ``status == "abstain"`` and ``outcome`` / ``permitted``
+          are ``None``.
+
+        Returns the stored table (with row ids ``o1``, ``o2``, ..., ``provenance
+        == "customer"``, ``applied == "confirmed"``). It is echoed on
+        :meth:`get`, ``platforms.status`` and every query. Editing the table (an
+        ``order`` or ``permits`` change alone changes every served decision) takes
+        effect on the NEXT build: rebuild the ontology and platform. Raises
+        :class:`AmbertraceError` (400) naming the offending field on an invalid
+        table.
+
+        Migration note (serving): branch on ``permitted`` to switch permit/deny,
+        on ``decision`` for label-specific logic, and on ``status`` for
+        ``abstain`` / ``indeterminate`` / ``unavailable``.
+        """
+        return self._request(
+            "PUT", f"/api/v1/domains/{domain_id}/decision-table", json=table)
+
+    def get(self, domain_id: int) -> DomainDetail:
         """Return the full domain detail including the ontology.
+
+        ``decision_table`` carries the domain's current Decision Table (with its
+        ``provenance`` and ``applied`` state), or ``None`` until one is declared or
+        inferred -- see :meth:`set_decision_table`.
 
         The ``ontology`` dict on the response carries the built rule set and,
         when a stated constraint from the domain description is not encoded by
@@ -588,14 +664,19 @@ class DomainResource(_Resource):
         each label as a conjunction of axis states, and state "classified into
         exactly one" for completeness.
 
-        Decision vocabulary (custom decision verbs). The terminal decision VERBS are
-        inferred from your description's language -- a description that decides with
-        domain-specific verbs (e.g. "clear / monitor / escalate", or the N class
-        labels above) DECLARES those as the platform's decision vocabulary, with a
-        restrictiveness rank. Read them back on ``query().decision`` /
-        ``platforms.status(id)["decision_vocabulary"]`` (also on
-        ``domains.get(id)["ontology"]["decision_vocabulary"]``; ``None`` when the
-        policy declares no custom verbs); you are not limited to permit/deny.
+        Decision Table (your decision outcomes). The outcomes a decision can take
+        -- e.g. "clear / monitor / escalate", or the N class labels above -- are
+        declared in the domain's Decision Table, not guessed from verbs in the
+        description: declare it with :meth:`set_decision_table` (or
+        ``create(decision_table=...)``), or let the platform propose one from your
+        data's label column / your description and read it back on
+        ``domains.get(id)["decision_table"]`` and
+        ``platforms.status(id)["decision_table"]``. The build is refused (409) when
+        a decision-column value maps to no table row; advisory description <->
+        table findings come back on ``platforms.status(id)["decision_table_warnings"]``.
+        A query's ``decision`` is always one of the table's labels. The
+        ``decision_vocabulary`` fields on ``domains.get`` / ``platforms.status``
+        were removed; read ``decision_table`` instead.
         """
         body = {"relations": relations} if relations is not None else None
         return _normalise_envelope(self._request(
@@ -769,7 +850,13 @@ class DatasetResource(_Resource):
         ``decision_column``, ...) — readable via ``[...]`` (unchanged) or
         attribute access (``ds.row_count``) for discoverability.
 
-        ``decision_column`` — naming a column here flips the build from
+        ``decision_column`` — naming a column here also seeds the domain's Decision
+        Table from the column's distinct values (see
+        :meth:`DomainResource.set_decision_table`): every distinct value must map to
+        exactly one table row, by ``label`` or the row's ``values`` -- an unmapped
+        value is reported by value in ``datasets.quality(id)["decision_table"]`` and the
+        build is refused (409) until it is mapped. Without it the platform proposes the
+        label column itself (read the proposal from ``quality``). Naming a column flips the build from
         *features-only* (unsupervised) to **label-supervised**: that column is
         treated as the labelled outcome the platform learns to reach, and
         verdict/decision rule generation is grounded against its observed label
@@ -971,7 +1058,19 @@ class DatasetResource(_Resource):
             body["require_coverage"] = require_coverage
         return self._request("POST", "/api/v1/datasets/fetch-multi", json=body)
 
-    def quality(self, dataset_id: int) -> dict:
+    def quality(self, dataset_id: int) -> QualityReport:
+        """The dataset's data-quality report (completeness, uniqueness,
+        consistency, recommendations) plus -- on a domain's primary dataset -- a
+        ``decision_table`` section: the label column the platform found (or you
+        declared with ``upload(decision_column=...)``), the Decision Table that
+        applies and the one it PROPOSES from that column (each with ``provenance``
+        and, where a field was filled by convention, ``guessed``), a
+        ``description_scaffold`` drawn from your schema, and the consistency
+        ``checks`` between data, description and table (``blocking`` items such as
+        an unmapped decision-column value, ``warnings`` such as a row the
+        description never mentions). Read it BEFORE building; refine with
+        :meth:`DomainResource.set_decision_table`. See
+        :class:`~ambertraceai.responses.QualityReport`."""
         return self._request("GET", f"/api/v1/datasets/{dataset_id}/quality")
 
     def panel_report(self, dataset_id: int, *, index_column: str | None = None,
@@ -1157,6 +1256,12 @@ class PlatformResource(_Resource):
           fails the build rather than shipping an unsound platform.
         * ``override_verification_gate: bool`` -- explicitly build even if the
           verification gate flags a concern (use sparingly; audited).
+        * ``decision_posture: "fail_closed" | "default_allow"`` -- Decisions
+          platforms: what a query that matches NO verdict rule returns. The
+          default ``"fail_closed"`` serves ``status == "abstain"`` (``decision``
+          None, ``permitted`` False -- never a silent permit); ``"default_allow"``
+          must be declared explicitly and serves the decision table's default
+          outcome (e.g. ``permit``). Example ``74_decision_posture.py``.
         * ``scored_determinations: dict`` -- OPEN-TEXTURED SCORED DETERMINATIONS
           (flag-gated, default OFF). For an OPEN-TEXTURED predicate that bright-line
           rules cannot decide (compatibility / reasonableness / materiality /
@@ -1244,6 +1349,12 @@ class PlatformResource(_Resource):
         return self._request("DELETE", f"/api/v1/platforms/{platform_id}")
 
     def status(self, platform_id: int) -> PlatformStatusOut:
+        """The platform's build status plus the **Decision Table** it was built
+        with (``decision_table``: rows, ``provenance``, ``applied`` -- ``None``
+        and ``decision_table_note == "no decisions declared"`` for a platform that
+        decides nothing), and the advisory consistency findings recorded at build
+        (``decision_table_warnings``, C4 first). ``decision_vocabulary`` was
+        removed: read ``decision_table``."""
         return self._request("GET", f"/api/v1/platforms/{platform_id}/status")
 
     def query(self, platform_id: int, *, query: str, explain: bool = True,
@@ -1254,7 +1365,19 @@ class PlatformResource(_Resource):
               top_k: int = 10,
               projection: list[str] | None = None,
               **kwargs) -> QueryResult:
-        """Query a platform; returns ``{answer, decision, explanation, ...}``.
+        """Query a platform; returns ``{answer, decision, outcome, permitted,
+        status, explanation, ...}``.
+
+        On a platform with a Decision Table (``domains.set_decision_table``):
+        ``decision`` is always one of the table's labels as written; ``outcome`` is
+        ``"permit"`` iff the deciding row ``permits`` else ``"deny"`` and
+        ``permitted`` is ``outcome == "permit"`` (both ``None`` in partition mode or
+        when nothing was decided); ``status`` is ``"decided"`` | ``"abstain"`` |
+        ``"indeterminate"`` | ``"unavailable"`` (``status`` is served once the
+        decision-table query path ships -- ``None``/absent on an older server).
+        Branch on ``permitted`` to switch permit/deny, on ``decision`` for
+        label-specific logic, on ``status`` for abstain / indeterminate /
+        unavailable (``abstain`` is a status, never a ``decision`` string).
 
         ``facts`` (``{field: scalar | {"value": v, "confidence": c}}``) is the
         FOCAL row.  Each value is EITHER a bare scalar (confidence 1.0,
@@ -1305,7 +1428,7 @@ class PlatformResource(_Resource):
         probability did not clear the model's confidence gate is stamped
         NOT-certified AT PRODUCTION TIME and therefore admits no fact here. With the
         fact absent, a rule reading ``<role>.<field>`` cannot fire a certified
-        permit, so the decision ABSTAINS — a policy that has an ``escalate`` /
+        permit, so the decision ABSTAINS (``status == "abstain"``) — a policy that has an ``escalate`` /
         ``refer`` fallback routes there rather than approving on an uncertified or
         low-confidence forecast. The response's ``proof_checked`` is True IFF the
         decision certifies AND every referenced prediction was found + aligned +
@@ -2025,8 +2148,16 @@ class PredictionResource(_Resource):
             periods; higher is better.
           - ``"skill_vs_persistence"`` — forecast skill relative to a naive
             persist-last-value baseline; higher is better.
+          - ``"rmse"`` / ``"mae"`` — minimise the holdout error (regression
+            objectives; reported negated so higher is better).
+          - ``"r_squared"`` — maximise the holdout R2 (regression objective).
 
-          When ``objective`` is omitted the default is context-dependent:
+          The regression objectives are the ones for ``mode="cross_sectional"``
+          (independent rows: no frequency, persistence or trading metrics).
+          They drive ``model_type="auto"`` selection and the symbolic
+          forecaster's rule-admission gate. When ``objective`` is omitted the
+          default is ``"rmse"`` for cross_sectional configs, otherwise
+          context-dependent:
           ``"sharpe_ratio"`` if a ``frequency`` is declared on the config (the
           trading objectives need it for annualisation), otherwise
           ``"skill_vs_persistence"``. The chosen objective is stored on the
@@ -2044,6 +2175,11 @@ class PredictionResource(_Resource):
               )
 
           Worked example: ``examples/63_sharpe_objective_forecast.py``.
+          Cross-sectional regression (categorical + numeric columns,
+          ``objective="rmse"``): ``examples/72_cross_sectional_regression.py``.
+          String-categorical columns are one-hot encoded; ``predict`` accepts
+          them in ``feature_overrides`` and imputes omitted features with the
+          training mean.
 
           .. versionadded:: 2.2.0
         """
@@ -3120,23 +3256,35 @@ class AgentPolicyResource(_Resource):
             tool="place_order",
             args={"qty": 100, "price": 400},
         )
-        verdict["decision"]       # "permit" | "deny" | a policy's own verb
+        verdict["decision"]       # a decision-table label: "permit" | "deny" | your own
+        verdict["permitted"]      # True iff the deciding row permits - execute on this
         verdict["proof_checked"]  # True - the verified engine certified the firing set
         verdict["denied_reason"]  # on a deny, the specific requirement that failed
-        verdict["outcome"]        # "permit" | "deny" | "indeterminate" | "unavailable"
+        verdict["status"]         # "decided" | "indeterminate" | "unavailable"
+        verdict["outcome"]        # "permit" | "deny" | None (None unless decided)
 
-    Branch on ``verdict["outcome"]`` - it splits apart THREE different non-permits
-    that ``decision``/``permitted`` alone conflate:
+    The gate decides over a **Decision Table**: by default the product's binary
+    table ``{permit (default, permits), deny}``; pass ``decision_table=`` to
+    :meth:`author` to declare more rows (``escalate``, ``hold``, ``review`` ...)
+    with their ``order`` and ``permits``. Branch on ``verdict["permitted"]`` to
+    execute or not, on ``verdict["decision"]`` for label-specific logic (e.g. route
+    an ``escalate`` row to a human), and on ``verdict["status"]`` - it splits apart
+    the non-permits that ``permitted`` alone conflates:
 
-    * ``permit`` - within policy; ``permitted`` True, ``proof_checked`` True. Execute.
-    * ``deny`` - a PROVEN policy violation; ``permitted`` False, ``proof_checked``
-      True. Do not execute, and do NOT blindly retry - the action breaks a rule.
-    * ``indeterminate`` - the decision chain needed a declared input it was not
-      given, so the gate reached NO verdict. ``permitted`` False, ``proof_checked``
-      False. This is NOT a denial (don't give up) and NOT a permit (don't execute):
-      the remedy is to supply ``verdict["missing_inputs"]`` and retry.
-    * ``unavailable`` - the verified engine could not run (e.g. checker disabled).
-      ``permitted`` False, ``proof_checked`` False - again, no verdict was reached.
+    * ``status == "decided"`` and ``permitted`` True - within policy;
+      ``proof_checked`` True. Execute.
+    * ``status == "decided"`` and ``permitted`` False - a PROVEN policy outcome
+      (``outcome == "deny"``); ``proof_checked`` True. Do not execute, and do NOT
+      blindly retry - the action breaks a rule (or, for a custom row such as
+      ``escalate``, needs the handling that row stands for).
+    * ``status == "indeterminate"`` - the decision chain needed a declared input it
+      was not given, so the gate reached NO verdict (``outcome`` None).
+      ``permitted`` False, ``proof_checked`` False. This is NOT a denial (don't give
+      up) and NOT a permit (don't execute): the remedy is to supply
+      ``verdict["missing_inputs"]`` and retry.
+    * ``status == "unavailable"`` - the verified engine could not run (e.g. checker
+      disabled). ``permitted`` False, ``proof_checked`` False - again, no verdict
+      was reached.
 
     For a CUMULATIVE control (a running count / sum / exposure over a history of
     prior actions) OR a TEMPORAL / sequencing control (precedence, bounded-window
@@ -3232,8 +3380,8 @@ class AgentPolicyResource(_Resource):
     additionally require the platform's numeric obligation checker to be enabled.
     """
 
-    def author(self, policy_text: str, *, timeout: float = 300.0,
-               poll_interval: float = 3.0) -> AuthorResult:
+    def author(self, policy_text: str, *, decision_table: DecisionTable | None = None,
+               timeout: float = 300.0, poll_interval: float = 3.0) -> AuthorResult:
         """Compile an English governance policy into a verified policy and
         build/replace the org's agent-policy gate.
 
@@ -3241,7 +3389,22 @@ class AgentPolicyResource(_Resource):
         the class docstring for the supported obligation classes + example
         phrasings). Returns ``{"platform": {...}, "admitted": [{"name",
         "description", "kind"}, ...], "rejected": [{"name", "reason"}, ...],
-        "policy_text": ..., "decision_vocabulary"?: {...}}``.
+        "policy_text": ..., "decision_table": {...}, "warnings": [...],
+        "unreached_rows": [...]}``.
+
+        ``decision_table`` (optional, a :class:`~ambertraceai.responses.DecisionTable`)
+        declares the gate's Decision Table (the outcomes it may decide). Omitted, the product's binary
+        table ``{permit (default, permits), deny}`` applies. Declare more rows to
+        keep an open outcome vocabulary, e.g. ``{"rows": [{"label": "permit",
+        "order": 1, "default": True, "permits": True}, {"label": "escalate",
+        "order": 2, "permits": False}, {"label": "deny", "order": 3, "permits":
+        False}]}`` -- a gate table is a ladder with at least one permitting and one
+        non-permitting row; the policy text may state only those outcomes. The
+        result's ``decision_table`` is the table the gate was built with;
+        ``warnings`` are advisory description <-> table findings and
+        ``unreached_rows`` lists declared rows no authored probe reached. (The
+        ``decision_vocabulary`` result key was removed; read ``decision_table``.)
+        A 400 names the offending field of an invalid table.
 
         * ``admitted`` - the rules that were admitted, each described in plain
           English. This is the authoritative read-back of what your policy
@@ -3283,9 +3446,11 @@ class AgentPolicyResource(_Resource):
         :class:`AmbertraceError` (503). (A deployment that still answers the POST
         synchronously is passed straight through.)
         """
+        payload: dict[str, Any] = {"policy_text": policy_text}
+        if decision_table is not None:
+            payload["decision_table"] = decision_table
         started = self._request(
-            "POST", "/api/v1/agent-policy-gate/policy",
-            json={"policy_text": policy_text})
+            "POST", "/api/v1/agent-policy-gate/policy", json=payload)
         # Back-compat: a deployment that compiles synchronously returns the built
         # gate inline (``platform`` present / ``status == "done"``) — pass it through.
         if (not isinstance(started, dict) or "platform" in started
@@ -3324,7 +3489,9 @@ class AgentPolicyResource(_Resource):
         "admitted_controls": [{"name", "description"}, ...], "input_fields":
         [{"name", "type", "enum_values"?, "min_value"?, "max_value"?,
         "description"?}, ...], "relations": [{"name", "columns": [{"name",
-        "type"}], "max_rows"?}, ...], "decision_vocabulary"?: {...}}``.
+        "type"}], "max_rows"?}, ...], "decision_table"?: {...}}`` -- ``decision_table``
+        is the table the gate was built with (its ``provenance`` / ``applied``);
+        ``decision_vocabulary`` was removed.
 
         ``input_fields`` is the contract for :meth:`authorize_action` / :meth:`step`
         - supply a value for each (under ``args`` or ``context``) so the gate
@@ -3425,32 +3592,40 @@ class AgentPolicyResource(_Resource):
 
         Returns ``{"decision", "permitted", "proof_checked", "proof_summary",
         "denied_reason", "deciding_rule"?, "certified_facts", "rejected_facts",
-        "outcome", "missing_inputs", "stalled_stage", "query_diagnostics"}``.
-        ``decision`` is the policy's verdict verb (``permit``/``deny``, or a custom
-        verb the policy declares). Fail-closed: a rejected/missing fact, a
-        proof-check failure, or an unavailable engine yields no permit - never a
-        default-allow.
+        "status", "outcome", "missing_inputs", "stalled_stage",
+        "query_diagnostics"}``. ``decision`` is the deciding Decision Table row's
+        label (``permit``/``deny`` on the default binary table, or a row you
+        declared with ``author(decision_table=...)``). Fail-closed: a
+        rejected/missing fact, a proof-check failure, or an unavailable engine
+        yields no permit - never a default-allow.
 
-        ``outcome`` is the field to BRANCH on - it separates the three distinct
-        non-permits that ``decision``/``permitted`` alone hide:
+        Branch on ``permitted`` to execute or not, on ``decision`` for
+        label-specific logic, and on ``status`` to separate a decided verdict from
+        "no verdict reached":
 
-        * ``outcome == "permit"`` - within policy (``permitted`` True,
-          ``proof_checked`` True). Execute the action.
-        * ``outcome == "deny"`` - a PROVEN policy violation (``permitted`` False,
-          ``proof_checked`` True). See ``denied_reason``. Do NOT blindly retry.
-        * ``outcome == "indeterminate"`` - the decision chain needed a declared
-          input that was not supplied or derived, so the gate reached NO verdict.
-          INVARIANT: ``permitted`` is False and ``proof_checked`` is False - this is
-          NOT a denial and NOT a permit. The remedy is to supply the field(s) in
-          ``missing_inputs`` and retry (don't give up, don't execute).
-        * ``outcome == "unavailable"`` - the verified engine could not run (e.g. the
+        * ``status == "decided"`` - a table row decided. ``outcome`` is ``"permit"``
+          iff that row permits, else ``"deny"``. With ``permitted`` True
+          (``proof_checked`` True) execute the action; with ``permitted`` False
+          (``proof_checked`` True) it is a PROVEN non-permit - see
+          ``denied_reason``, do NOT blindly retry.
+        * ``status == "indeterminate"`` - the decision chain needed a declared
+          input that was not supplied or derived, so the gate reached NO verdict
+          (``outcome`` is None). INVARIANT: ``permitted`` is False and
+          ``proof_checked`` is False - this is NOT a denial and NOT a permit. The
+          remedy is to supply the field(s) in ``missing_inputs`` and retry (don't
+          give up, don't execute).
+        * ``status == "unavailable"`` - the verified engine could not run (e.g. the
           numeric checker is disabled). Same invariant: ``permitted`` False,
           ``proof_checked`` False; no verdict was reached.
+
+        Migration: code that branched on ``outcome == "indeterminate"`` /
+        ``"unavailable"`` now branches on ``status``; ``outcome`` is narrowed to
+        ``"permit"`` | ``"deny"`` | None.
 
         Supporting diagnostics on a non-permit:
 
         * ``missing_inputs`` - ``list[str]``: declared input field(s) the decision
-          chain needed but did not get. Populated on ``indeterminate``; supply these
+          chain needed but did not get. Populated on ``status == "indeterminate"``; supply these
           and retry.
         * ``stalled_stage`` - ``str | None``: the decision stage the chain stalled at.
         * ``query_diagnostics`` - ``{"missing_atoms", "deciding_rule",
@@ -3459,14 +3634,14 @@ class AgentPolicyResource(_Resource):
         Detect -> supply -> retry::
 
             v = api.agent_policy.authorize_action(pid, tool="t", args={...})
-            if v["outcome"] == "indeterminate":
+            if v["status"] == "indeterminate":
                 needs = v["missing_inputs"]   # e.g. ["target_zone"] - supply + retry
             elif v["permitted"]:
                 ...                            # within policy (proof_checked True)
             else:
                 ...                            # proven deny - do not blindly retry
 
-        An ``indeterminate`` outcome is NOT a policy denial (don't give up) and NOT
+        An ``indeterminate`` status is NOT a policy denial (don't give up) and NOT
         a permit (don't execute): it means the gate lacked an input it needed. Fill
         in ``missing_inputs`` (under ``args`` or ``context``) and call again.
 
@@ -3513,9 +3688,10 @@ class AgentPolicyResource(_Resource):
         "executed": bool, "effect": ...}}``.
 
         ``step["verdict"]`` carries the SAME shape as :meth:`authorize_action`,
-        including the ``outcome`` field (``"permit"`` | ``"deny"`` |
-        ``"indeterminate"`` | ``"unavailable"``) plus ``missing_inputs``,
-        ``stalled_stage`` and ``query_diagnostics``. Branch on ``outcome``: an
+        including ``status`` (``"decided"`` | ``"indeterminate"`` |
+        ``"unavailable"``) and ``outcome`` (``"permit"`` | ``"deny"`` | None) plus
+        ``missing_inputs``, ``stalled_stage`` and ``query_diagnostics``. Branch on
+        ``permitted`` to execute and on ``status`` for "no verdict": an
         ``indeterminate`` verdict leaves ``executed`` False and is NOT a denial - the
         gate lacked a declared input (``verdict["missing_inputs"]``); supply it and
         re-issue the step rather than treating it as a policy block. A ``deny`` is a

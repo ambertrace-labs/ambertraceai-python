@@ -94,6 +94,19 @@ DOMAIN_DESCRIPTION = (
     "otherwise decline."
 )
 
+# The Decision Table: a DEFAULT-DENY gate ("otherwise decline"), so the default row is `decline`
+# and `permits` is declared explicitly on every row (it would otherwise default from the
+# default row's order, which here would make every row permit). `escalate` blocks the action
+# but is distinct from `decline`: switch on `decision` to route it to a human.
+DECISION_TABLE = {
+    "mode": "ladder",
+    "rows": [
+        {"label": "decline", "order": 3, "default": True, "permits": False},
+        {"label": "escalate", "order": 2, "permits": False},
+        {"label": "permit", "order": 1, "permits": True},
+    ],
+}
+
 
 def _facts(value, occ, annual, cash=False, bribe=False, unsolicited=True,
            excluded=False, appearance=False) -> dict:
@@ -153,7 +166,9 @@ def run_gift_gate(api, args: argparse.Namespace) -> None:
     total = 4
 
     print_section(1, total, "Creating the gift-acceptance ethics domain (5 CFR 2635 B)")
-    domain = api.domains.create(name=DOMAIN_NAME, description=DOMAIN_DESCRIPTION)
+    domain = api.domains.create(
+        name=DOMAIN_NAME, description=DOMAIN_DESCRIPTION,
+        decision_table=DECISION_TABLE)
     dataset = api.datasets.upload(domain_id=domain["id"], file_path=str(args.dataset))
     print_dataset(dataset)
 

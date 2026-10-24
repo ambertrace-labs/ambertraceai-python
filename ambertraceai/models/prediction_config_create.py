@@ -119,8 +119,9 @@ class PredictionConfigCreate:
                 acceptance, neural-tier model selection, and greedy forward selection. Default: 'sharpe_ratio' when frequency is
                 declared, 'skill_vs_persistence' otherwise. Options: 'sharpe_ratio' (annualised Sharpe of directional PnL),
                 'directional_pnl' (cumulative directional PnL on holdout), 'hit_rate' (directional hit rate excluding zero-move
-                periods), 'skill_vs_persistence' (forecast skill vs naive persist-last-value). Trading objectives require a
-                frequency for annualisation.
+                periods), 'skill_vs_persistence' (forecast skill vs naive persist-last-value), 'rmse' / 'mae' (minimise holdout
+                error), 'r_squared' (maximise holdout R2); cross_sectional configs default to 'rmse'. Trading objectives require
+                a frequency for annualisation.
             regime_platform_id (int | None | Unset): ID of a Decisions platform (same org) that classifies macro regimes. At
                 build time the panel is batch-classified via this platform and regime labels are injected as one-hot dummy
                 features (regime_<label>). The symbolic forecaster can then learn regime-conditional rules. At forecast time a

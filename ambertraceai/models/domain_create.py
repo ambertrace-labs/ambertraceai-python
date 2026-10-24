@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Any, TypeVar, cast
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
 from ..types import UNSET, Unset
+
+if TYPE_CHECKING:
+    from ..models.decision_table_in import DecisionTableIn
+
 
 T = TypeVar("T", bound="DomainCreate")
 
@@ -16,15 +20,17 @@ class DomainCreate:
     """
     Attributes:
         name (str):
-        decision_vocabulary (Any | None | Unset): Rejected with 400. Decision verbs are not pinned at domain create:
-            state them in the description; read the minted vocabulary from platforms.status()['decision_vocabulary'] or
-            domains.get(id)['ontology']['decision_vocabulary'].
+        decision_table (DecisionTableIn | None | Unset): Optional declared Decision Table (same body as PUT
+            /domains/{id}/decision-table): validated, then stored and marked applied='confirmed'. Shorthand for create +
+            set_decision_table.
+        decision_vocabulary (Any | None | Unset): Rejected with 400. Declare outcomes with decision_table instead.
         description (str | Unset):  Default: ''.
         team_id (int | None | Unset): Required when visibility='team'; the caller must be a member.
         visibility (None | str | Unset): Sharing audience: 'user' (private, default) | 'team' | 'org'.
     """
 
     name: str
+    decision_table: DecisionTableIn | None | Unset = UNSET
     decision_vocabulary: Any | None | Unset = UNSET
     description: str | Unset = ""
     team_id: int | None | Unset = UNSET
@@ -32,7 +38,17 @@ class DomainCreate:
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        from ..models.decision_table_in import DecisionTableIn
+
         name = self.name
+
+        decision_table: dict[str, Any] | None | Unset
+        if isinstance(self.decision_table, Unset):
+            decision_table = UNSET
+        elif isinstance(self.decision_table, DecisionTableIn):
+            decision_table = self.decision_table.to_dict()
+        else:
+            decision_table = self.decision_table
 
         decision_vocabulary: Any | None | Unset
         if isinstance(self.decision_vocabulary, Unset):
@@ -61,6 +77,8 @@ class DomainCreate:
                 "name": name,
             }
         )
+        if decision_table is not UNSET:
+            field_dict["decision_table"] = decision_table
         if decision_vocabulary is not UNSET:
             field_dict["decision_vocabulary"] = decision_vocabulary
         if description is not UNSET:
@@ -74,8 +92,27 @@ class DomainCreate:
 
     @classmethod
     def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
+        from ..models.decision_table_in import DecisionTableIn
+
         d = dict(src_dict)
         name = d.pop("name")
+
+        def _parse_decision_table(data: object) -> DecisionTableIn | None | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            try:
+                if not isinstance(data, dict):
+                    raise TypeError()
+                decision_table_type_0 = DecisionTableIn.from_dict(data)
+
+                return decision_table_type_0
+            except (TypeError, ValueError, AttributeError, KeyError):
+                pass
+            return cast(DecisionTableIn | None | Unset, data)
+
+        decision_table = _parse_decision_table(d.pop("decision_table", UNSET))
 
         def _parse_decision_vocabulary(data: object) -> Any | None | Unset:
             if data is None:
@@ -108,6 +145,7 @@ class DomainCreate:
 
         domain_create = cls(
             name=name,
+            decision_table=decision_table,
             decision_vocabulary=decision_vocabulary,
             description=description,
             team_id=team_id,

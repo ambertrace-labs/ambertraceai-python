@@ -48,7 +48,20 @@ DOMAIN_DESCRIPTION = (
     "or age — any rejection where interview_score is 0 and the candidate meets all "
     "objective criteria is flagged as potential bias; "
     "all hiring decisions must be explainable and auditable for equality compliance."
+    " Decide each application: hire or reject; hire the candidate otherwise."
 )
+
+# The Decision Table. The CSV's `decision` cells (Hired / Rejected) differ from the labels
+# declared here, so each row lists them in `values`: that is how a data cell maps to a row.
+# `label` is what a query serves in `decision`; higher `order` wins; `default` is the outcome
+# when nothing fires; `permits` says whether the action may proceed.
+DECISION_TABLE = {
+    "mode": "ladder",
+    "rows": [
+        {"label": "reject", "order": 2, "permits": False, "values": ["Rejected"]},
+        {"label": "hire", "order": 1, "default": True, "permits": True, "values": ["Hired"]},
+    ],
+}
 
 RECRUITMENT_QUERIES = [
     "Can we hire a 16-year-old applicant for a junior developer role?",
@@ -71,7 +84,9 @@ def run_recruitment_demo(api, args: argparse.Namespace) -> None:
     total = 7
 
     print_section(1, total, "Creating recruitment compliance domain")
-    domain = api.domains.create(name=DOMAIN_NAME, description=DOMAIN_DESCRIPTION)
+    domain = api.domains.create(
+        name=DOMAIN_NAME, description=DOMAIN_DESCRIPTION,
+        decision_table=DECISION_TABLE)
     print(f"  Domain {domain['id']}: {domain['name']} ({domain.get('status')})")
 
     print_section(2, total, "Uploading candidate application data")
@@ -90,6 +105,8 @@ def run_recruitment_demo(api, args: argparse.Namespace) -> None:
         api, domain["id"], dataset["id"],
         verified_profile=not args.standard,
         verified_min_confidence=args.tau,
+        # The domain's table plants a default outcome: declare it (the platform default is fail-closed, see 72).
+        decision_posture="default_allow",
     )
     profile = "verified" if platform.get("verified_profile") else "standard"
     print(f"  Platform {platform['id']}: {platform['name']} ({platform.get('status')}, {profile})")

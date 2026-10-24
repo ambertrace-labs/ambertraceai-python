@@ -42,6 +42,115 @@ from typing import Any, Required, TypedDict
 JsonDict = dict[str, Any]
 
 
+# --- Decision Table --------------------------------------------------------
+
+class DecisionTableRow(TypedDict, total=False):
+    """One outcome (row) of a :class:`DecisionTable`.
+
+    ``label`` is your word for the outcome, served as written in a query's
+    ``decision``. ``id`` (``"o1"``, ``"o2"``, ...) is system-minted and stable:
+    omit it on a new row, send it back on an edit to keep the row's identity.
+    ``order`` / ``default`` / ``permits`` apply to a ``"ladder"`` table only;
+    ``values`` are the data cells that denote this row when they differ from the
+    label (exact, case-insensitive)."""
+
+    id: str
+    label: Required[str]
+    order: int | None  # ladder: higher wins among rows that fire; distinct
+    default: bool | None  # ladder: the outcome when nothing fires; exactly one row
+    permits: bool | None  # ladder: may the action proceed (omitted -> order <= default's)
+    values: list[str] | None
+
+
+class DecisionTable(TypedDict, total=False):
+    """A Decision Table: the outcomes a decision can take. Pass one to
+    ``domains.set_decision_table`` / ``domains.create(decision_table=)`` /
+    ``agent_policy.author(decision_table=)``; it is echoed back on
+    ``domains.get`` / ``platforms.status`` / ``agent_policy.status``.
+
+    ``mode`` is ``"ladder"`` (default: >= 2 rows, one ``default``, distinct
+    ``order``; the most restrictive fired row wins) or ``"partition"`` (mutually
+    exclusive cells: no default / order / permits; zero or several cells firing is
+    ``status == "abstain"``). On an echoed table ``provenance`` says where it came
+    from (``"data_column:<name>"``, ``"description"``, ``"customer"``,
+    ``"product_default"``, ``"backfill"``) and ``applied`` is ``"inferred"`` (the
+    platform proposed it from your data / description) or ``"confirmed"`` (you
+    declared it). ``guessed`` lists the row fields an inference step filled by
+    convention rather than read (``"default"``, ``"order"``, ``"permits"``) --
+    review those first; absent on a declared table."""
+
+    mode: str  # "ladder" | "partition"
+    rows: Required[list[DecisionTableRow]]
+    provenance: str
+    applied: str  # "inferred" | "confirmed"
+    guessed: list[str] | None
+
+
+class DecisionTableCheckItem(TypedDict, total=False):
+    """One consistency finding between your data, description and decision table.
+    ``check`` is ``"C1"`` (field named in the description but absent from the
+    data), ``"C2"`` (a decision-column value mapping to no row, or a row with no
+    value -- BLOCKS the build), ``"C3"`` (a row never mentioned in the description),
+    ``"C4"`` (the default row not named in an "otherwise" sentence, or a row the
+    text refuses but the table permits) or ``"C6"`` (a declared relation the
+    description never mentions). ``message`` names the value / sentence / field /
+    row. Only C2 (and an invalid stored table) blocks; the rest are advisory."""
+
+    check: str
+    kind: str
+    message: str
+    value: str
+    row: str
+    field: str
+    sentence: str
+    relation: str
+
+
+class DecisionTableChecks(TypedDict, total=False):
+    """``{"blocking": [...], "warnings": [...]}`` -- see
+    :class:`DecisionTableCheckItem` (warnings are ordered C4, C3, C1, C6)."""
+
+    blocking: list[DecisionTableCheckItem]
+    warnings: list[DecisionTableCheckItem]
+
+
+class DecisionTableQuality(TypedDict, total=False):
+    """The ``decision_table`` section of ``datasets.quality(id)``: what the
+    platform would use and what it proposes, BEFORE you build.
+
+    * ``label_column`` -- ``{"name", "source": "declared" | "proposed"}`` or None.
+    * ``table`` -- the table that applies now (stored, with ``provenance`` /
+      ``applied`` / ``guessed``), or None.
+    * ``proposal`` -- the table the label column's distinct values would seed.
+    * ``description_scaffold`` -- text drawn from your schema to start the
+      domain description from (never written into the domain for you).
+    * ``checks`` -- :class:`DecisionTableChecks`.
+    * ``note`` -- ``"no decisions declared"`` when there is no table (the
+      platform then builds as a Q&A / classifier platform with no ``decision``)."""
+
+    label_column: JsonDict | None
+    table: DecisionTable | None
+    proposal: DecisionTable | None
+    description_scaffold: str
+    checks: DecisionTableChecks
+    note: str | None
+
+
+class QualityReport(TypedDict, total=False):
+    """What ``datasets.quality`` returns. ``decision_table`` is present on a
+    domain's primary dataset (not on a relation dataset)."""
+
+    overall_score: float
+    row_count: int
+    column_count: int
+    completeness: JsonDict
+    uniqueness: JsonDict
+    consistency: JsonDict
+    recommendations: list[str]
+    warnings: list[JsonDict]
+    decision_table: DecisionTableQuality | None
+
+
 # --- Resource records (derived from the generated OpenAPI models) ----------
 
 class DomainOut(TypedDict, total=False):
@@ -58,6 +167,19 @@ class DomainOut(TypedDict, total=False):
     team_id: int | None
     created_at: str | None
     updated_at: str | None
+    # The declared Decision Table; None until declared (domains.set_decision_table
+    # or domains.create(decision_table=)) or inferred at upload.
+    decision_table: DecisionTable | None
+
+
+class DomainDetail(DomainOut, total=False):
+    """The full domain record ``domains.get`` returns: :class:`DomainOut` plus the
+    ontology, eval config, entities and relationships."""
+
+    ontology: JsonDict | None
+    eval_config: JsonDict | None
+    entities: list[JsonDict]
+    relationships: list[JsonDict]
 
 
 class DatasetOut(TypedDict, total=False):
@@ -121,9 +243,14 @@ class PlatformStatusOut(TypedDict, total=False):
     name: Required[str]
     status: Required[str]
     version: int
-    # {"verbs": [{verb, rank, restrictive, default, label}, ...]} or None when the
-    # policy declares no custom verbs.
-    decision_vocabulary: dict | None
+    # The Decision Table the platform was built with ("provenance": "backfill" marks
+    # a table derived for a platform built before tables existed); None when the
+    # platform decides nothing.
+    decision_table: DecisionTable | None
+    # Advisory consistency findings (C4, C3, C1, C6) recorded at build.
+    decision_table_warnings: list[DecisionTableCheckItem]
+    # "no decisions declared" when decision_table is None; else None.
+    decision_table_note: str | None
 
 
 class BuildQualityCheck(TypedDict, total=False):
@@ -277,7 +404,7 @@ class RuleFiring(TypedDict, total=False):
     rule_id: int | None
     rule_name: Required[str]  # stable identifier
     rule_type: str  # e.g. "derive" | "constraint"
-    action_type: str | None
+    action_type: str | None  # "derive" | "decide" once the decision-table query path ships
     fired: Required[bool]
     required: bool  # hard obligation (a `require` leaf or a deny-family verdict)?
     explanation: str
@@ -393,7 +520,6 @@ class QueryExplanation(TypedDict, total=False):
     decision: JsonDict  # {decision, deciding_rules: [{rule, reason}]}
     proof_checked: bool
     proof_summary: str
-    vocabulary_declared: bool
 
 
 class QueryResult(TypedDict, total=False):
@@ -406,10 +532,18 @@ class QueryResult(TypedDict, total=False):
     answer: Required[str]
     platform_id: Required[int]
     query: Required[str]
+    # A declared decision-table label, as written; None on a platform that decides
+    # nothing or when status != "decided".
     decision: str | None
+    # "permit" iff the deciding row permits, else "deny"; None when nothing was
+    # decided (or a partition-mode table).
+    outcome: str | None
+    permitted: bool | None  # outcome == "permit"
+    # "decided" | "abstain" | "indeterminate" | "unavailable"; Optional until the
+    # query path serves it (decision-table epic step 3) -- absent on older servers.
+    status: str | None
     proof_checked: bool | None
     proof_summary: str | None
-    vocabulary_declared: bool | None
     explanation: QueryExplanation
 
 
@@ -450,13 +584,17 @@ class VerifyPropertyResult(TypedDict, total=False):
 
 class AuthorizeActionResult(TypedDict, total=False):
     """The permit/deny verdict ``agent_policy.authorize_action`` returns (and
-    the ``verdict`` inside ``step``'s result). BRANCH on ``outcome`` — it
-    separates the three non-permits ``decision`` / ``permitted`` conflate."""
+    the ``verdict`` inside ``step``'s result). BRANCH on ``permitted`` to execute
+    or not, on ``decision`` for label-specific logic (e.g. an ``escalate`` row), and
+    on ``status`` to tell a proven deny from "no verdict reached"."""
 
-    decision: Required[str]  # policy verdict verb ("permit"/"deny"/custom)
+    decision: Required[str]  # the deciding decision-table row's label
     permitted: Required[bool]
     proof_checked: Required[bool]
-    outcome: Required[str]  # "permit" | "deny" | "indeterminate" | "unavailable"
+    # "decided" | "indeterminate" | "unavailable" -- branch on this for "no
+    # verdict was reached" (replaces outcome == "indeterminate" / "unavailable").
+    status: str
+    outcome: str | None  # "permit" | "deny"; None when status != "decided"
     proof_summary: str
     denied_reason: str | None
     deciding_rule: Any
@@ -515,7 +653,10 @@ class AuthorResult(TypedDict, total=False):
     admitted: list[AdmittedControl]
     rejected: list[RejectedProposal]
     policy_text: str
-    decision_vocabulary: JsonDict
+    decision_table: DecisionTable | None
+    # Advisory consistency findings / declared rows no probe reached.
+    warnings: list[JsonDict]
+    unreached_rows: list[JsonDict]
 
 
 class InputField(TypedDict, total=False):
@@ -547,7 +688,7 @@ class AgentPolicyStatus(TypedDict, total=False):
     admitted_controls: list[AdmittedControl]
     input_fields: list[InputField]
     relations: list[RelationDecl]
-    decision_vocabulary: JsonDict
+    decision_table: DecisionTable | None
     # Advisory soundness findings are computed when the policy is COMPILED and
     # persisted; ``findings_compiled_at`` / ``findings_compiler_build`` say when
     # and by which build, ``findings_stale`` is True when the running build has

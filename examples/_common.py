@@ -172,7 +172,7 @@ def fetch_dataset(
 
     Connector types include ``fred``, ``yahoo``, ``coinbase``, ``eurostat``,
     ``fiscaldata``, ``edgar``, ``imf``, ``worldbank``, ``boe``, ``ecb``,
-    ``oecd``, ``rest``, ``gdelt``, ``sentiment`` (see
+    ``oecd``, ``fx_forwards``, ``rest``, ``gdelt``, ``sentiment`` (see
     ``api.connectors.list()``).
     """
     return api.datasets.fetch(domain_id=domain_id, connector_type=connector_type, config=config)
@@ -291,6 +291,26 @@ def wait_for_domain(api, domain_id: int, *, timeout: int = 180, poll_interval: i
 # Async build helpers
 # ---------------------------------------------------------------------------
 
+def create_domain(
+    api: AmbertraceAPI,
+    *,
+    name: str,
+    description: str,
+    decision_table: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Create a draft domain, optionally declaring its Decision Table.
+
+    ``decision_table`` (``{"mode": "ladder", "rows": [...]}``, see
+    ``api.domains.set_decision_table``) declares the outcomes a decision can take:
+    each row's ``label`` is served verbatim in a query's ``decision``. Omit it to
+    let the platform propose one from your data / description.
+    """
+    extra: dict[str, Any] = {}
+    if decision_table is not None:
+        extra["decision_table"] = decision_table
+    return api.domains.create(name=name, description=description, **extra)
+
+
 def build_ontology(
     api: AmbertraceAPI,
     domain_id: int,
@@ -343,9 +363,13 @@ def build_platform(
     poll_interval: int = DEFAULT_POLL_INTERVAL,
     verified_profile: bool = False,
     verified_min_confidence: float | None = None,
+    **create_kwargs: Any,
 ) -> dict[str, Any]:
-    """Create a platform and wait for its build job to finish."""
-    extra: dict[str, Any] = {}
+    """Create a platform and wait for its build job to finish.
+
+    ``create_kwargs`` are forwarded to ``platforms.create`` (e.g. ``decision_posture``).
+    """
+    extra: dict[str, Any] = dict(create_kwargs)
     if verified_profile:
         extra["verified_profile"] = True
         if verified_min_confidence is not None:
@@ -396,6 +420,38 @@ def print_ontology(domain: dict[str, Any], limit: int = 8) -> None:
         print(f"    Rule:   {constraint.get('name', '?')}: {desc}")
 
 
+def print_decision_table(table: dict[str, Any] | None, *, indent: str = "  ") -> None:
+    """Print a Decision Table (declared, proposed or echoed on status)."""
+    if not table:
+        print(f"{indent}No decision table (the platform decides nothing).")
+        return
+    print(f"{indent}mode={table.get('mode', 'ladder')}  "
+          f"provenance={table.get('provenance', '-')}  applied={table.get('applied', '-')}")
+    guessed = table.get("guessed") or []
+    if guessed:
+        print(f"{indent}guessed (review these): {', '.join(guessed)}")
+    for row in table.get("rows", []):
+        flags = []
+        if row.get("default"):
+            flags.append("default")
+        if row.get("permits") is not None:
+            flags.append("permits" if row["permits"] else "blocks")
+        if row.get("values"):
+            flags.append("values=" + "/".join(row["values"]))
+        order = f" order={row['order']}" if row.get("order") is not None else ""
+        print(f"{indent}  {row.get('id', '?'):>3}  {row.get('label')}{order}"
+              + (f"  ({', '.join(flags)})" if flags else ""))
+
+
+def print_decision_checks(checks: dict[str, Any] | None, *, indent: str = "  ") -> None:
+    """Print data/description/table consistency findings (blocking first)."""
+    checks = checks or {}
+    for kind in ("blocking", "warnings"):
+        for item in checks.get(kind) or []:
+            print(f"{indent}[{kind[:-1] if kind == 'warnings' else kind}] "
+                  f"{item.get('check', '?')}: {item.get('message')}")
+
+
 def print_quality(quality: dict[str, Any]) -> None:
     def _score(value: Any) -> float:
         if isinstance(value, dict):
@@ -408,6 +464,11 @@ def print_quality(quality: dict[str, Any]) -> None:
     print(f"  Uniqueness:   {_score(quality.get('uniqueness')):.0%}")
     for rec in quality.get("recommendations", []):
         print(f"  -> {rec}")
+    section = quality.get("decision_table")
+    if section:
+        print("  Decision table (what the platform will decide with):")
+        print_decision_table(section.get("table") or section.get("proposal"), indent="    ")
+        print_decision_checks(section.get("checks"), indent="    ")
 
 
 def print_graph(graph: dict[str, Any], limit: int = 10) -> None:

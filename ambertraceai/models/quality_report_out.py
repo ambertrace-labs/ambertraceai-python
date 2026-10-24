@@ -11,6 +11,7 @@ from ..types import UNSET, Unset
 if TYPE_CHECKING:
     from ..models.quality_report_out_completeness import QualityReportOutCompleteness
     from ..models.quality_report_out_consistency import QualityReportOutConsistency
+    from ..models.quality_report_out_decision_table_type_0 import QualityReportOutDecisionTableType0
     from ..models.quality_report_out_uniqueness import QualityReportOutUniqueness
     from ..models.quality_report_out_warnings_item import QualityReportOutWarningsItem
 
@@ -28,6 +29,11 @@ class QualityReportOut:
         overall_score (float):
         row_count (int):
         uniqueness (QualityReportOutUniqueness):
+        decision_table (None | QualityReportOutDecisionTableType0 | Unset): Decision Table section (focal datasets):
+            label_column {name, source: declared|proposed}, table (the stored table with provenance / applied / guessed),
+            proposal (the table the label column would seed), description_scaffold (text drawn from the schema), checks
+            {blocking, warnings} (C4 first; each item names the value / sentence / field), note ('no decisions declared'
+            when there is no table).
         recommendations (list[str] | Unset):
         warnings (list[QualityReportOutWarningsItem] | Unset):
     """
@@ -38,11 +44,14 @@ class QualityReportOut:
     overall_score: float
     row_count: int
     uniqueness: QualityReportOutUniqueness
+    decision_table: None | QualityReportOutDecisionTableType0 | Unset = UNSET
     recommendations: list[str] | Unset = UNSET
     warnings: list[QualityReportOutWarningsItem] | Unset = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        from ..models.quality_report_out_decision_table_type_0 import QualityReportOutDecisionTableType0
+
         column_count = self.column_count
 
         completeness = self.completeness.to_dict()
@@ -54,6 +63,14 @@ class QualityReportOut:
         row_count = self.row_count
 
         uniqueness = self.uniqueness.to_dict()
+
+        decision_table: dict[str, Any] | None | Unset
+        if isinstance(self.decision_table, Unset):
+            decision_table = UNSET
+        elif isinstance(self.decision_table, QualityReportOutDecisionTableType0):
+            decision_table = self.decision_table.to_dict()
+        else:
+            decision_table = self.decision_table
 
         recommendations: list[str] | Unset = UNSET
         if not isinstance(self.recommendations, Unset):
@@ -78,6 +95,8 @@ class QualityReportOut:
                 "uniqueness": uniqueness,
             }
         )
+        if decision_table is not UNSET:
+            field_dict["decision_table"] = decision_table
         if recommendations is not UNSET:
             field_dict["recommendations"] = recommendations
         if warnings is not UNSET:
@@ -89,6 +108,7 @@ class QualityReportOut:
     def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
         from ..models.quality_report_out_completeness import QualityReportOutCompleteness
         from ..models.quality_report_out_consistency import QualityReportOutConsistency
+        from ..models.quality_report_out_decision_table_type_0 import QualityReportOutDecisionTableType0
         from ..models.quality_report_out_uniqueness import QualityReportOutUniqueness
         from ..models.quality_report_out_warnings_item import QualityReportOutWarningsItem
 
@@ -104,6 +124,23 @@ class QualityReportOut:
         row_count = d.pop("row_count")
 
         uniqueness = QualityReportOutUniqueness.from_dict(d.pop("uniqueness"))
+
+        def _parse_decision_table(data: object) -> None | QualityReportOutDecisionTableType0 | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            try:
+                if not isinstance(data, dict):
+                    raise TypeError()
+                decision_table_type_0 = QualityReportOutDecisionTableType0.from_dict(data)
+
+                return decision_table_type_0
+            except (TypeError, ValueError, AttributeError, KeyError):
+                pass
+            return cast(None | QualityReportOutDecisionTableType0 | Unset, data)
+
+        decision_table = _parse_decision_table(d.pop("decision_table", UNSET))
 
         recommendations = cast(list[str], d.pop("recommendations", UNSET))
 
@@ -123,6 +160,7 @@ class QualityReportOut:
             overall_score=overall_score,
             row_count=row_count,
             uniqueness=uniqueness,
+            decision_table=decision_table,
             recommendations=recommendations,
             warnings=warnings,
         )

@@ -38,6 +38,30 @@ Run them in order — each is independent, but they build conceptually.
 | `09_fred_analysis.py` | Ingest FRED series → explainable macro Q&A | Yes (self-cleans) · needs `FRED_API_KEY` |
 | `10_verified_profile.py` | Verified platform: proof-carrying queries, rules CRUD, drift monitoring | Yes (self-cleans) |
 | `44_public_data_connectors.py` | Ingest from six public-data connectors (Eurostat, FiscalData, EDGAR, IMF, World Bank, FRED ALFRED vintage) + multi-source merge | Yes (self-cleans) · `FRED_API_KEY` + `IMF_API_KEY` for keyed connectors |
+| `73_fx_forwards_connector.py` | Fetch CIP-derived 3M G4 FX forwards (EURUSD/GBPUSD/USDJPY; derived from FRED spot + rates, not market-observed) | Yes (self-cleans) · needs `FRED_API_KEY` |
+
+### Decision Table (start here for any domain that decides)
+
+A platform that **decides** (approve / flag / deny, escalate / monitor / clear, …) decides
+over a **Decision Table**: your outcomes, each with a `label` (served verbatim in
+`decision`), a precedence `order`, whether it `permits` the action, one `default` row, and
+the data `values` that denote it. Three inputs must agree before a platform builds — your
+**data** (mandatory), the domain **description**, and the table. You supply the data; the
+platform proposes the other two from it, and you refine either.
+
+| Script | What it shows |
+|--------|---------------|
+| `71_decision_table_quickstart.py` | The whole flow on a bundled lending CSV: upload → `datasets.quality(id)["decision_table"]` (the proposed table, its `provenance` and `guessed` fields, the consistency checks: C2 mapping errors **block** the build, C1/C3/C4/C6 are advisory warnings) → `domains.set_decision_table` → build → `decision` / `outcome` / `permitted` / `status` |
+| `74_decision_posture.py` | `decision_posture`: a query no verdict rule covers **abstains** by default (fail-closed); declare `decision_posture="default_allow"` on `platforms.create` to serve the table's default outcome instead |
+| `72_cross_sectional_regression.py` | Cross-sectional regression on a bundled model-cost panel (numeric + categorical columns): `create_config(mode="cross_sectional", objective="rmse")` → train → `predict` with a categorical override (`{"domain": "Language"}`) and a sparse row (omitted features imputed with the training mean) |
+| `68_decision_verb_pinning.py` | Your own labels (`approve` / `reject`) on a policy gate, declared with `agent_policy.author(..., decision_table=...)` |
+
+How the examples declare their table: `domains.create(..., decision_table=...)` (shorthand
+for create + `domains.set_decision_table`). Where a dataset's label column holds cells that
+differ from your labels (loan `approved`/`denied`, recruitment `Hired`/`Rejected`), the row
+lists them in `values`. `38_symmetric_multiclass_classifier.py` uses `"mode": "partition"`.
+Serving: branch on `permitted` to switch permit/deny, on `decision` for label-specific
+logic, on `status` for abstain / indeterminate / unavailable.
 
 ### Domain demos
 
@@ -69,17 +93,18 @@ symbolic trace.
 | `19_air_track_triage.py` | Air track C2 triage (escalate/monitor/clear) | `data/air_tracks.csv` |
 | `24_air_track_isr_hispec.py` | High-spec ISR air track triage (ASTERIX/MISB schema) | `data/air_tracks_hispec.csv` |
 | `25_cross_domain_cueing.py` | Cross-domain cueing — unified air+maritime `fused_track` triage with a top-precedence cross-cue rule, a separate human-review obligation, and a derived position-trust flag (Tier 0). The two cross-domain cue booleans are **pre-joined by the fusion layer outside the proof** — the certified claim is conditional on them (Tier 1 brings the join inside) | `data/fused_tracks.csv` (regenerate via `python gen_fused_tracks.py`) |
-| `38_symmetric_multiclass_classifier.py` | **Symmetric N-class / multiclass classification** — classify an observation into ONE of N mutually-exclusive labels (the 2×2 macro-regime grid: reflation / goldilocks / stagflation / deflation), each answer proof-carrying. The class labels ARE the platform's decision verbs — a verified DOMAIN platform, NOT the `author()` permit/deny gate | `data/macro_regime_panel.csv` (seeded features-only on first run) |
+| `38_symmetric_multiclass_classifier.py` | **Symmetric N-class / multiclass classification** — classify an observation into ONE of N mutually-exclusive labels (the 2×2 macro-regime grid: reflation / goldilocks / stagflation / deflation), each answer proof-carrying. The class labels are the rows of a `"mode": "partition"` Decision Table — a verified DOMAIN platform, NOT the `author()` permit/deny gate | `data/macro_regime_panel.csv` (seeded features-only on first run) |
 | `39_federal_ethics_gift_gate.py` | **Federal gift-acceptance ethics gate (5 CFR 2635 Subpart B)** — encodes the executive-branch Gifts From Outside Sources rules as a **classify-then-conclude** permit/decline/**escalate** domain: the codifiable core (bribery + cash-equivalent overrides, the $20-per-source-per-occasion and $50-annual thresholds, excluded items) is proved; the open-textured reasonable-person appearance test is **not forced into logic** — it *escalates* to a human. First-matching-rule precedence (bribe-decline beats the $20 exception; escalate beats permit), `decline` as the fail-closed default. 14/14 CFR worked examples decide as the regulation requires, each proof-carrying. Illustrative encoding — not legal advice, not affiliated with any agency | `data/gift_acceptance_cases.csv` |
 
 ### Multi-class (N-class) classification
 
 Need to classify into one of **N labels** rather than permit/deny? That is a
-verified **domain platform** whose decision verbs *are* the class labels — you
-author it through the ordinary `domains` → `build_ontology` → `platforms` surface.
-There is **no `multiclass` model_type and no new SDK method**, and it does **not**
-use the `author()` permit/deny gate (that gate's only outcomes are
-permit/deny/indeterminate/unavailable — a different shape entirely).
+verified **domain platform** whose Decision Table (`"mode": "partition"`, one row per
+label) *is* the class set — you author it through the ordinary `domains` →
+`build_ontology` → `platforms` surface, declaring the table with
+`domains.create(..., decision_table=...)` or `domains.set_decision_table`.
+There is **no `multiclass` model_type**, and it does **not** use the `author()`
+permit/deny gate (a different shape entirely: a ladder of permit/deny-style rows).
 
 See **`38_symmetric_multiclass_classifier.py`** for the copy-me template and the
 English-phrasing recipe that makes every class resolve:
@@ -92,7 +117,8 @@ English-phrasing recipe that makes every class resolve:
    regime." — a total, mutually-exclusive partition, not overlapping flags.
 
 Query it with `platforms.query(...)` and read `report["decision"]` (the winning
-label) plus `report["proof_checked"]`. It scales to flat N≈6–8 labels and small
+label) plus `report["proof_checked"]`. In partition mode `outcome` / `permitted` are
+`None`, and zero or several cells firing is `report["status"] == "abstain"`. It scales to flat N≈6–8 labels and small
 `k`-axis grids — author grids **compositionally** (`k` axis-classifiers plus one
 label-per-cell layer), not by enumerating `mᵏ` cells.
 
@@ -116,16 +142,21 @@ only inside the approved change window; review-before-merge) are a roadmap item:
 today the gate proves them as **caller-supplied booleans** (`within_change_window`,
 `code_review_approved`) rather than reasoning about time/order itself.
 
-**Branch on `verdict["outcome"]`, not just `permitted`.** Each verdict reports one
-of `permit` | `deny` | `indeterminate` | `unavailable`. `indeterminate` means the
-gate needed a declared input it was not given (see `verdict["missing_inputs"]`): it
-keeps `permitted=False` and `proof_checked=False`, but it is **not** a policy
-denial — supply the missing field(s) and retry rather than giving up. Only `deny`
-(with `proof_checked=True`) is a proven violation; only `permit` should execute.
+**Branch on `verdict["permitted"]` to execute, on `verdict["status"]` for "no verdict".**
+Each verdict reports `status` — `decided` | `indeterminate` | `unavailable` — and, when
+decided, an `outcome` of `permit` | `deny` (`None` otherwise); `decision` is the deciding
+Decision Table row's label. `indeterminate` means the gate needed a declared input it was
+not given (see `verdict["missing_inputs"]`): it keeps `permitted=False` and
+`proof_checked=False`, but it is **not** a policy denial — supply the missing field(s)
+and retry rather than giving up. Only a decided, non-permitting verdict (with
+`proof_checked=True`) is a proven violation; only `permitted=True` should execute. Code
+that branched on `outcome == "indeterminate"` now branches on `status`. The gate decides
+over a Decision Table: the binary `{permit, deny}` by default, or your own rows via
+`author(..., decision_table=...)` (example 27).
 
 | Script | What it shows |
 |--------|---------------|
-| `27_agent_policy_gate.py` | Single-action gate — author a per-action policy, permit one action and deny another, print the proof certificate |
+| `27_agent_policy_gate.py` | Single-action gate — author a per-action policy over a declared `permit` / `escalate` / `deny` Decision Table, permit one action, deny another and escalate a third, print the proof certificate |
 | `28_agent_policy_gate_cicd.py` | CI/CD deploy gate — a software-supply-chain policy (enum allowlist + boolean preconditions + canary-rollout cap + **separation of duties: approver ≠ author**, a cross-field inequality); gates a compliant deploy (permit) and several single-fact-flipped cases including the SoD violation (deny). This one stays PER-ACTION and expresses change-window / review-before-merge as caller-supplied booleans; for a NATIVE happens-before obligation proved from the ordered ledger, see `40_agent_policy_gate_temporal.py` |
 | `30_investment_decision_gate.py` | Investment decision-process gate — proves an AI execution agent followed a fiduciary decision process before any trade stands. **Tier-partitioned conditional permits** (`trade_tier` standard/material as the mutually-exclusive partition) + cross-field suitability comparison + concentration caps + restricted-list block + **separation of duties on material trades: approver ≠ recommender**. Synthetic/illustrative CFA Code & Standards encoding — not investment advice, not affiliated with CFA Institute |
 | `25_agent_spend_budget.py` | Cumulative spend budget — mediate a session so the obligation is proven over the accumulated ledger (with a `--band` interval variant) |
@@ -143,7 +174,7 @@ what-if scenarios.
 | `20_bond_yield_forecast.py` | US 10y Treasury yield (macro) | `data/fred_economic_data.csv` or FRED connector (`FRED_API_KEY`) |
 | `21_bitcoin_macro_forecast.py` | Bitcoin (BTC) — explainable macro-panel forecast; the system picks which crypto + macro drivers explain BTC | `data/btc_macro_panel.csv` (bundled snapshot) or live `coinbase` + `fred` connectors (`--refresh`, `FRED_API_KEY`) |
 | `22_sp500_macro_forecast.py` | S&P 500 — explainable macro forecast; the system picks which macro drivers move the index | FRED connector, **live-fetch only** (`FRED_API_KEY`); S&P 500 data is not redistributable so none is bundled |
-| `26_neurosymbolic_bond_yield.py` | US 10y Treasury yield — **full neurosymbolic flow** (train → discover correction rules → symbolic WHY → neural-vs-neurosymbolic comparison) | `data/fred_economic_data.csv` or FRED connector (`FRED_API_KEY`) |
+| `26_neurosymbolic_bond_yield.py` | US 10y Treasury yield — **full neurosymbolic flow** (train → discover correction rules → verified symbolic WHY with certified/active/fired rule counts → neural-vs-neurosymbolic comparison); recipe `model_type="auto"` + `objective="rmse"` over a 24-driver panel | `data/gs10_macro_panel.csv` or FRED connector (`FRED_API_KEY`) |
 | `32_inflation_macro_forecast.py` | US CPI inflation (INFL_YOY) — system picks the macro drivers | `data/inflation_macro_panel.csv` (bundled, FRED public domain) |
 | `33_credit_spread_macro_forecast.py` | US investment-grade credit spread (IG_SPREAD) — system picks the drivers | `data/credit_macro_panel.csv` (bundled, FRED public domain) |
 | `34_real_gdp_growth_macro_forecast.py` | US real GDP growth (REAL_GDP_GROWTH) — system picks the drivers | `data/gdp_macro_panel.csv` (bundled, FRED public domain) |

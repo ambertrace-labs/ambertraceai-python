@@ -5,16 +5,19 @@ exclusive labels — an N-way / symmetric multi-class classification — with a
 machine-checked proof for every answer.
 
 WHICH API — read this first. This is NOT ``author()``. ``author()`` is the Agent
-Policy Gate: a single per-org PERMIT/DENY obligation gate (its only outcomes are
-permit / deny / indeterminate / unavailable). A symmetric N-class classifier is a
-different shape entirely: it is a SEPARATE verified platform whose DECISION VERBS
-*are* the class labels (here: reflation / goldilocks / stagflation / deflation).
-It does not touch a permit/deny gate — so a trade gate's ``decision_vocabulary``
-being ``None`` is unrelated to it. You author it through the ordinary
-``domains`` → ``build_ontology`` → ``platforms`` surface — there is no
-``multiclass`` model_type and no new SDK method; the classifier IS the domain
-platform. Query it with ``platforms.query(...)`` and read ``report["decision"]``
-(the winning label) and ``report["proof_checked"]``.
+Policy Gate: a per-org PERMIT/DENY-style obligation gate over a ladder of outcomes.
+A symmetric N-class classifier is a different shape entirely: it is a SEPARATE
+verified platform whose DECISION TABLE is in ``"mode": "partition"`` — one
+mutually-exclusive row per class label (here: reflation / goldilocks / stagflation /
+deflation), declared with ``domains.create(..., decision_table=...)`` (or
+``domains.set_decision_table``). A partition table has no default, no order and no
+``permits``: each cell is a rule the platform proves, and zero or several cells
+firing is ``status == "abstain"`` (never a made-up label). You author it through the
+ordinary ``domains`` → ``build_ontology`` → ``platforms`` surface — there is no
+``multiclass`` model_type; the classifier IS the domain platform. Query it with
+``platforms.query(...)`` and read ``report["decision"]`` (the winning label),
+``report["status"]`` and ``report["proof_checked"]`` (``outcome`` / ``permitted`` are
+``None`` in partition mode).
 
 THE LOAD-BEARING PART is the English ``description``. To build a symmetric N-class
 classifier that resolves every cell, phrase it so the builder can synthesise one
@@ -81,6 +84,20 @@ DOMAIN_DESCRIPTION = (
     "stagflation is soft growth with elevated inflation; deflation is soft growth with contained "
     "inflation. Every observation must be classified into exactly one regime."
 )
+
+# The Decision Table, in PARTITION mode: the four regimes are mutually exclusive cells (one per
+# cell of the 2x2 grid) -- no default, no order, no permits. Each cell is a rule the platform
+# proves; zero or several firing is `status == "abstain"` (never a made-up label), and
+# `outcome` / `permitted` are None. `label` is served verbatim in `decision`.
+DECISION_TABLE = {
+    "mode": "partition",
+    "rows": [
+        {"label": "reflation"},
+        {"label": "goldilocks"},
+        {"label": "stagflation"},
+        {"label": "deflation"},
+    ],
+}
 
 # The four cells of the 2x2 grid and the label each MUST resolve to.
 # (label description, facts, expected regime)
@@ -175,7 +192,9 @@ def run_multiclass_demo(api, args: argparse.Namespace) -> None:
 
     if not PANEL.exists():
         _generate_panel(PANEL)
-    domain = api.domains.create(name=DOMAIN_NAME, description=DOMAIN_DESCRIPTION)
+    domain = api.domains.create(
+        name=DOMAIN_NAME, description=DOMAIN_DESCRIPTION,
+        decision_table=DECISION_TABLE)
     print(f"  Domain {domain['id']}: {domain['name']} ({domain.get('status')})")
     dataset = api.datasets.upload(domain_id=domain["id"], file_path=str(PANEL))
     print_dataset(dataset)
