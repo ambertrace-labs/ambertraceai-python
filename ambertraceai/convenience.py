@@ -674,6 +674,13 @@ class DomainResource(_Resource):
         ``platforms.status(id)["decision_table"]``. The build is refused (409) when
         a decision-column value maps to no table row; advisory description <->
         table findings come back on ``platforms.status(id)["decision_table_warnings"]``.
+        A verified build is also REFUSED (the build job fails with a ``consistency:``
+        message naming your description's sentence and witness rows) when the
+        description's "otherwise" claim contradicts the decisions the built table
+        serves over your ingested rows -- e.g. "approved otherwise" with a ``deny``
+        default row -- when the server's ``AMBERTRACE_CONSISTENCY_BLOCK`` is on; off,
+        the same finding is a ``C9`` ``claim_contradicted`` entry in
+        ``decision_table_warnings``. See example ``75_consistency_refusal.py``.
         A query's ``decision`` is always one of the table's labels. The
         ``decision_vocabulary`` fields on ``domains.get`` / ``platforms.status``
         were removed; read ``decision_table`` instead.
@@ -1354,7 +1361,10 @@ class PlatformResource(_Resource):
         with (``decision_table``: rows, ``provenance``, ``applied`` -- ``None``
         and ``decision_table_note == "no decisions declared"`` for a platform that
         decides nothing), and the advisory consistency findings recorded at build
-        (``decision_table_warnings``, C4 first). ``decision_vocabulary`` was
+        (``decision_table_warnings``, C4 first; a ``C9`` ``claim_contradicted`` entry
+        -- the description's "otherwise" claim contradicts the served decisions, with
+        ``sentence`` + ``witnesses`` -- appears when the build was not refused; see
+        example ``75_consistency_refusal.py``). ``decision_vocabulary`` was
         removed: read ``decision_table``."""
         return self._request("GET", f"/api/v1/platforms/{platform_id}/status")
 
