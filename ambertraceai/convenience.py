@@ -1363,8 +1363,8 @@ class PlatformResource(_Resource):
         decides nothing), and the advisory consistency findings recorded at build
         (``decision_table_warnings``, C4 first; a ``C9`` ``claim_contradicted`` entry
         -- the description's "otherwise" claim contradicts the served decisions, with
-        ``sentence`` + ``witnesses`` -- appears when the build was not refused, see
-        ``create`` / example ``75_consistency_refusal.py``). ``decision_vocabulary`` was
+        ``sentence`` + ``witnesses`` -- appears when the build was not refused; see
+        example ``75_consistency_refusal.py``). ``decision_vocabulary`` was
         removed: read ``decision_table``."""
         return self._request("GET", f"/api/v1/platforms/{platform_id}/status")
 
