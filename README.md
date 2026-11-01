@@ -947,6 +947,20 @@ Agent/LLM orientation: [`AGENTS.md`](AGENTS.md)
 
 ## Changelog
 
+### 2.10.1
+
+**Forecast headline now describes the served tier.** `served_tier` names the
+tier the served forecast comes from, and the headline `objective_value`
+describes that same tier -- under the default neural `baseline_mode` this is
+`composed` (the certification fix for the neural-baseline headline). Example
+`63_sharpe_objective_forecast.py` comments corrected.
+
+Also in this release: `set_certificate` (Rule Set Certification of the induced
+driver-rule set; `platforms.verify_property(require_totality=False)` for the
+at-most-one check) and the decision table's declared default row is now served
+as a decided outcome under `decision_posture="fail_closed"` (abstain only when
+no default row is declared or a safety condition fired).
+
 ### 2.10.0
 
 **`domains.create(decision_table=...)` — ladder decision tables.** Declare how

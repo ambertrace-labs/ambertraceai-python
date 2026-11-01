@@ -839,7 +839,8 @@ class PredictionRecord(TypedDict, total=False):
 class SymbolicForecastResult(TypedDict, total=False):
     """What ``symbolic_forecast`` returns. ``why`` (== ``accepted_drivers``) is
     the explanation; ``prediction_record`` is the canonical Stage-A output.
-    ``why_certification`` (verified) / ``fitted_series`` (opt-in) are open
+    ``why_certification`` (verified) / ``set_certificate`` (verified; the
+    rule-SET certificate) / ``fitted_series`` (opt-in) are open
     blocks typed as :data:`JsonDict`.
 
     ``hit_rate_alpha`` (float) — the significance level used for the binomial
@@ -913,13 +914,14 @@ class SymbolicForecastResult(TypedDict, total=False):
     GBT baseline prediction (``neural``). Present when
     ``baseline_mode='neural'`` (the default).
 
-    The headline ``objective_value`` is aligned to the objective-dominant
-    tier on the holdout (the ``served_tier`` key names which tier was
-    selected). The served ``forecast`` value comes from that same tier's
-    series: the combined (neural plus fired effects) value for ``composed``,
-    the raw model value for ``neural``, and the rule layer's own forecast
-    for ``rule_layer``. Partial-coverage ``forecast_tier`` partitions are
-    never selected.  ``per_tier_skill['rule_layer']`` shows the symbolic rules'
+    The headline ``objective_value`` is aligned to the tier the served
+    ``forecast`` value comes from (the ``served_tier`` key names it). Under
+    ``baseline_mode='neural'`` (the default) the served value is always the
+    ``composed`` path (neural anchor plus fired rule effects), so
+    ``served_tier == 'composed'`` and ``objective_value`` equals
+    ``per_tier_skill['composed']`` on the objective metric, even when another
+    tier scores higher. ``per_tier_skill`` still carries every tier's metrics
+    for comparison: ``per_tier_skill['rule_layer']`` shows the symbolic rules'
     standalone trading performance, and ``per_tier_skill['neural']`` shows
     the GBT baseline's standalone trading performance.
 
@@ -950,6 +952,7 @@ class SymbolicForecastResult(TypedDict, total=False):
     prediction_react_trajectory: JsonDict | None
     prediction_screen_enabled: bool
     why_certification: JsonDict
+    set_certificate: JsonDict
     fitted_series: JsonDict
     unmatched_overrides: list[str]
     discovery_mode: bool

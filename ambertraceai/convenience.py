@@ -1258,10 +1258,11 @@ class PlatformResource(_Resource):
           verification gate flags a concern (use sparingly; audited).
         * ``decision_posture: "fail_closed" | "default_allow"`` -- Decisions
           platforms: what a query that matches NO verdict rule returns. The
-          default ``"fail_closed"`` serves ``status == "abstain"`` (``decision``
-          None, ``permitted`` False -- never a silent permit); ``"default_allow"``
-          must be declared explicitly and serves the decision table's default
-          outcome (e.g. ``permit``). Example ``74_decision_posture.py``.
+          default ``"fail_closed"`` serves the decision table's DECLARED DEFAULT
+          row as a decided outcome; ``status == "abstain"`` (``decision`` None,
+          ``permitted`` False) is served only when the table declares no default
+          row or a safety condition fired. ``"default_allow"`` is no longer
+          required to serve a declared default. Example ``74_decision_posture.py``.
         * ``scored_determinations: dict`` -- OPEN-TEXTURED SCORED DETERMINATIONS
           (flag-gated, default OFF). For an OPEN-TEXTURED predicate that bright-line
           rules cannot decide (compatibility / reasonableness / materiality /
@@ -2447,6 +2448,24 @@ class PredictionResource(_Resource):
         composes onto the neural (GBT) prediction instead of persistence.
         ``baseline`` is the neural anchor value (the GBT prediction), and
         ``forecast.value`` is neural anchor + sum of fired rule effects.
+
+        **Rule Set Certification (``verified=True``).** The response also carries
+        ``set_certificate``: a machine-checked verdict on the induced driver-rule
+        SET itself, decided exhaustively by the proven ``searchcheck`` binary over
+        a grid of each feature's threshold cells. Shape ``{property, structure,
+        result, proof_checked, proof_summary, witness, search: {space_size, bound,
+        complete}, n_rules, n_variables}``. A set whose rules tile ONE feature
+        (``structure='partition'``, detected: every cell fires exactly one rule)
+        is certified ``exactly_one_verdict`` (no contradictory directions); any other set (``structure='additive'``) is
+        certified ``no_contradictory_fire`` (no cell fires both ``up`` and
+        ``down``). ``result`` is ``HOLDS``, ``VIOLATED`` (``witness`` names the
+        counterexample cell, verdicts and rules) or ``ABSTAIN`` (a stated
+        ``reason`` such as ``too_many_variables`` -- never a silent pass). It is
+        SEPARATE from ``why_certification`` (the per-row input certificate) and
+        from ``objective_value`` / ``rule_layer_marginal`` (the statistical
+        judge). Reachable only through this endpoint's response, not a separate
+        route; ``platforms.verify_property`` accepts ``require_totality=False`` for
+        the same at-most-one check over your own grid.
 
         Pass ``include_fitted_series=True`` to ALSO get the backtest's per-period
         fitted-vs-actual TIMESERIES under ``fitted_series`` so you can chart actual

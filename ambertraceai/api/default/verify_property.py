@@ -98,9 +98,11 @@ def sync_detailed(
     and `exactly_one_verdict` (regime-grid totality + exclusivity: over the grid declared in
     `space.variables`, every cell derives EXACTLY ONE verdict from THIS platform's active decision
     rules; VIOLATED returns the uncovered or double-covered cell in `witness` / `witness_detail`; a rule
-    leaf that is not a scalar test on a declared grid field is an ABSTAIN, never a guess). The platform
-    scopes access, audit and config (`lean_checker_mode`, a lowered `certified_search_max_space`); a
-    mechanism is declared in the request.
+    leaf that is not a scalar test on a declared grid field is an ABSTAIN, never a guess; with
+    `space.require_totality=false` the property is AT-MOST-ONE, i.e. no cell derives contradictory
+    verdicts, `no_contradictory_fire`). The platform scopes access, audit and config
+    (`lean_checker_mode`, a lowered `certified_search_max_space`); a mechanism is declared in the
+    request.
 
     Capability gating: requires the \"query\" capability (see GET /api/v1/capabilities). Returns 403
     capability_disabled when the capability is not enabled for the org.
@@ -158,9 +160,11 @@ def sync(
     and `exactly_one_verdict` (regime-grid totality + exclusivity: over the grid declared in
     `space.variables`, every cell derives EXACTLY ONE verdict from THIS platform's active decision
     rules; VIOLATED returns the uncovered or double-covered cell in `witness` / `witness_detail`; a rule
-    leaf that is not a scalar test on a declared grid field is an ABSTAIN, never a guess). The platform
-    scopes access, audit and config (`lean_checker_mode`, a lowered `certified_search_max_space`); a
-    mechanism is declared in the request.
+    leaf that is not a scalar test on a declared grid field is an ABSTAIN, never a guess; with
+    `space.require_totality=false` the property is AT-MOST-ONE, i.e. no cell derives contradictory
+    verdicts, `no_contradictory_fire`). The platform scopes access, audit and config
+    (`lean_checker_mode`, a lowered `certified_search_max_space`); a mechanism is declared in the
+    request.
 
     Capability gating: requires the \"query\" capability (see GET /api/v1/capabilities). Returns 403
     capability_disabled when the capability is not enabled for the org.
@@ -213,9 +217,11 @@ async def asyncio_detailed(
     and `exactly_one_verdict` (regime-grid totality + exclusivity: over the grid declared in
     `space.variables`, every cell derives EXACTLY ONE verdict from THIS platform's active decision
     rules; VIOLATED returns the uncovered or double-covered cell in `witness` / `witness_detail`; a rule
-    leaf that is not a scalar test on a declared grid field is an ABSTAIN, never a guess). The platform
-    scopes access, audit and config (`lean_checker_mode`, a lowered `certified_search_max_space`); a
-    mechanism is declared in the request.
+    leaf that is not a scalar test on a declared grid field is an ABSTAIN, never a guess; with
+    `space.require_totality=false` the property is AT-MOST-ONE, i.e. no cell derives contradictory
+    verdicts, `no_contradictory_fire`). The platform scopes access, audit and config
+    (`lean_checker_mode`, a lowered `certified_search_max_space`); a mechanism is declared in the
+    request.
 
     Capability gating: requires the \"query\" capability (see GET /api/v1/capabilities). Returns 403
     capability_disabled when the capability is not enabled for the org.
@@ -271,9 +277,11 @@ async def asyncio(
     and `exactly_one_verdict` (regime-grid totality + exclusivity: over the grid declared in
     `space.variables`, every cell derives EXACTLY ONE verdict from THIS platform's active decision
     rules; VIOLATED returns the uncovered or double-covered cell in `witness` / `witness_detail`; a rule
-    leaf that is not a scalar test on a declared grid field is an ABSTAIN, never a guess). The platform
-    scopes access, audit and config (`lean_checker_mode`, a lowered `certified_search_max_space`); a
-    mechanism is declared in the request.
+    leaf that is not a scalar test on a declared grid field is an ABSTAIN, never a guess; with
+    `space.require_totality=false` the property is AT-MOST-ONE, i.e. no cell derives contradictory
+    verdicts, `no_contradictory_fire`). The platform scopes access, audit and config
+    (`lean_checker_mode`, a lowered `certified_search_max_space`); a mechanism is declared in the
+    request.
 
     Capability gating: requires the \"query\" capability (see GET /api/v1/capabilities). Returns 403
     capability_disabled when the capability is not enabled for the org.

@@ -25,9 +25,11 @@ class BuildRequest:
         domain_id (int):
         config (BuildRequestConfig | Unset):
         decision_posture (BuildRequestDecisionPostureType0 | None | Unset): Decisions platforms only. What a query that
-            matches NO verdict rule returns. 'fail_closed' (the default when omitted) serves ``status='abstain'`` with
-            ``decision`` null and ``permitted`` false; 'default_allow' serves the domain's default outcome (e.g. 'permit')
-            and must be declared explicitly -- it is never inferred. Persisted to ``platform.config['decision_posture']``.
+            matches NO verdict rule returns. 'fail_closed' (the default when omitted) serves the decision table's DECLARED
+            DEFAULT row as a decided outcome; it serves ``status='abstain'`` (``decision`` null, ``permitted`` false) only
+            when the table declares no default row or a safety condition fired (e.g. an incomplete restrictive layer).
+            Declaring 'default_allow' is no longer required to serve a declared default. Persisted to
+            ``platform.config['decision_posture']``.
         invariant_manifest (list[Invariant] | None | Unset): Verified profile only. The required-invariant manifest — a
             list of forbid/require obligations enforced at build and on every query. See the Invariant schema.
         override_verification_gate (bool | Unset): Human-in-the-loop override. If the build-time verification gate is

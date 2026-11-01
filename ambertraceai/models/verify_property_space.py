@@ -36,6 +36,9 @@ class VerifyPropertySpace:
             mechanism (None | str | Unset): strategy_proof only. Mechanism library entry: 'plurality' (3-5 alternatives,
                 ties break in `domain` order), 'majority' (exactly 2 alternatives, tie -> first), 'vickrey' (2 bidders, second-
                 price) or 'first_price' (2 bidders, first-price; a manipulable control).
+            require_totality (bool | Unset): exactly_one_verdict only. True (default): every cell must derive EXACTLY ONE
+                verdict (totality + exclusivity). False: AT-MOST-ONE -- a cell deriving no verdict is allowed, only two co-
+                firing verdicts is a violation. Default: True.
             variables (list[VerifyPropertyVariable] | None | Unset): exactly_one_verdict only. The regime grid: each axis is
                 a rule-condition field with its explicit finite domain, e.g. [{'field': 'priced', 'domain':
                 ['neg','zero','pos']}, {'field': 'reaction', 'domain': ['hawk','dove']}]. Every cell of the product is checked
@@ -47,6 +50,7 @@ class VerifyPropertySpace:
     agents: int | None | Unset = UNSET
     domain: list[int | str] | None | Unset = UNSET
     mechanism: None | str | Unset = UNSET
+    require_totality: bool | Unset = True
     variables: list[VerifyPropertyVariable] | None | Unset = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
@@ -78,6 +82,8 @@ class VerifyPropertySpace:
         else:
             mechanism = self.mechanism
 
+        require_totality = self.require_totality
+
         variables: list[dict[str, Any]] | None | Unset
         if isinstance(self.variables, Unset):
             variables = UNSET
@@ -103,6 +109,8 @@ class VerifyPropertySpace:
             field_dict["domain"] = domain
         if mechanism is not UNSET:
             field_dict["mechanism"] = mechanism
+        if require_totality is not UNSET:
+            field_dict["require_totality"] = require_totality
         if variables is not UNSET:
             field_dict["variables"] = variables
 
@@ -159,6 +167,8 @@ class VerifyPropertySpace:
 
         mechanism = _parse_mechanism(d.pop("mechanism", UNSET))
 
+        require_totality = d.pop("require_totality", UNSET)
+
         def _parse_variables(data: object) -> list[VerifyPropertyVariable] | None | Unset:
             if data is None:
                 return data
@@ -186,6 +196,7 @@ class VerifyPropertySpace:
             agents=agents,
             domain=domain,
             mechanism=mechanism,
+            require_totality=require_totality,
             variables=variables,
         )
 
