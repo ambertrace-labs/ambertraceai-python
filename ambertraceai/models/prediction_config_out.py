@@ -78,6 +78,9 @@ class PredictionConfigOut:
             auto_reduce has never run or the panel already met the declared bar.
         regime_platform_id (int | None | Unset): ID of the Decisions platform used for regime conditioning. Null when no
             regime platform is configured.
+        resolved_model_type (None | str | Unset): The concrete model that runs for this config. For an explicit
+            model_type it echoes it; for model_type='auto' it is the train-time winner (the same value predict(explain=True)
+            reports as explanation.model.auto_winner), null until trained.
         resolved_target_transform (None | str | Unset): Item 6 — the EFFECTIVE target transform, echoed on the config so
             the output space is known without predicting. When a concrete transform was requested ('none' or 'difference')
             this echoes it immediately at create_config time. When 'auto' was requested it resolves at TRAIN time, so before
@@ -123,6 +126,7 @@ class PredictionConfigOut:
     panel_sufficiency: None | PredictionConfigOutPanelSufficiencyType0 | Unset = UNSET
     reduction_manifest: None | PredictionConfigOutReductionManifestType0 | Unset = UNSET
     regime_platform_id: int | None | Unset = UNSET
+    resolved_model_type: None | str | Unset = UNSET
     resolved_target_transform: None | str | Unset = UNSET
     target_transform_reason: None | str | Unset = UNSET
     time_index_field: None | str | Unset = UNSET
@@ -284,6 +288,12 @@ class PredictionConfigOut:
         else:
             regime_platform_id = self.regime_platform_id
 
+        resolved_model_type: None | str | Unset
+        if isinstance(self.resolved_model_type, Unset):
+            resolved_model_type = UNSET
+        else:
+            resolved_model_type = self.resolved_model_type
+
         resolved_target_transform: None | str | Unset
         if isinstance(self.resolved_target_transform, Unset):
             resolved_target_transform = UNSET
@@ -368,6 +378,8 @@ class PredictionConfigOut:
             field_dict["reduction_manifest"] = reduction_manifest
         if regime_platform_id is not UNSET:
             field_dict["regime_platform_id"] = regime_platform_id
+        if resolved_model_type is not UNSET:
+            field_dict["resolved_model_type"] = resolved_model_type
         if resolved_target_transform is not UNSET:
             field_dict["resolved_target_transform"] = resolved_target_transform
         if target_transform_reason is not UNSET:
@@ -633,6 +645,15 @@ class PredictionConfigOut:
 
         regime_platform_id = _parse_regime_platform_id(d.pop("regime_platform_id", UNSET))
 
+        def _parse_resolved_model_type(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        resolved_model_type = _parse_resolved_model_type(d.pop("resolved_model_type", UNSET))
+
         def _parse_resolved_target_transform(data: object) -> None | str | Unset:
             if data is None:
                 return data
@@ -701,6 +722,7 @@ class PredictionConfigOut:
             panel_sufficiency=panel_sufficiency,
             reduction_manifest=reduction_manifest,
             regime_platform_id=regime_platform_id,
+            resolved_model_type=resolved_model_type,
             resolved_target_transform=resolved_target_transform,
             target_transform_reason=target_transform_reason,
             time_index_field=time_index_field,

@@ -14,16 +14,20 @@ per-tier trading metrics: ``per_tier_skill['composed']`` contains
 trading metrics on the composed prediction, ``per_tier_skill['rule_layer']``
 shows the symbolic rules' standalone trading performance, and
 ``per_tier_skill['neural']`` shows the GBT baseline's standalone trading
-performance.  The headline ``objective_value`` is aligned to the
-objective-dominant tier (the ``served_tier`` key names it).
+performance.  The headline ``objective_value`` describes the tier
+the served forecast comes from (the ``served_tier`` key names it); under the
+default neural anchor that is ``composed``.
 
     python 63_sharpe_objective_forecast.py
 
 .. note::
 
-   The ``objective`` field drives tier selection: the served forecast
-   uses the tier with the highest value of the configured objective on the
-   holdout.  ``baseline_mode='persistence'`` is not supported -- a forecast
+   Under the default ``baseline_mode='neural'`` the served forecast is the
+   composed path (neural anchor plus fired rule effects), so ``served_tier``
+   is ``composed`` and the headline matches ``per_tier_skill['composed']``;
+   ``per_tier_skill`` still lists every tier's metrics, including any tier
+   that scores higher on the configured ``objective``.
+   ``baseline_mode='persistence'`` is not supported -- a forecast
    derived from the last observed value moves with spot and is untradeable.
    Persistence remains as a reference metric (``skill_vs_persistence``).
 """
@@ -102,8 +106,8 @@ def main():
     per_tier_skill = fs_data.get("per_tier_skill") or {}
 
     # The composed entry carries trading metrics for the full composed
-    # prediction.  The headline objective_value is aligned to the
-    # objective-dominant tier (named in served_tier).
+    # prediction.  The headline objective_value describes the tier the served
+    # forecast comes from (named in served_tier; composed under neural mode).
     print(f"\nServed tier: {fs_data.get('served_tier', 'N/A')}")
     composed = per_tier_skill.get("composed")
     if composed:

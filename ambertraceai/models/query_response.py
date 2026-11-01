@@ -26,9 +26,10 @@ class QueryResponse:
         decision (None | str | Unset): The deciding row's LABEL from the platform's Decision Table (``decision_table``),
             exactly as the customer declared it (e.g. ``approve``, ``deny``, ``escalate``) -- always a declared row label,
             never an internal word. ``null`` when ``status`` is ``abstain`` (no decision could be certified) or the platform
-            has no decision layer. A query that fires no verdict is ``abstain`` (fail-closed) unless the platform was built
-            with ``decision_posture='default_allow'``. Branch on ``permitted`` for execute-or-block and on ``decision`` for
-            label-specific logic. ``explanation.decision.decision`` carries the same label.
+            has no decision layer. A query that fires no verdict is served the table's declared default row as a decided
+            outcome; it is ``abstain`` only when the table declares no default row or a safety condition fired. Branch on
+            ``permitted`` for execute-or-block and on ``decision`` for label-specific logic.
+            ``explanation.decision.decision`` carries the same label.
         decision_table (None | QueryResponseDecisionTableType0 | Unset): The Decision Table the platform was built with
             {mode, rows: [{id, label, order, default, permits, values}], provenance, applied}. ``null`` when none is
             declared.

@@ -5,7 +5,9 @@ the forecast is composed as ``baseline (persistence) + Σ fired driver-rules`` o
 your data's REAL features, so the response carries an actionable *why* — the
 ordered drivers that fired, each with its fitted contribution and reliability —
 not just a number. With ``verified=True`` the active-driver set is run through
-the verified kernel and each driver is stamped ``proof_checked``.
+the verified kernel and each driver is stamped ``proof_checked``; the response
+also carries ``set_certificate`` -- a machine-checked verdict on the whole
+driver-rule SET (Rule Set Certification).
 
 When a forecast misses badly, ``residual_diagnosis`` calls **drift vs
 correction**: a decayed driver that pointed the wrong way => drift (residual
@@ -83,6 +85,18 @@ def main() -> None:
         cert = result.get("why_certification")
         if cert:
             step(f"Certification: {cert.get('proof_summary')}")
+        # Rule Set Certification: the induced driver-rule SET itself is certified
+        # (exactly-one for a one-feature partition, no-contradictory-fire for an
+        # additive set) -- separate from the per-row ``why_certification`` above.
+        set_cert = result.get("set_certificate")
+        if set_cert:
+            step(
+                f"Rule set: {set_cert['property']} ({set_cert['structure']}) -> "
+                f"{set_cert['result']} over {set_cert['search'].get('space_size', '?')} cells, "
+                f"proof_checked={set_cert['proof_checked']}"
+            )
+            if set_cert["witness"]:
+                step(f"  counterexample cell: {set_cert['witness']}")
 
         # 2) What-if override: ask "what would the forecast look like if a key
         #    driver were at a different level?". The override is injected into the

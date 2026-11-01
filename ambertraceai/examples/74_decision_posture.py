@@ -1,10 +1,11 @@
 """72 -- decision_posture: what a query that matches NO verdict rule returns.
 
-A Decisions platform fails CLOSED by default. When a query lands in a region none
-of your verdict rules covers (e.g. rules say "deny if risk > 80" and "permit if
-risk < 20", and the query has risk = 50) the served answer is ``status ==
-"abstain"`` with ``decision`` None and ``permitted`` False -- a gap in your rules
-never silently approves.
+When a query lands in a region none of your verdict rules covers (e.g. rules say
+"deny if risk > 80" and "permit if risk < 20", and the query has risk = 50) the
+platform serves your decision table's DECLARED DEFAULT row as a decided outcome.
+It abstains (``status == "abstain"``, ``decision`` None, ``permitted`` False)
+only when the table declares no default row or a safety condition fired -- a gap
+is never silently approved.
 
 If your policy genuinely is "allow unless a rule says otherwise", declare it when
 you build the platform:
