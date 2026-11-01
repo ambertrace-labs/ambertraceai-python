@@ -93,8 +93,14 @@ class DecisionTableCheckItem(TypedDict, total=False):
     value -- BLOCKS the build), ``"C3"`` (a row never mentioned in the description),
     ``"C4"`` (the default row not named in an "otherwise" sentence, or a row the
     text refuses but the table permits) or ``"C6"`` (a declared relation the
-    description never mentions). ``message`` names the value / sentence / field /
-    row. Only C2 (and an invalid stored table) blocks; the rest are advisory."""
+    description never mentions) or ``"C9"`` / ``kind == "claim_contradicted"`` (the
+    description's "otherwise" claim contradicts the decisions the built table serves
+    over your ingested rows; carries ``sentence``, ``row`` and ``witnesses`` --
+    ``[{"row": {...}, "served": "<label>"}]``). ``message`` names the value /
+    sentence / field / row. Only C2 (and an invalid stored table) blocks the
+    pre-build checks; C9 REFUSES the build itself when the server's
+    ``AMBERTRACE_CONSISTENCY_BLOCK`` is on (the refusal message carries the same
+    sentence + witnesses) and is advisory otherwise; the rest are advisory."""
 
     check: str
     kind: str
@@ -104,6 +110,8 @@ class DecisionTableCheckItem(TypedDict, total=False):
     field: str
     sentence: str
     relation: str
+    claim_kind: str
+    witnesses: list[JsonDict]
 
 
 class DecisionTableChecks(TypedDict, total=False):
@@ -247,7 +255,7 @@ class PlatformStatusOut(TypedDict, total=False):
     # a table derived for a platform built before tables existed); None when the
     # platform decides nothing.
     decision_table: DecisionTable | None
-    # Advisory consistency findings (C4, C3, C1, C6) recorded at build.
+    # Advisory consistency findings (C4, C3, C1, C6, C9 claim_contradicted) recorded at build.
     decision_table_warnings: list[DecisionTableCheckItem]
     # "no decisions declared" when decision_table is None; else None.
     decision_table_note: str | None

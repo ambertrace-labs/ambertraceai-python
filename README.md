@@ -947,6 +947,22 @@ Agent/LLM orientation: [`AGENTS.md`](AGENTS.md)
 
 ## Changelog
 
+### 2.10.2
+
+**Consistency refusal -- a build that contradicts your description.** A verified
+platform build is now REFUSED when the description's residual ("otherwise") claim
+contradicts the decisions the built table serves over your ingested rows (e.g. the
+description says "approved otherwise" but the table's default row is `deny`). The
+build job fails with a `consistency:` message that quotes your description sentence
+and witness rows (`score=600 -> served 'deny'`); fix the description or the table's
+default row and rebuild. A legitimate minimal deny-default table (one approve rule,
+description "deny otherwise") now builds. With the server flag
+`AMBERTRACE_CONSISTENCY_BLOCK` off -- or for advisory-only findings -- the build
+completes and the finding is a `C9` / `claim_contradicted` entry in
+`platforms.status(id)["decision_table_warnings"]` (`sentence`, `row`, `witnesses`,
+`message`). The refusal applies on a deployment only once that flag is on. New
+example `75_consistency_refusal.py`; `DecisionTableCheckItem` documents `C9`.
+
 ### 2.10.1
 
 **Forecast headline now describes the served tier.** `served_tier` names the
