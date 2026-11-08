@@ -118,6 +118,10 @@ def run_quickstart(api, args: argparse.Namespace) -> None:
     print_section(3, total, "Confirming the table with set_decision_table")
     stored = api.domains.set_decision_table(domain["id"], DECISION_TABLE)
     print_decision_table(stored, indent="  ")
+    # Non-blocking notes on what you declared (e.g. a label whose usual meaning is
+    # the opposite of its polarity); the table is stored exactly as declared.
+    for adv in stored.get("advisories") or []:
+        print(f"  Advisory [{adv['check']}] row {adv['row']}: {adv['message']}")
     section = api.datasets.quality(dataset["id"]).get("decision_table") or {}
     print("  Checks after confirming:")
     print_decision_checks(section.get("checks"), indent="    ")

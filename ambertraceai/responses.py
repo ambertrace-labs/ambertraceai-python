@@ -77,13 +77,19 @@ class DecisionTable(TypedDict, total=False):
     platform proposed it from your data / description) or ``"confirmed"`` (you
     declared it). ``guessed`` lists the row fields an inference step filled by
     convention rather than read (``"default"``, ``"order"``, ``"permits"``) --
-    review those first; absent on a declared table."""
+    review those first; absent on a declared table.
+
+    ``advisories`` (on the ``set_decision_table`` / ``domains.create`` response
+    only) lists non-blocking notes on the table you just declared, each
+    ``{check, kind, row, message}`` (e.g. a label whose usual meaning is the
+    opposite of its declared polarity); the table is stored exactly as declared."""
 
     mode: str  # "ladder" | "partition"
     rows: Required[list[DecisionTableRow]]
     provenance: str
     applied: str  # "inferred" | "confirmed"
     guessed: list[str] | None
+    advisories: list[JsonDict]
 
 
 class DecisionTableCheckItem(TypedDict, total=False):
@@ -178,6 +184,15 @@ class DomainOut(TypedDict, total=False):
     # The declared Decision Table; None until declared (domains.set_decision_table
     # or domains.create(decision_table=)) or inferred at upload.
     decision_table: DecisionTable | None
+
+
+class DomainCreateOut(DomainOut, total=False):
+    """The ``domains.create`` response: :class:`DomainOut` plus ``advisories``."""
+
+    # Non-blocking notes on a table submitted via domains.create(decision_table=),
+    # each {check, kind, row, message}; empty when no table is submitted. Present
+    # on the create response only -- never on reads (get / list / update).
+    advisories: list[JsonDict]
 
 
 class DomainDetail(DomainOut, total=False):

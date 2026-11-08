@@ -6,7 +6,7 @@ import httpx
 from ... import errors
 from ...client import AuthenticatedClient, Client
 from ...models.domain_create import DomainCreate
-from ...models.domain_out import DomainOut
+from ...models.domain_create_out import DomainCreateOut
 from ...models.validation_error_model import ValidationErrorModel
 from ...types import Response
 
@@ -32,9 +32,9 @@ def _get_kwargs(
 
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> DomainOut | list[ValidationErrorModel] | None:
+) -> DomainCreateOut | list[ValidationErrorModel] | None:
     if response.status_code == 201:
-        response_201 = DomainOut.from_dict(response.json())
+        response_201 = DomainCreateOut.from_dict(response.json())
 
         return response_201
 
@@ -56,7 +56,7 @@ def _parse_response(
 
 def _build_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> Response[DomainOut | list[ValidationErrorModel]]:
+) -> Response[DomainCreateOut | list[ValidationErrorModel]]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -69,7 +69,7 @@ def sync_detailed(
     *,
     client: AuthenticatedClient | Client,
     body: DomainCreate,
-) -> Response[DomainOut | list[ValidationErrorModel]]:
+) -> Response[DomainCreateOut | list[ValidationErrorModel]]:
     """Create domain
 
      Creates a new domain with a name and description. The domain starts in 'draft' status. Build an
@@ -84,7 +84,7 @@ def sync_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[DomainOut | list[ValidationErrorModel]]
+        Response[DomainCreateOut | list[ValidationErrorModel]]
     """
 
     kwargs = _get_kwargs(
@@ -102,7 +102,7 @@ def sync(
     *,
     client: AuthenticatedClient | Client,
     body: DomainCreate,
-) -> DomainOut | list[ValidationErrorModel] | None:
+) -> DomainCreateOut | list[ValidationErrorModel] | None:
     """Create domain
 
      Creates a new domain with a name and description. The domain starts in 'draft' status. Build an
@@ -117,7 +117,7 @@ def sync(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        DomainOut | list[ValidationErrorModel]
+        DomainCreateOut | list[ValidationErrorModel]
     """
 
     return sync_detailed(
@@ -130,7 +130,7 @@ async def asyncio_detailed(
     *,
     client: AuthenticatedClient | Client,
     body: DomainCreate,
-) -> Response[DomainOut | list[ValidationErrorModel]]:
+) -> Response[DomainCreateOut | list[ValidationErrorModel]]:
     """Create domain
 
      Creates a new domain with a name and description. The domain starts in 'draft' status. Build an
@@ -145,7 +145,7 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[DomainOut | list[ValidationErrorModel]]
+        Response[DomainCreateOut | list[ValidationErrorModel]]
     """
 
     kwargs = _get_kwargs(
@@ -161,7 +161,7 @@ async def asyncio(
     *,
     client: AuthenticatedClient | Client,
     body: DomainCreate,
-) -> DomainOut | list[ValidationErrorModel] | None:
+) -> DomainCreateOut | list[ValidationErrorModel] | None:
     """Create domain
 
      Creates a new domain with a name and description. The domain starts in 'draft' status. Build an
@@ -176,7 +176,7 @@ async def asyncio(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        DomainOut | list[ValidationErrorModel]
+        DomainCreateOut | list[ValidationErrorModel]
     """
 
     return (

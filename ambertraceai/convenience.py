@@ -29,6 +29,7 @@ from .responses import (
     DecisionTable,
     DiscoveredRules,
     DiscoverySummary,
+    DomainCreateOut,
     DomainDetail,
     DomainOut,
     FindDriversResult,
@@ -526,10 +527,36 @@ class DomainResource(_Resource):
         return self._request("GET", "/api/v1/domains")
 
     def create(self, *, name: str, description: str,
-               decision_table: DecisionTable | None = None, **kwargs) -> DomainOut:
+               decision_table: DecisionTable | None = None, **kwargs) -> DomainCreateOut:
         """Create a draft domain.
 
         ``visibility`` / ``team_id`` are the supported extra fields.
+
+        **Supported description phrases for numeric rules** (the build reads
+        these from ``description`` and enforces them as verdict rules):
+
+        * ``"A exceeds P percent of B"`` -- single-field ratio;
+        * ``"the combined total of A, B exceeds P percent of C"`` -- multi-field
+          sum against a share of another column (``total of`` / ``sum of`` and
+          ``A and B`` also work; ``must not exceed`` / ``at most`` state the same
+          bound). The sum is strict -- a query that does not carry every listed
+          column gets no total -- and "exceeds" is exclusive of exactly P percent.
+          An unreadable clause in an ``or`` is dropped on its own; the other
+          clauses keep their rule. See ``examples/76_combined_total_rule.py``.
+        * ``"the ratio of A to B exceeds the ratio of C to D"`` -- nested ratio
+          (optionally ``... exceeds P percent of the ratio of C to D``); both
+          ratios are computed per query and a zero denominator gives no ratio,
+          so the bound does not fire for it; equal ratios do not exceed;
+        * ``"taking X1, X2, X3 in order, the running total after any ... exceeds
+          ... 100 after the first, 250 after the second, 500 after the third"``
+          (or ``caps 100/250/500``) -- cumulative thresholds: the running total
+          is checked after each step and exceeding ANY step's cap triggers the
+          rule; a total exactly at a cap does not exceed it.
+
+        For all three computed-column phrasings the decision the clause states
+        ("decide deny if ...") is the one enforced; a clause stating the
+        permissive verb ("approve if the ratio ... exceeds ...") is not turned
+        into a restriction.
 
         ``decision_table`` (optional) declares the domain's Decision Table at
         creation -- shorthand for ``create`` followed by :meth:`set_decision_table`
@@ -2406,7 +2433,8 @@ class PredictionResource(_Resource):
         backtest-only comparison (backward-compatible).
 
         Pass ``wait=False`` for the raw 202 envelope (``{"job_id", "poll", ...}``)
-        to poll the job yourself.
+        to poll the job yourself. Requires a user-scoped key or a session
+        (platform-scoped keys receive 403: the job is polled via ``/jobs/{id}``).
         """
         body: dict = {"prediction_config_id": prediction_config_id,
                       "include_pending": include_pending,
@@ -2446,8 +2474,27 @@ class PredictionResource(_Resource):
                           period: str | None = None,
                           entity: str | None = None,
                           top_drivers_n: int | None = None,
-                          compact_certification: bool = True) -> SymbolicForecastResult:
+                          compact_certification: bool = True,
+                          wait: bool = True,
+                          timeout: float = 600.0,
+                          poll_interval: float = 5.0) -> SymbolicForecastResult:
         """Run the symbolic forecaster and return the forecast WITH its WHY.
+
+        **Async (HTTP 202, since the symbolic-forecast job change).** The server
+        runs the fit as a background job — a wide panel takes minutes, longer than
+        a gateway's request timeout. By DEFAULT (``wait=True``) the SDK polls that
+        job (``poll_interval`` seconds apart, up to ``timeout`` seconds) and
+        returns the SETTLED forecast payload described below — the same call shape
+        and return value as before, so existing code keeps working. A failed fit
+        raises :class:`AmbertraceError` naming the reason; exceeding ``timeout``
+        raises :class:`TimeoutError`. Pass ``wait=False`` for the raw 202 envelope
+        ``{"job_id", "poll", "status": "forecasting", "deduplicated"}`` and poll
+        yourself via :meth:`AmbertraceAPI.wait_for_job` (the job ``result`` is the
+        forecast payload). An identical request already in flight returns the
+        existing ``job_id`` (``deduplicated=True``) rather than starting a second
+        fit. Requires a user-scoped key or a session: platform-scoped keys receive
+        403 on this endpoint (the job is polled via ``GET /api/v1/jobs/{id}``,
+        which is user/session-only).
 
         Returns ``{"forecast": {"value", "lower", "upper"}, "baseline",
         "skill_vs_persistence", "why": [...], "accepted_drivers": [...],
@@ -2825,12 +2872,23 @@ class PredictionResource(_Resource):
             body["entity"] = entity
         if top_drivers_n is not None:
             body["top_drivers_n"] = top_drivers_n
-        return self._request(
+        resp = self._request(
             "POST", f"/api/v1/platforms/{platform_id}/symbolic-forecast", json=body)
+        if not wait:
+            return resp
+        job_id = resp.get("job_id")
+        if job_id is None:
+            return resp
+        return self._await_job(
+            job_id, what=f"Symbolic forecast for config {prediction_config_id}",
+            timeout=timeout, poll_interval=poll_interval)
 
     def find_drivers(self, platform_id: int, *, prediction_config_id: int,
                      verified: bool = False,
-                     top_drivers_n: int | None = None) -> FindDriversResult:
+                     top_drivers_n: int | None = None,
+                     wait: bool = True,
+                     timeout: float = 600.0,
+                     poll_interval: float = 5.0) -> FindDriversResult:
         """Find My Drivers -- discovery-mode convenience over symbolic_forecast.
 
         Returns the ranked predictive drivers the platform discovered for a
@@ -2851,6 +2909,13 @@ class PredictionResource(_Resource):
 
         ``top_drivers_n`` controls how many ranked drivers appear in the
         ``prediction_record.top_drivers`` list (default 5).
+
+        Async like :meth:`symbolic_forecast` (the server fit is a background
+        job): by default (``wait=True``) this polls to completion and returns the
+        settled result; ``timeout`` / ``poll_interval`` bound the wait, and
+        ``wait=False`` returns the raw 202 envelope (``job_id``, ``poll``) to
+        poll yourself. Requires a user-scoped key or a session (platform-scoped
+        keys receive 403).
 
         The underlying ``symbolic_forecast`` call uses ``feature_overrides=None``
         (the real latest data, not a what-if) because the purpose is DISCOVERY
@@ -2876,8 +2941,16 @@ class PredictionResource(_Resource):
         }
         if top_drivers_n is not None:
             body["top_drivers_n"] = top_drivers_n
-        return self._request(
+        resp = self._request(
             "POST", f"/api/v1/platforms/{platform_id}/symbolic-forecast", json=body)
+        if not wait:
+            return resp
+        job_id = resp.get("job_id")
+        if job_id is None:
+            return resp
+        return self._await_job(
+            job_id, what=f"Find drivers for config {prediction_config_id}",
+            timeout=timeout, poll_interval=poll_interval)
 
     def residual_diagnosis(self, platform_id: int, *, prediction_config_id: int,
                            forecast_id: int | None = None,
