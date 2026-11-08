@@ -9,6 +9,7 @@ from attrs import field as _attrs_field
 from ..types import UNSET, Unset
 
 if TYPE_CHECKING:
+    from ..models.decision_table_out_advisories_item import DecisionTableOutAdvisoriesItem
     from ..models.decision_table_out_rows_item import DecisionTableOutRowsItem
 
 
@@ -23,6 +24,9 @@ class DecisionTableOut:
         mode (str):
         provenance (str):
         rows (list[DecisionTableOutRowsItem]):
+        advisories (list[DecisionTableOutAdvisoriesItem] | Unset): Advisory notes on the table you just declared (e.g. a
+            label whose usual meaning is the opposite of its `permits`); each {check, kind, row, message}. Never blocks or
+            alters the table, which is stored exactly as declared.
         guessed (list[str] | None | Unset): Row fields an inference step filled by convention rather than read
             ('default', 'order', 'permits'); absent on a declared table.
     """
@@ -31,6 +35,7 @@ class DecisionTableOut:
     mode: str
     provenance: str
     rows: list[DecisionTableOutRowsItem]
+    advisories: list[DecisionTableOutAdvisoriesItem] | Unset = UNSET
     guessed: list[str] | None | Unset = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
@@ -45,6 +50,13 @@ class DecisionTableOut:
         for rows_item_data in self.rows:
             rows_item = rows_item_data.to_dict()
             rows.append(rows_item)
+
+        advisories: list[dict[str, Any]] | Unset = UNSET
+        if not isinstance(self.advisories, Unset):
+            advisories = []
+            for advisories_item_data in self.advisories:
+                advisories_item = advisories_item_data.to_dict()
+                advisories.append(advisories_item)
 
         guessed: list[str] | None | Unset
         if isinstance(self.guessed, Unset):
@@ -65,6 +77,8 @@ class DecisionTableOut:
                 "rows": rows,
             }
         )
+        if advisories is not UNSET:
+            field_dict["advisories"] = advisories
         if guessed is not UNSET:
             field_dict["guessed"] = guessed
 
@@ -72,6 +86,7 @@ class DecisionTableOut:
 
     @classmethod
     def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
+        from ..models.decision_table_out_advisories_item import DecisionTableOutAdvisoriesItem
         from ..models.decision_table_out_rows_item import DecisionTableOutRowsItem
 
         d = dict(src_dict)
@@ -87,6 +102,15 @@ class DecisionTableOut:
             rows_item = DecisionTableOutRowsItem.from_dict(rows_item_data)
 
             rows.append(rows_item)
+
+        _advisories = d.pop("advisories", UNSET)
+        advisories: list[DecisionTableOutAdvisoriesItem] | Unset = UNSET
+        if _advisories is not UNSET:
+            advisories = []
+            for advisories_item_data in _advisories:
+                advisories_item = DecisionTableOutAdvisoriesItem.from_dict(advisories_item_data)
+
+                advisories.append(advisories_item)
 
         def _parse_guessed(data: object) -> list[str] | None | Unset:
             if data is None:
@@ -110,6 +134,7 @@ class DecisionTableOut:
             mode=mode,
             provenance=provenance,
             rows=rows,
+            advisories=advisories,
             guessed=guessed,
         )
 

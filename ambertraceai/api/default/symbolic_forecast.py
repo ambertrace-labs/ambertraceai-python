@@ -90,6 +90,15 @@ def sync_detailed(
     when the target is absent from every dataset; 422 when the latest row's target is non-numeric),
     never a raw 404.
 
+    ASYNC: returns 202 immediately with {job_id, poll, status:\"forecasting\"}; the fit runs in the
+    background (minutes on wide panels). Poll GET /api/v1/jobs/{job_id} — on completion the job `result`
+    IS the forecast payload described above; on failure the job status is failed, `error_message`
+    carries the reason and `result.error` the structured {code, message, http_status} (the status the
+    former synchronous endpoint returned, e.g. 409 target absent, 422 validation). An identical request
+    already in flight returns the existing job_id (deduplicated=true). The 404 (flag off), 403 and
+    config-not-found errors are still returned synchronously. Requires a user or session credential
+    (platform-scoped keys get 403), since the job is polled via GET /jobs/{id}.
+
     Capability gating: requires the \"predictions\" capability (see GET /api/v1/capabilities). Returns
     403 capability_disabled when the capability is not enabled for the org.
 
@@ -152,6 +161,15 @@ def sync(
     when the target is absent from every dataset; 422 when the latest row's target is non-numeric),
     never a raw 404.
 
+    ASYNC: returns 202 immediately with {job_id, poll, status:\"forecasting\"}; the fit runs in the
+    background (minutes on wide panels). Poll GET /api/v1/jobs/{job_id} — on completion the job `result`
+    IS the forecast payload described above; on failure the job status is failed, `error_message`
+    carries the reason and `result.error` the structured {code, message, http_status} (the status the
+    former synchronous endpoint returned, e.g. 409 target absent, 422 validation). An identical request
+    already in flight returns the existing job_id (deduplicated=true). The 404 (flag off), 403 and
+    config-not-found errors are still returned synchronously. Requires a user or session credential
+    (platform-scoped keys get 403), since the job is polled via GET /jobs/{id}.
+
     Capability gating: requires the \"predictions\" capability (see GET /api/v1/capabilities). Returns
     403 capability_disabled when the capability is not enabled for the org.
 
@@ -208,6 +226,15 @@ async def asyncio_detailed(
     WITH a real RMSE-based interval, not an error. Unmet preconditions return a STRUCTURED error (409
     when the target is absent from every dataset; 422 when the latest row's target is non-numeric),
     never a raw 404.
+
+    ASYNC: returns 202 immediately with {job_id, poll, status:\"forecasting\"}; the fit runs in the
+    background (minutes on wide panels). Poll GET /api/v1/jobs/{job_id} — on completion the job `result`
+    IS the forecast payload described above; on failure the job status is failed, `error_message`
+    carries the reason and `result.error` the structured {code, message, http_status} (the status the
+    former synchronous endpoint returned, e.g. 409 target absent, 422 validation). An identical request
+    already in flight returns the existing job_id (deduplicated=true). The 404 (flag off), 403 and
+    config-not-found errors are still returned synchronously. Requires a user or session credential
+    (platform-scoped keys get 403), since the job is polled via GET /jobs/{id}.
 
     Capability gating: requires the \"predictions\" capability (see GET /api/v1/capabilities). Returns
     403 capability_disabled when the capability is not enabled for the org.
@@ -268,6 +295,15 @@ async def asyncio(
     WITH a real RMSE-based interval, not an error. Unmet preconditions return a STRUCTURED error (409
     when the target is absent from every dataset; 422 when the latest row's target is non-numeric),
     never a raw 404.
+
+    ASYNC: returns 202 immediately with {job_id, poll, status:\"forecasting\"}; the fit runs in the
+    background (minutes on wide panels). Poll GET /api/v1/jobs/{job_id} — on completion the job `result`
+    IS the forecast payload described above; on failure the job status is failed, `error_message`
+    carries the reason and `result.error` the structured {code, message, http_status} (the status the
+    former synchronous endpoint returned, e.g. 409 target absent, 422 validation). An identical request
+    already in flight returns the existing job_id (deduplicated=true). The 404 (flag off), 403 and
+    config-not-found errors are still returned synchronously. Requires a user or session credential
+    (platform-scoped keys get 403), since the job is polled via GET /jobs/{id}.
 
     Capability gating: requires the \"predictions\" capability (see GET /api/v1/capabilities). Returns
     403 capability_disabled when the capability is not enabled for the org.

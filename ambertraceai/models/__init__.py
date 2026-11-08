@@ -28,6 +28,7 @@ from .batch_query_item_result_error_type_0 import BatchQueryItemResultErrorType0
 from .batch_query_request import BatchQueryRequest
 from .batch_query_response import BatchQueryResponse
 from .build_request import BuildRequest
+from .build_request_build_profile import BuildRequestBuildProfile
 from .build_request_config import BuildRequestConfig
 from .build_request_decision_posture_type_0 import BuildRequestDecisionPostureType0
 from .build_request_scored_determinations_type_0 import BuildRequestScoredDeterminationsType0
@@ -68,10 +69,14 @@ from .decision_provenance_response_decision import DecisionProvenanceResponseDec
 from .decision_table_in import DecisionTableIn
 from .decision_table_in_mode import DecisionTableInMode
 from .decision_table_out import DecisionTableOut
+from .decision_table_out_advisories_item import DecisionTableOutAdvisoriesItem
 from .decision_table_out_rows_item import DecisionTableOutRowsItem
 from .decision_table_row_in import DecisionTableRowIn
 from .discover_prediction_rules_request import DiscoverPredictionRulesRequest
 from .domain_create import DomainCreate
+from .domain_create_out import DomainCreateOut
+from .domain_create_out_advisories_item import DomainCreateOutAdvisoriesItem
+from .domain_create_out_decision_table_type_0 import DomainCreateOutDecisionTableType0
 from .domain_detail import DomainDetail
 from .domain_detail_decision_table_type_0 import DomainDetailDecisionTableType0
 from .domain_detail_eval_config_type_0 import DomainDetailEvalConfigType0
@@ -269,6 +274,7 @@ __all__ = (
     "BatchQueryRequest",
     "BatchQueryResponse",
     "BuildRequest",
+    "BuildRequestBuildProfile",
     "BuildRequestConfig",
     "BuildRequestDecisionPostureType0",
     "BuildRequestScoredDeterminationsType0",
@@ -307,10 +313,14 @@ __all__ = (
     "DecisionTableIn",
     "DecisionTableInMode",
     "DecisionTableOut",
+    "DecisionTableOutAdvisoriesItem",
     "DecisionTableOutRowsItem",
     "DecisionTableRowIn",
     "DiscoverPredictionRulesRequest",
     "DomainCreate",
+    "DomainCreateOut",
+    "DomainCreateOutAdvisoriesItem",
+    "DomainCreateOutDecisionTableType0",
     "DomainDetail",
     "DomainDetailDecisionTableType0",
     "DomainDetailEvalConfigType0",

@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, TypeVar, cast
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
+from ..models.build_request_build_profile import BuildRequestBuildProfile
 from ..models.build_request_decision_posture_type_0 import BuildRequestDecisionPostureType0
 from ..types import UNSET, Unset
 
@@ -23,6 +24,10 @@ class BuildRequest:
     """
     Attributes:
         domain_id (int):
+        build_profile (BuildRequestBuildProfile | Unset): 'full' (default) builds the decisions + predictions platform
+            and needs a domain with entities and a consistent decision table. 'prediction_only' builds a forecasting
+            platform from the domain's datasets alone: no entities, ontology or decision table required. Default:
+            BuildRequestBuildProfile.FULL.
         config (BuildRequestConfig | Unset):
         decision_posture (BuildRequestDecisionPostureType0 | None | Unset): Decisions platforms only. What a query that
             matches NO verdict rule returns. 'fail_closed' (the default when omitted) serves the decision table's DECLARED
@@ -65,6 +70,7 @@ class BuildRequest:
     """
 
     domain_id: int
+    build_profile: BuildRequestBuildProfile | Unset = BuildRequestBuildProfile.FULL
     config: BuildRequestConfig | Unset = UNSET
     decision_posture: BuildRequestDecisionPostureType0 | None | Unset = UNSET
     invariant_manifest: list[Invariant] | None | Unset = UNSET
@@ -81,6 +87,10 @@ class BuildRequest:
         from ..models.build_request_scored_determinations_type_0 import BuildRequestScoredDeterminationsType0
 
         domain_id = self.domain_id
+
+        build_profile: str | Unset = UNSET
+        if not isinstance(self.build_profile, Unset):
+            build_profile = self.build_profile.value
 
         config: dict[str, Any] | Unset = UNSET
         if not isinstance(self.config, Unset):
@@ -149,6 +159,8 @@ class BuildRequest:
                 "domain_id": domain_id,
             }
         )
+        if build_profile is not UNSET:
+            field_dict["build_profile"] = build_profile
         if config is not UNSET:
             field_dict["config"] = config
         if decision_posture is not UNSET:
@@ -180,6 +192,13 @@ class BuildRequest:
 
         d = dict(src_dict)
         domain_id = d.pop("domain_id")
+
+        _build_profile = d.pop("build_profile", UNSET)
+        build_profile: BuildRequestBuildProfile | Unset
+        if isinstance(_build_profile, Unset):
+            build_profile = UNSET
+        else:
+            build_profile = BuildRequestBuildProfile(_build_profile)
 
         _config = d.pop("config", UNSET)
         config: BuildRequestConfig | Unset
@@ -286,6 +305,7 @@ class BuildRequest:
 
         build_request = cls(
             domain_id=domain_id,
+            build_profile=build_profile,
             config=config,
             decision_posture=decision_posture,
             invariant_manifest=invariant_manifest,
