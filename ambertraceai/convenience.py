@@ -3811,6 +3811,34 @@ class AgentPolicyResource(_Resource):
 
 
 class JobResource(_Resource):
+    def list(self, *, status: str | None = None, type: str | None = None,
+             ref_type: str | None = None, ref_id: int | None = None,
+             since: str | None = None, limit: int | None = None) -> list[JobOut]:
+        """List the org's jobs, newest first (``GET /api/v1/jobs``, ``listJobs``).
+
+        Discover in-flight or recent async work (platform builds, ontology
+        builds, dataset cleaning, prediction training/forecast jobs) without
+        already holding a job id — e.g. to re-attach after a restart:
+        ``client.jobs.list(status="pending,running")``, then poll each id with
+        :meth:`get`.
+
+        ``status`` — comma-separated ``pending,running,completed,failed``.
+        ``type`` — ``"build"``, ``"cleaning"`` or a generic job type
+        (``"ontology"``, ``"training"``, ``"symbolic_forecast"``).
+        ``ref_type`` / ``ref_id`` — restrict to one platform or domain.
+        ``since`` — ISO-8601 ``created_at`` cutoff. ``limit`` — 1..100 (default 20).
+
+        Items omit ``result``; fetch it with :meth:`get`. Pass the item's
+        ``type`` ("build"/"cleaning") back to :meth:`get` as the ``type`` hint,
+        since job ids are only unique within a job type. Only jobs of
+        platforms/domains the caller may view are returned.
+        """
+        params = {k: v for k, v in (
+            ("status", status), ("type", type), ("ref_type", ref_type),
+            ("ref_id", ref_id), ("since", since), ("limit", limit),
+        ) if v is not None}
+        return self._request("GET", "/api/v1/jobs", params=params)
+
     def get(self, job_id: int | str, *, type: str | None = None) -> JobOut:
         """Fetch a job by id.
 

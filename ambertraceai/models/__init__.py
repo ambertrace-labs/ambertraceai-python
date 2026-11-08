@@ -127,10 +127,12 @@ from .graph_nodes_response import GraphNodesResponse
 from .health_data import HealthData
 from .health_response import HealthResponse
 from .invariant import Invariant
+from .job_list_out import JobListOut
 from .job_out import JobOut
 from .job_out_result_type_0 import JobOutResultType0
 from .linked_dataset_out import LinkedDatasetOut
 from .linked_series_out import LinkedSeriesOut
+from .list_jobs_ref_type_type_0 import ListJobsRefTypeType0
 from .neurosymbolic_comparison_query import NeurosymbolicComparisonQuery
 from .neurosymbolic_comparison_query_feature_overrides_type_0 import NeurosymbolicComparisonQueryFeatureOverridesType0
 from .node_out import NodeOut
@@ -371,10 +373,12 @@ __all__ = (
     "HealthData",
     "HealthResponse",
     "Invariant",
+    "JobListOut",
     "JobOut",
     "JobOutResultType0",
     "LinkedDatasetOut",
     "LinkedSeriesOut",
+    "ListJobsRefTypeType0",
     "NeurosymbolicComparisonQuery",
     "NeurosymbolicComparisonQueryFeatureOverridesType0",
     "NodeOut",

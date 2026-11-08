@@ -25,6 +25,8 @@ class JobOut:
         created_at (None | str | Unset):
         error_message (None | str | Unset):
         progress (int | None | Unset):
+        ref_id (int | None | Unset):
+        ref_type (None | str | Unset):
         result (JobOutResultType0 | None | Unset):
         step (None | str | Unset):
         updated_at (None | str | Unset):
@@ -36,6 +38,8 @@ class JobOut:
     created_at: None | str | Unset = UNSET
     error_message: None | str | Unset = UNSET
     progress: int | None | Unset = UNSET
+    ref_id: int | None | Unset = UNSET
+    ref_type: None | str | Unset = UNSET
     result: JobOutResultType0 | None | Unset = UNSET
     step: None | str | Unset = UNSET
     updated_at: None | str | Unset = UNSET
@@ -67,6 +71,18 @@ class JobOut:
             progress = UNSET
         else:
             progress = self.progress
+
+        ref_id: int | None | Unset
+        if isinstance(self.ref_id, Unset):
+            ref_id = UNSET
+        else:
+            ref_id = self.ref_id
+
+        ref_type: None | str | Unset
+        if isinstance(self.ref_type, Unset):
+            ref_type = UNSET
+        else:
+            ref_type = self.ref_type
 
         result: dict[str, Any] | None | Unset
         if isinstance(self.result, Unset):
@@ -103,6 +119,10 @@ class JobOut:
             field_dict["error_message"] = error_message
         if progress is not UNSET:
             field_dict["progress"] = progress
+        if ref_id is not UNSET:
+            field_dict["ref_id"] = ref_id
+        if ref_type is not UNSET:
+            field_dict["ref_type"] = ref_type
         if result is not UNSET:
             field_dict["result"] = result
         if step is not UNSET:
@@ -150,6 +170,24 @@ class JobOut:
 
         progress = _parse_progress(d.pop("progress", UNSET))
 
+        def _parse_ref_id(data: object) -> int | None | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(int | None | Unset, data)
+
+        ref_id = _parse_ref_id(d.pop("ref_id", UNSET))
+
+        def _parse_ref_type(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        ref_type = _parse_ref_type(d.pop("ref_type", UNSET))
+
         def _parse_result(data: object) -> JobOutResultType0 | None | Unset:
             if data is None:
                 return data
@@ -192,6 +230,8 @@ class JobOut:
             created_at=created_at,
             error_message=error_message,
             progress=progress,
+            ref_id=ref_id,
+            ref_type=ref_type,
             result=result,
             step=step,
             updated_at=updated_at,
