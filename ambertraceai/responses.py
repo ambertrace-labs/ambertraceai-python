@@ -602,6 +602,8 @@ class VerifyPropertyResult(TypedDict, total=False):
     witness_index: int | None  # VIOLATED only: 0-based position in the enumeration
     witness_detail: JsonDict | None  # exactly_one_verdict VIOLATED: cell, verdicts, coverage
     witness_recertification: JsonDict | None  # VIOLATED: the two kernel derivations
+    inherited_provenance: list[JsonDict] | None  # certified-output params: per-source level
+    resolved_payoffs: list[JsonDict] | None  # custom-game properties: the decided payoff table
     answer: str  # SDK-rendered from result/certified/search/witness (never free text)
 
 

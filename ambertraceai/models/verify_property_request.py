@@ -17,9 +17,13 @@ T = TypeVar("T", bound="VerifyPropertyRequest")
 class VerifyPropertyRequest:
     """
     Attributes:
-        property_ (str): The universal property to certify: 'strategy_proof' (needs space.mechanism, agents, domain) or
+        property_ (str): The universal property to certify: 'strategy_proof' (needs space.mechanism, agents, domain),
             'exactly_one_verdict' (regime-grid totality + exclusivity of the platform's decision rules; needs
-            space.variables).
+            space.variables), or a custom-game property over space.game: 'nash_equilibrium' (space.profile),
+            'dominant_strategy' (space.player, space.action, optional space.strict), 'best_response' (space.player,
+            space.action, space.opponent_profile), 'pareto_optimal' (space.profile; HOLDS = no profile Pareto-dominates it,
+            VIOLATED = the dominating profile is the witness) or 'pareto_dominated' (space.profile; the dual: HOLDS = a
+            dominating profile exists and is the witness, VIOLATED = none does, certified exhaustively).
         space (VerifyPropertySpace): The finite space a ``verify_property`` claim quantifies over.
 
             ``strategy_proof``: the PRODUCT of every agent's type domain x which agent deviates x

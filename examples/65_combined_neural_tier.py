@@ -28,52 +28,56 @@ dict includes the objective key alongside the standard r2/rmse deltas.
 """
 
 import argparse
-import sys
+from pathlib import Path
 
-from _common import api, ensure_domain_platform_data
+from _common import (
+    add_common_args,
+    run_demo,
+    setup_forecast_platform,
+)
 
-EXAMPLE_DATASET = "data/fred_economic_data.csv"
+EXAMPLE_DATASET = str(Path(__file__).resolve().parent / "data" / "fred_economic_data.csv")
 
 
-def main():
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Combined neural+rule composition tier example")
     parser.add_argument(
         "--dataset", default=EXAMPLE_DATASET,
         help="Path to the dataset CSV (default: %(default)s)")
-    args = parser.parse_args()
+    add_common_args(parser)
+    return parser.parse_args()
+
+
+def run(api, args: argparse.Namespace) -> None:
 
     # --- Setup: domain + platform + data ---
-    platform_id = ensure_domain_platform_data(
-        domain_name="combined_tier_demo",
+    platform_id = setup_forecast_platform(
+        api,
+        name="combined_tier_demo",
+        description="Combined neural+rule forecast of the US 10-year Treasury yield (GS10) from monthly FRED macro drivers.",
         dataset_path=args.dataset,
     )
 
     # --- Create config with neural baseline + sharpe objective ---
-    config_resp = api.create_prediction_config(
-        id=platform_id,
-        data={
-            "target_field": "GS10",
-            "time_index_field": "date",
-            "frequency": "monthly",
-            "baseline_mode": "neural",
-            "objective": "sharpe_ratio",
-        },
+    config = api.predictions.create_config(
+        platform_id,
+        target_field="GS10",
+        time_index_field="date",
+        frequency="monthly",
+        baseline_mode="neural",
+        objective="sharpe_ratio",
     )
-    config = config_resp.data
     print(f"Created config id={config['id']} "
           f"baseline_mode={config['baseline_mode']} "
           f"objective={config['objective']}")
 
     # --- Symbolic forecast ---
-    forecast_resp = api.symbolic_forecast(
-        id=platform_id,
-        data={
-            "config_id": config["id"],
-            "include_fitted_series": True,
-        },
+    forecast = api.predictions.symbolic_forecast(
+        platform_id,
+        prediction_config_id=config["id"],
+        include_fitted_series=True,
     )
-    forecast = forecast_resp.data
 
     # --- Combined tier ---
     tier = forecast.get("forecast_tier")
@@ -101,14 +105,11 @@ def main():
             print(f"  ... {len(series) - 5} more points")
 
     # --- Neurosymbolic comparison with objective-scored delta ---
-    comparison_resp = api.neurosymbolic_comparison(
-        id=platform_id,
-        data={
-            "config_id": config["id"],
-            "include_series": True,
-        },
+    comp = api.predictions.neurosymbolic_comparison(
+        platform_id,
+        prediction_config_id=config["id"],
+        include_series=True,
     )
-    comp = comparison_resp.data
     delta = comp.get("delta") or {}
     print("\nNeurosymbolic comparison delta:")
     print(f"  r2:    {delta.get('r2')}")
@@ -121,5 +122,9 @@ def main():
     print("\nDone.")
 
 
+def main() -> None:
+    run_demo(run, parse_args())
+
+
 if __name__ == "__main__":
-    sys.exit(main() or 0)
+    main()

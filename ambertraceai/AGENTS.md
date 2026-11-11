@@ -76,6 +76,13 @@ totality + exclusivity** with `property="exactly_one_verdict"` and
 grid derives EXACTLY ONE verdict from the platform's own decision rules (`VIOLATED` names
 the uncovered / double-covered cell in `witness` / `witness_detail`; a non-scalar rule
 leaf is an `ABSTAIN`). See `examples/70_verify_property_regime_grid.py`.
+The same method certifies **custom normal-form games** (`space.game` = `{"players":
+[[actions]...], "payoffs": [{"actions", "utilities"}...]}`) with `property` =
+`nash_equilibrium` (`space.profile`), `dominant_strategy` (`player`, `action`, `strict`),
+`best_response` (`player`, `action`, `opponent_profile`) or `pareto_optimal` /
+`pareto_dominated` (`profile`): (`pareto_dominated` is the dual: `HOLDS` = a dominating profile exists) `VIOLATED` names the profitable deviation / dominating
+profile with every player's payoff in `witness_recertification`. See
+`examples/77_verify_property_custom_game.py`.
 
 ## Async jobs
 

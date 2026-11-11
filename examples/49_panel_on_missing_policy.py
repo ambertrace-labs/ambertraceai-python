@@ -33,69 +33,77 @@ connector config.
 from __future__ import annotations
 
 
-from _common import api, print_section, wait_for_dataset
+from _common import banner, get_client, wait_for_dataset
 
-# ---- 1. Create a domain --------------------------------------------------
-print_section("1. Create domain")
-domain = api.domains.create(
-    name="Panel Policy Demo",
-    description="Demonstrates on_missing policy for multi-source panels",
-)
-print(f"Domain: {domain.id} ({domain.name})")
 
-# ---- 2. Fetch a multi-source panel WITH on_missing -----------------------
-print_section("2. Fetch multi-source panel with on_missing=interpolate")
+def main() -> None:
+    api = get_client()
 
-# Example: two FRED sources with different history lengths.
-# The on_missing policy controls how gaps from the outer join are handled.
-ds = api.datasets.fetch_multi(
-    domain_id=domain.id,
-    sources=[
-        {"connector_type": "fred", "config": {"series_ids": ["GS10", "GS2"]}},
-        {"connector_type": "fred", "config": {"series_ids": ["DFF"]}},
-    ],
-    frequency="monthly",
-    aggregation="last",
-    on_missing={"method": "interpolate", "max_gap": 3},
-)
-print(f"Dataset: {ds['id']} (status={ds['status']})")
+    # ---- 1. Create a domain --------------------------------------------------
+    banner("1. Create domain")
+    domain = api.domains.create(
+        name="Panel Policy Demo",
+        description="Demonstrates on_missing policy for multi-source panels",
+    )
+    print(f"Domain: {domain.id} ({domain.name})")
 
-# ---- 3. Wait for the merge to complete -----------------------------------
-print_section("3. Poll until ready")
-ds = wait_for_dataset(api, ds["id"])
-print(f"Status: {ds['status']}, rows={ds.get('row_count')}, cols={ds.get('column_count')}")
+    # ---- 2. Fetch a multi-source panel WITH on_missing -----------------------
+    banner("2. Fetch multi-source panel with on_missing=interpolate")
 
-# ---- 4. Read the transformation manifest ---------------------------------
-print_section("4. Transformation manifest")
-schema = ds.get("schema_info") or {}
-manifest = schema.get("transformation_manifest", [])
-if manifest:
-    for entry in manifest:
-        col = entry.get("column", "?")
-        method = entry.get("method", "?")
-        rows = entry.get("rows_affected", 0)
-        extrap = entry.get("modeled_extrapolation", False)
-        flag = " [MODELED EXTRAPOLATION]" if extrap else ""
-        print(f"  {col}: {method}, {rows} rows{flag}")
-else:
-    print("  (no transformations applied -- panel was already complete)")
+    # Example: two FRED sources with different history lengths.
+    # The on_missing policy controls how gaps from the outer join are handled.
+    ds = api.datasets.fetch_multi(
+        domain_id=domain.id,
+        sources=[
+            {"connector_type": "fred", "config": {"series_ids": ["GS10", "GS2"]}},
+            {"connector_type": "fred", "config": {"series_ids": ["DFF"]}},
+        ],
+        frequency="monthly",
+        aggregation="last",
+        on_missing={"method": "interpolate", "max_gap": 3},
+    )
+    print(f"Dataset: {ds['id']} (status={ds['status']})")
 
-# ---- 5. Check panel sufficiency -------------------------------------------
-print_section("5. Panel sufficiency report")
-report = api.datasets.panel_report(ds["id"])
-print(f"  Usable rows: {report['intersection']['usable_rows']}")
-print(f"  Coverage: {report['intersection']['coverage_pct']}%")
-if report.get("stale_columns"):
-    print(f"  Stale columns: {report['stale_columns']}")
+    # ---- 3. Wait for the merge to complete -----------------------------------
+    banner("3. Poll until ready")
+    ds = wait_for_dataset(api, ds["id"])
+    print(f"Status: {ds['status']}, rows={ds.get('row_count')}, cols={ds.get('column_count')}")
 
-# ---- 6. Compare policies -------------------------------------------------
-print_section("6. Policy comparison (drop vs interpolate vs proxy_splice)")
-print("  The on_missing policy controls the tradeoff between data quality")
-print("  and data quantity. 'drop' is strictest (fewest rows, all observed).")
-print("  'proxy_splice' is most permissive (most rows, but modeled_extrapolation")
-print("  cells are flagged in the manifest).")
-print()
-print("  Use the panel_report + transformation_manifest together to understand")
-print("  what your panel really contains before training.")
+    # ---- 4. Read the transformation manifest ---------------------------------
+    banner("4. Transformation manifest")
+    schema = ds.get("schema_info") or {}
+    manifest = schema.get("transformation_manifest", [])
+    if manifest:
+        for entry in manifest:
+            col = entry.get("column", "?")
+            method = entry.get("method", "?")
+            rows = entry.get("rows_affected", 0)
+            extrap = entry.get("modeled_extrapolation", False)
+            flag = " [MODELED EXTRAPOLATION]" if extrap else ""
+            print(f"  {col}: {method}, {rows} rows{flag}")
+    else:
+        print("  (no transformations applied -- panel was already complete)")
 
-print_section("Done")
+    # ---- 5. Check panel sufficiency -------------------------------------------
+    banner("5. Panel sufficiency report")
+    report = api.datasets.panel_report(ds["id"])
+    print(f"  Usable rows: {report['intersection']['usable_rows']}")
+    print(f"  Coverage: {report['intersection']['coverage_pct']}%")
+    if report.get("stale_columns"):
+        print(f"  Stale columns: {report['stale_columns']}")
+
+    # ---- 6. Compare policies -------------------------------------------------
+    banner("6. Policy comparison (drop vs interpolate vs proxy_splice)")
+    print("  The on_missing policy controls the tradeoff between data quality")
+    print("  and data quantity. 'drop' is strictest (fewest rows, all observed).")
+    print("  'proxy_splice' is most permissive (most rows, but modeled_extrapolation")
+    print("  cells are flagged in the manifest).")
+    print()
+    print("  Use the panel_report + transformation_manifest together to understand")
+    print("  what your panel really contains before training.")
+
+    banner("Done")
+
+
+if __name__ == "__main__":
+    main()

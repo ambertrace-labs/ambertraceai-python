@@ -392,6 +392,21 @@ def build_platform(
     return api.platforms.get(int(platform_id))
 
 
+def setup_forecast_platform(
+    api: AmbertraceAPI,
+    *,
+    name: str,
+    description: str,
+    dataset_path: str,
+) -> int:
+    """Create a domain, upload ``dataset_path``, build ontology + platform; return the platform id."""
+    domain = create_domain(api, name=name, description=description)
+    dataset = api.datasets.upload(domain_id=domain["id"], file_path=str(dataset_path))
+    build_ontology(api, domain["id"])
+    platform = build_platform(api, domain["id"], dataset["id"])
+    return platform["id"]
+
+
 # ---------------------------------------------------------------------------
 # Pretty-printing: data inspection
 # ---------------------------------------------------------------------------

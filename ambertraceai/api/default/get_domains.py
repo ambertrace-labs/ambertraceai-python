@@ -14,6 +14,9 @@ def _get_kwargs(
     *,
     limit: int | Unset = 50,
     offset: int | Unset = 0,
+    q: None | str | Unset = UNSET,
+    status: None | str | Unset = UNSET,
+    sort: None | str | Unset = UNSET,
 ) -> dict[str, Any]:
 
     params: dict[str, Any] = {}
@@ -21,6 +24,27 @@ def _get_kwargs(
     params["limit"] = limit
 
     params["offset"] = offset
+
+    json_q: None | str | Unset
+    if isinstance(q, Unset):
+        json_q = UNSET
+    else:
+        json_q = q
+    params["q"] = json_q
+
+    json_status: None | str | Unset
+    if isinstance(status, Unset):
+        json_status = UNSET
+    else:
+        json_status = status
+    params["status"] = json_status
+
+    json_sort: None | str | Unset
+    if isinstance(sort, Unset):
+        json_sort = UNSET
+    else:
+        json_sort = sort
+    params["sort"] = json_sort
 
     params = {k: v for k, v in params.items() if v is not UNSET and v is not None}
 
@@ -73,14 +97,24 @@ def sync_detailed(
     client: AuthenticatedClient | Client,
     limit: int | Unset = 50,
     offset: int | Unset = 0,
+    q: None | str | Unset = UNSET,
+    status: None | str | Unset = UNSET,
+    sort: None | str | Unset = UNSET,
 ) -> Response[DomainOut | list[ValidationErrorModel]]:
     """List domains
 
-     Returns all domains belonging to the authenticated organisation. Supports pagination.
+     Returns the domains visible to the caller in the authenticated organisation. Server-side pagination
+    (limit/offset; pagination.total is the true count). Optional filters: q (case-insensitive substring
+    of name or description), status (comma-separated), sort (id | name | status | updated | created;
+    prefix '-' for descending; default id). For a lightweight typeahead use GET /domains/search.
 
     Args:
         limit (int | Unset):  Default: 50.
         offset (int | Unset):  Default: 0.
+        q (None | str | Unset): Case-insensitive substring match on domain name or description.
+        status (None | str | Unset): Comma-separated statuses (e.g. 'draft,active').
+        sort (None | str | Unset): id | name | status | updated | created; prefix '-' for
+            descending. Default: id.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -93,6 +127,9 @@ def sync_detailed(
     kwargs = _get_kwargs(
         limit=limit,
         offset=offset,
+        q=q,
+        status=status,
+        sort=sort,
     )
 
     response = client.get_httpx_client().request(
@@ -107,14 +144,24 @@ def sync(
     client: AuthenticatedClient | Client,
     limit: int | Unset = 50,
     offset: int | Unset = 0,
+    q: None | str | Unset = UNSET,
+    status: None | str | Unset = UNSET,
+    sort: None | str | Unset = UNSET,
 ) -> DomainOut | list[ValidationErrorModel] | None:
     """List domains
 
-     Returns all domains belonging to the authenticated organisation. Supports pagination.
+     Returns the domains visible to the caller in the authenticated organisation. Server-side pagination
+    (limit/offset; pagination.total is the true count). Optional filters: q (case-insensitive substring
+    of name or description), status (comma-separated), sort (id | name | status | updated | created;
+    prefix '-' for descending; default id). For a lightweight typeahead use GET /domains/search.
 
     Args:
         limit (int | Unset):  Default: 50.
         offset (int | Unset):  Default: 0.
+        q (None | str | Unset): Case-insensitive substring match on domain name or description.
+        status (None | str | Unset): Comma-separated statuses (e.g. 'draft,active').
+        sort (None | str | Unset): id | name | status | updated | created; prefix '-' for
+            descending. Default: id.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -128,6 +175,9 @@ def sync(
         client=client,
         limit=limit,
         offset=offset,
+        q=q,
+        status=status,
+        sort=sort,
     ).parsed
 
 
@@ -136,14 +186,24 @@ async def asyncio_detailed(
     client: AuthenticatedClient | Client,
     limit: int | Unset = 50,
     offset: int | Unset = 0,
+    q: None | str | Unset = UNSET,
+    status: None | str | Unset = UNSET,
+    sort: None | str | Unset = UNSET,
 ) -> Response[DomainOut | list[ValidationErrorModel]]:
     """List domains
 
-     Returns all domains belonging to the authenticated organisation. Supports pagination.
+     Returns the domains visible to the caller in the authenticated organisation. Server-side pagination
+    (limit/offset; pagination.total is the true count). Optional filters: q (case-insensitive substring
+    of name or description), status (comma-separated), sort (id | name | status | updated | created;
+    prefix '-' for descending; default id). For a lightweight typeahead use GET /domains/search.
 
     Args:
         limit (int | Unset):  Default: 50.
         offset (int | Unset):  Default: 0.
+        q (None | str | Unset): Case-insensitive substring match on domain name or description.
+        status (None | str | Unset): Comma-separated statuses (e.g. 'draft,active').
+        sort (None | str | Unset): id | name | status | updated | created; prefix '-' for
+            descending. Default: id.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -156,6 +216,9 @@ async def asyncio_detailed(
     kwargs = _get_kwargs(
         limit=limit,
         offset=offset,
+        q=q,
+        status=status,
+        sort=sort,
     )
 
     response = await client.get_async_httpx_client().request(**kwargs)
@@ -168,14 +231,24 @@ async def asyncio(
     client: AuthenticatedClient | Client,
     limit: int | Unset = 50,
     offset: int | Unset = 0,
+    q: None | str | Unset = UNSET,
+    status: None | str | Unset = UNSET,
+    sort: None | str | Unset = UNSET,
 ) -> DomainOut | list[ValidationErrorModel] | None:
     """List domains
 
-     Returns all domains belonging to the authenticated organisation. Supports pagination.
+     Returns the domains visible to the caller in the authenticated organisation. Server-side pagination
+    (limit/offset; pagination.total is the true count). Optional filters: q (case-insensitive substring
+    of name or description), status (comma-separated), sort (id | name | status | updated | created;
+    prefix '-' for descending; default id). For a lightweight typeahead use GET /domains/search.
 
     Args:
         limit (int | Unset):  Default: 50.
         offset (int | Unset):  Default: 0.
+        q (None | str | Unset): Case-insensitive substring match on domain name or description.
+        status (None | str | Unset): Comma-separated statuses (e.g. 'draft,active').
+        sort (None | str | Unset): id | name | status | updated | created; prefix '-' for
+            descending. Default: id.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -190,5 +263,8 @@ async def asyncio(
             client=client,
             limit=limit,
             offset=offset,
+            q=q,
+            status=status,
+            sort=sort,
         )
     ).parsed

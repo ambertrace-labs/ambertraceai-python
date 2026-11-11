@@ -14,6 +14,10 @@ def _get_kwargs(
     *,
     limit: int | Unset = 50,
     offset: int | Unset = 0,
+    q: None | str | Unset = UNSET,
+    domain_id: int | None | Unset = UNSET,
+    status: None | str | Unset = UNSET,
+    sort: None | str | Unset = UNSET,
 ) -> dict[str, Any]:
 
     params: dict[str, Any] = {}
@@ -21,6 +25,34 @@ def _get_kwargs(
     params["limit"] = limit
 
     params["offset"] = offset
+
+    json_q: None | str | Unset
+    if isinstance(q, Unset):
+        json_q = UNSET
+    else:
+        json_q = q
+    params["q"] = json_q
+
+    json_domain_id: int | None | Unset
+    if isinstance(domain_id, Unset):
+        json_domain_id = UNSET
+    else:
+        json_domain_id = domain_id
+    params["domain_id"] = json_domain_id
+
+    json_status: None | str | Unset
+    if isinstance(status, Unset):
+        json_status = UNSET
+    else:
+        json_status = status
+    params["status"] = json_status
+
+    json_sort: None | str | Unset
+    if isinstance(sort, Unset):
+        json_sort = UNSET
+    else:
+        json_sort = sort
+    params["sort"] = json_sort
 
     params = {k: v for k, v in params.items() if v is not UNSET and v is not None}
 
@@ -73,15 +105,26 @@ def sync_detailed(
     client: AuthenticatedClient | Client,
     limit: int | Unset = 50,
     offset: int | Unset = 0,
+    q: None | str | Unset = UNSET,
+    domain_id: int | None | Unset = UNSET,
+    status: None | str | Unset = UNSET,
+    sort: None | str | Unset = UNSET,
 ) -> Response[DatasetOut | list[ValidationErrorModel]]:
     """List datasets
 
-     Returns all datasets belonging to the authenticated organisation, ordered by creation date. Supports
-    limit/offset pagination.
+     Returns the datasets of domains visible to the caller, with limit/offset pagination
+    (pagination.total is the true count) and domain_name on each row. Optional filters: q (case-
+    insensitive substring of name or description), domain_id, status (comma-separated), sort (created |
+    name | rows | status | updated; prefix '-' for descending; default -created).
 
     Args:
         limit (int | Unset):  Default: 50.
         offset (int | Unset):  Default: 0.
+        q (None | str | Unset): Case-insensitive substring match on dataset name or description.
+        domain_id (int | None | Unset): Only datasets of this domain.
+        status (None | str | Unset): Comma-separated statuses (e.g. 'ingested,ready').
+        sort (None | str | Unset): created | name | rows | status | updated; prefix '-' for
+            descending. Default: -created.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -94,6 +137,10 @@ def sync_detailed(
     kwargs = _get_kwargs(
         limit=limit,
         offset=offset,
+        q=q,
+        domain_id=domain_id,
+        status=status,
+        sort=sort,
     )
 
     response = client.get_httpx_client().request(
@@ -108,15 +155,26 @@ def sync(
     client: AuthenticatedClient | Client,
     limit: int | Unset = 50,
     offset: int | Unset = 0,
+    q: None | str | Unset = UNSET,
+    domain_id: int | None | Unset = UNSET,
+    status: None | str | Unset = UNSET,
+    sort: None | str | Unset = UNSET,
 ) -> DatasetOut | list[ValidationErrorModel] | None:
     """List datasets
 
-     Returns all datasets belonging to the authenticated organisation, ordered by creation date. Supports
-    limit/offset pagination.
+     Returns the datasets of domains visible to the caller, with limit/offset pagination
+    (pagination.total is the true count) and domain_name on each row. Optional filters: q (case-
+    insensitive substring of name or description), domain_id, status (comma-separated), sort (created |
+    name | rows | status | updated; prefix '-' for descending; default -created).
 
     Args:
         limit (int | Unset):  Default: 50.
         offset (int | Unset):  Default: 0.
+        q (None | str | Unset): Case-insensitive substring match on dataset name or description.
+        domain_id (int | None | Unset): Only datasets of this domain.
+        status (None | str | Unset): Comma-separated statuses (e.g. 'ingested,ready').
+        sort (None | str | Unset): created | name | rows | status | updated; prefix '-' for
+            descending. Default: -created.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -130,6 +188,10 @@ def sync(
         client=client,
         limit=limit,
         offset=offset,
+        q=q,
+        domain_id=domain_id,
+        status=status,
+        sort=sort,
     ).parsed
 
 
@@ -138,15 +200,26 @@ async def asyncio_detailed(
     client: AuthenticatedClient | Client,
     limit: int | Unset = 50,
     offset: int | Unset = 0,
+    q: None | str | Unset = UNSET,
+    domain_id: int | None | Unset = UNSET,
+    status: None | str | Unset = UNSET,
+    sort: None | str | Unset = UNSET,
 ) -> Response[DatasetOut | list[ValidationErrorModel]]:
     """List datasets
 
-     Returns all datasets belonging to the authenticated organisation, ordered by creation date. Supports
-    limit/offset pagination.
+     Returns the datasets of domains visible to the caller, with limit/offset pagination
+    (pagination.total is the true count) and domain_name on each row. Optional filters: q (case-
+    insensitive substring of name or description), domain_id, status (comma-separated), sort (created |
+    name | rows | status | updated; prefix '-' for descending; default -created).
 
     Args:
         limit (int | Unset):  Default: 50.
         offset (int | Unset):  Default: 0.
+        q (None | str | Unset): Case-insensitive substring match on dataset name or description.
+        domain_id (int | None | Unset): Only datasets of this domain.
+        status (None | str | Unset): Comma-separated statuses (e.g. 'ingested,ready').
+        sort (None | str | Unset): created | name | rows | status | updated; prefix '-' for
+            descending. Default: -created.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -159,6 +232,10 @@ async def asyncio_detailed(
     kwargs = _get_kwargs(
         limit=limit,
         offset=offset,
+        q=q,
+        domain_id=domain_id,
+        status=status,
+        sort=sort,
     )
 
     response = await client.get_async_httpx_client().request(**kwargs)
@@ -171,15 +248,26 @@ async def asyncio(
     client: AuthenticatedClient | Client,
     limit: int | Unset = 50,
     offset: int | Unset = 0,
+    q: None | str | Unset = UNSET,
+    domain_id: int | None | Unset = UNSET,
+    status: None | str | Unset = UNSET,
+    sort: None | str | Unset = UNSET,
 ) -> DatasetOut | list[ValidationErrorModel] | None:
     """List datasets
 
-     Returns all datasets belonging to the authenticated organisation, ordered by creation date. Supports
-    limit/offset pagination.
+     Returns the datasets of domains visible to the caller, with limit/offset pagination
+    (pagination.total is the true count) and domain_name on each row. Optional filters: q (case-
+    insensitive substring of name or description), domain_id, status (comma-separated), sort (created |
+    name | rows | status | updated; prefix '-' for descending; default -created).
 
     Args:
         limit (int | Unset):  Default: 50.
         offset (int | Unset):  Default: 0.
+        q (None | str | Unset): Case-insensitive substring match on dataset name or description.
+        domain_id (int | None | Unset): Only datasets of this domain.
+        status (None | str | Unset): Comma-separated statuses (e.g. 'ingested,ready').
+        sort (None | str | Unset): created | name | rows | status | updated; prefix '-' for
+            descending. Default: -created.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -194,5 +282,9 @@ async def asyncio(
             client=client,
             limit=limit,
             offset=offset,
+            q=q,
+            domain_id=domain_id,
+            status=status,
+            sort=sort,
         )
     ).parsed

@@ -16,14 +16,18 @@ Prerequisites:
 """
 
 import argparse
-import sys
+from pathlib import Path
 
-from _common import api, ensure_domain_platform_data
+from _common import (
+    add_common_args,
+    run_demo,
+    setup_forecast_platform,
+)
 
-EXAMPLE_DATASET = "data/fred_economic_data.csv"
+EXAMPLE_DATASET = str(Path(__file__).resolve().parent / "data" / "fred_economic_data.csv")
 
 
-def main():
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Regime-conditioned forecast example")
     parser.add_argument(
@@ -32,35 +36,36 @@ def main():
     parser.add_argument(
         "--regime-platform-id", type=int, required=True,
         help="ID of a built Decisions platform that classifies regimes")
-    args = parser.parse_args()
+    add_common_args(parser)
+    return parser.parse_args()
+
+
+def run(api, args: argparse.Namespace) -> None:
 
     # --- Setup: domain + platform + data ---
-    platform_id = ensure_domain_platform_data(
-        domain_name="regime_forecast_demo",
+    platform_id = setup_forecast_platform(
+        api,
+        name="regime_forecast_demo",
+        description="Regime-conditioned forecast of the US 10-year Treasury yield (GS10) from monthly FRED macro drivers.",
         dataset_path=args.dataset,
     )
 
     # --- Create prediction config with regime conditioning ---
-    config_resp = api.create_prediction_config(
-        id=platform_id,
-        data={
-            "target_field": "GS10",
-            "time_index_field": "date",
-            "frequency": "monthly",
-            "regime_platform_id": args.regime_platform_id,
-        },
+    config = api.predictions.create_config(
+        platform_id,
+        target_field="GS10",
+        time_index_field="date",
+        frequency="monthly",
+        regime_platform_id=args.regime_platform_id,
     )
-    config = config_resp.data
     print(f"Created config id={config['id']} "
           f"regime_platform_id={config['regime_platform_id']}")
     assert config["regime_platform_id"] == args.regime_platform_id
 
     # --- Symbolic forecast (regime-conditioned) ---
-    forecast_resp = api.symbolic_forecast(
-        id=platform_id,
-        data={"prediction_config_id": config["id"]},
+    forecast = api.predictions.symbolic_forecast(
+        platform_id, prediction_config_id=config["id"],
     )
-    forecast = forecast_resp.data
 
     print(f"Forecast value: {forecast['forecast']['value']}")
     print(f"Drivers fired: {len(forecast.get('why', []))}")
@@ -84,5 +89,9 @@ def main():
     print("Done.")
 
 
+def main() -> None:
+    run_demo(run, parse_args())
+
+
 if __name__ == "__main__":
-    sys.exit(main() or 0)
+    main()

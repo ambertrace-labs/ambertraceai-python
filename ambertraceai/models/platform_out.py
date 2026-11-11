@@ -34,6 +34,7 @@ class PlatformOut:
         config (None | PlatformOutConfigType0 | Unset):
         created_at (None | str | Unset):
         description (None | str | Unset):
+        domain_name (None | str | Unset): Name of the parent domain (set on GET /platforms).
         error_message (None | str | Unset): Human-readable build failure cause, populated when status is 'error'. Null
             on successful or in-progress builds.
         neural_config (None | PlatformOutNeuralConfigType0 | Unset):
@@ -60,6 +61,7 @@ class PlatformOut:
     config: None | PlatformOutConfigType0 | Unset = UNSET
     created_at: None | str | Unset = UNSET
     description: None | str | Unset = UNSET
+    domain_name: None | str | Unset = UNSET
     error_message: None | str | Unset = UNSET
     neural_config: None | PlatformOutNeuralConfigType0 | Unset = UNSET
     owner_user_id: int | None | Unset = UNSET
@@ -114,6 +116,12 @@ class PlatformOut:
             description = UNSET
         else:
             description = self.description
+
+        domain_name: None | str | Unset
+        if isinstance(self.domain_name, Unset):
+            domain_name = UNSET
+        else:
+            domain_name = self.domain_name
 
         error_message: None | str | Unset
         if isinstance(self.error_message, Unset):
@@ -184,6 +192,8 @@ class PlatformOut:
             field_dict["created_at"] = created_at
         if description is not UNSET:
             field_dict["description"] = description
+        if domain_name is not UNSET:
+            field_dict["domain_name"] = domain_name
         if error_message is not UNSET:
             field_dict["error_message"] = error_message
         if neural_config is not UNSET:
@@ -276,6 +286,15 @@ class PlatformOut:
 
         description = _parse_description(d.pop("description", UNSET))
 
+        def _parse_domain_name(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        domain_name = _parse_domain_name(d.pop("domain_name", UNSET))
+
         def _parse_error_message(data: object) -> None | str | Unset:
             if data is None:
                 return data
@@ -363,6 +382,7 @@ class PlatformOut:
             config=config,
             created_at=created_at,
             description=description,
+            domain_name=domain_name,
             error_message=error_message,
             neural_config=neural_config,
             owner_user_id=owner_user_id,

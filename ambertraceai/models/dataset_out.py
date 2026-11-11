@@ -29,6 +29,7 @@ class DatasetOut:
         created_at (None | str | Unset):
         decision_column (None | str | Unset):
         description (None | str | Unset):
+        domain_name (None | str | Unset): Name of the parent domain (saves a client-side join).
         relation_join_key (None | str | Unset):
         relation_name (None | str | Unset):
         row_count (int | None | Unset):
@@ -49,6 +50,7 @@ class DatasetOut:
     created_at: None | str | Unset = UNSET
     decision_column: None | str | Unset = UNSET
     description: None | str | Unset = UNSET
+    domain_name: None | str | Unset = UNSET
     relation_join_key: None | str | Unset = UNSET
     relation_name: None | str | Unset = UNSET
     row_count: int | None | Unset = UNSET
@@ -95,6 +97,12 @@ class DatasetOut:
             description = UNSET
         else:
             description = self.description
+
+        domain_name: None | str | Unset
+        if isinstance(self.domain_name, Unset):
+            domain_name = UNSET
+        else:
+            domain_name = self.domain_name
 
         relation_join_key: None | str | Unset
         if isinstance(self.relation_join_key, Unset):
@@ -152,6 +160,8 @@ class DatasetOut:
             field_dict["decision_column"] = decision_column
         if description is not UNSET:
             field_dict["description"] = description
+        if domain_name is not UNSET:
+            field_dict["domain_name"] = domain_name
         if relation_join_key is not UNSET:
             field_dict["relation_join_key"] = relation_join_key
         if relation_name is not UNSET:
@@ -220,6 +230,15 @@ class DatasetOut:
 
         description = _parse_description(d.pop("description", UNSET))
 
+        def _parse_domain_name(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        domain_name = _parse_domain_name(d.pop("domain_name", UNSET))
+
         def _parse_relation_join_key(data: object) -> None | str | Unset:
             if data is None:
                 return data
@@ -286,6 +305,7 @@ class DatasetOut:
             created_at=created_at,
             decision_column=decision_column,
             description=description,
+            domain_name=domain_name,
             relation_join_key=relation_join_key,
             relation_name=relation_name,
             row_count=row_count,

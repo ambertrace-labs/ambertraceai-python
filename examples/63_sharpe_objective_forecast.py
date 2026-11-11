@@ -33,54 +33,56 @@ default neural anchor that is ``composed``.
 """
 
 import argparse
-import sys
+from pathlib import Path
 
-from _common import api, ensure_domain_platform_data
+from _common import (
+    add_common_args,
+    run_demo,
+    setup_forecast_platform,
+)
 
-EXAMPLE_DATASET = "data/fred_economic_data.csv"
+EXAMPLE_DATASET = str(Path(__file__).resolve().parent / "data" / "fred_economic_data.csv")
 
 
-def main():
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Sharpe-ratio objective forecast example")
     parser.add_argument(
         "--dataset", default=EXAMPLE_DATASET,
         help="Path to the dataset CSV (default: %(default)s)")
-    args = parser.parse_args()
+    add_common_args(parser)
+    return parser.parse_args()
+
+
+def run(api, args: argparse.Namespace) -> None:
 
     # --- Setup: domain + platform + data ---
-    platform_id = ensure_domain_platform_data(
-        domain_name="sharpe_objective_demo",
+    platform_id = setup_forecast_platform(
+        api,
+        name="sharpe_objective_demo",
+        description="Sharpe-ratio objective forecast of the US 10-year Treasury yield (GS10) from monthly FRED macro drivers.",
         dataset_path=args.dataset,
     )
 
     # --- Create prediction config with objective='sharpe_ratio' ---
-    config_resp = api.create_prediction_config(
-        id=platform_id,
-        data={
-            "target_field": "GS10",
-            "time_index_field": "date",
-            "frequency": "monthly",
-            "objective": "sharpe_ratio",
-        },
+    config = api.predictions.create_config(
+        platform_id,
+        target_field="GS10",
+        time_index_field="date",
+        frequency="monthly",
+        objective="sharpe_ratio",
     )
-    config = config_resp.data
     print(f"Created config id={config['id']} objective={config['objective']}")
     assert config["objective"] == "sharpe_ratio"
 
     # --- Train ---
-    train_resp = api.train_prediction_model(
-        id=platform_id,
-        config_id=config["id"],
-    )
-    print(f"Training status: {train_resp.data.get('status', 'unknown')}")
+    trained = api.predictions.train(platform_id, config["id"])
+    print(f"Training status: {trained.get('status', 'unknown')}")
 
     # --- Symbolic forecast (surfaces the per-objective metrics) ---
-    forecast_resp = api.symbolic_forecast(
-        id=platform_id,
-        data={"config_id": config["id"]},
+    forecast = api.predictions.symbolic_forecast(
+        platform_id, prediction_config_id=config["id"],
     )
-    forecast = forecast_resp.data
 
     # The response surfaces backtest-fit skill + objective-specific metrics
     print(f"Skill vs persistence: {forecast.get('skill_vs_persistence')}")
@@ -95,14 +97,11 @@ def main():
 
     # --- Per-tier trading metrics ---
     # Request the fitted series to get per_tier_skill with trading metrics.
-    fs_resp = api.symbolic_forecast(
-        id=platform_id,
-        data={
-            "config_id": config["id"],
-            "include_fitted_series": True,
-        },
+    fs_data = api.predictions.symbolic_forecast(
+        platform_id,
+        prediction_config_id=config["id"],
+        include_fitted_series=True,
     )
-    fs_data = fs_resp.data
     per_tier_skill = fs_data.get("per_tier_skill") or {}
 
     # The composed entry carries trading metrics for the full composed
@@ -135,5 +134,9 @@ def main():
     print("Done.")
 
 
+def main() -> None:
+    run_demo(run, parse_args())
+
+
 if __name__ == "__main__":
-    sys.exit(main() or 0)
+    main()

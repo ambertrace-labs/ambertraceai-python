@@ -115,6 +115,10 @@ def _render_property_answer(res: dict) -> str:
         return (f"HOLDS (certified: {res.get('certified')}): the property holds for all "
                 f"{search.get('space_size')} members of the space (bound "
                 f"{search.get('bound')}); the enumeration was complete.")
+    if result == "VIOLATED" and res.get("witness") is None:
+        return (f"VIOLATED (certified: {res.get('certified')}): the claim fails for all "
+                f"{search.get('space_size')} members of the declared space (no witness "
+                f"exists; the enumeration was complete).")
     if result == "VIOLATED":
         return (f"VIOLATED (certified: {res.get('certified')}): counterexample "
                 f"{res.get('witness')} -- re-certified; {search.get('space_size')} "
@@ -523,8 +527,35 @@ class _Resource:
 
 
 class DomainResource(_Resource):
-    def list(self) -> list[DomainOut]:
-        return self._request("GET", "/api/v1/domains")
+    def list(self, *, q: str | None = None, status: str | None = None,
+             sort: str | None = None, limit: int | None = None,
+             offset: int | None = None) -> list[DomainOut]:
+        """List domains (``GET /api/v1/domains``), one server-side page.
+
+        With no arguments you get the first page (50, ordered by id). For large
+        collections filter and page on the server: ``q`` -- case-insensitive
+        substring of name or description; ``status`` -- comma-separated
+        (``"draft,active"``); ``sort`` -- ``id | name | status | updated |
+        created``, prefix ``-`` for descending; ``limit`` 1..200 / ``offset``
+        to walk pages. For a name lookup use :meth:`search`.
+        """
+        params = {k: v for k, v in (
+            ("q", q), ("status", status), ("sort", sort),
+            ("limit", limit), ("offset", offset)) if v is not None}
+        return self._request("GET", "/api/v1/domains", params=params)
+
+    def search(self, q: str | None = None, *, status: str | None = None,
+               limit: int | None = None, offset: int | None = None) -> list[dict]:
+        """Typeahead lookup (``GET /api/v1/domains/search``): ``[{id, name,
+        status}]`` ordered by name, never the whole collection.
+
+        ``q`` -- case-insensitive substring of name or description; ``status``
+        -- comma-separated; ``limit`` 1..100 (default 20) / ``offset``.
+        """
+        params = {k: v for k, v in (
+            ("q", q), ("status", status),
+            ("limit", limit), ("offset", offset)) if v is not None}
+        return self._request("GET", "/api/v1/domains/search", params=params)
 
     def create(self, *, name: str, description: str,
                decision_table: DecisionTable | None = None, **kwargs) -> DomainCreateOut:
@@ -854,14 +885,26 @@ class DomainResource(_Resource):
 
 
 class DatasetResource(_Resource):
-    def list(self) -> list[DatasetOut]:
-        """List the caller's datasets.
+    def list(self, *, q: str | None = None, domain_id: int | None = None,
+             status: str | None = None, sort: str | None = None,
+             limit: int | None = None, offset: int | None = None) -> list[DatasetOut]:
+        """List the caller's datasets (one server-side page; default 50, newest first).
 
         Each item is an :class:`AttrDict` — subscriptable
         (``ds["row_count"]``) and attribute-accessible (``ds.row_count``,
-        ``ds.column_count``, ``ds.decision_column``) for IDE autocomplete.
+        ``ds.column_count``, ``ds.decision_column``, ``ds.domain_name``) for
+        IDE autocomplete.
+
+        Optional server-side filters for large collections: ``q`` --
+        case-insensitive substring of name or description; ``domain_id``;
+        ``status`` -- comma-separated; ``sort`` -- ``created | name | rows |
+        status | updated`` (prefix ``-`` for descending; default ``-created``);
+        ``limit`` 1..200 / ``offset`` to walk pages.
         """
-        return [_wrap(d) for d in self._request("GET", "/api/v1/datasets")]
+        params = {k: v for k, v in (
+            ("q", q), ("domain_id", domain_id), ("status", status),
+            ("sort", sort), ("limit", limit), ("offset", offset)) if v is not None}
+        return [_wrap(d) for d in self._request("GET", "/api/v1/datasets", params=params)]
 
     def get(self, dataset_id: int) -> DatasetOut:
         """Fetch one dataset as an :class:`AttrDict`.
@@ -1730,8 +1773,29 @@ class PlatformResource(_Resource):
         (false on every ABSTAIN). The returned ``answer`` is a one-line rendering of
         those same fields.
 
-        ``property`` is one of two:
+        ``property`` is one of:
 
+        * ``"nash_equilibrium"`` / ``"dominant_strategy"`` / ``"best_response"`` /
+          ``"pareto_optimal"`` / ``"pareto_dominated"`` -- CUSTOM NORMAL-FORM GAME
+          properties over a game you declare in ``space["game"]`` (2-6 players, finite
+          action sets, an explicit payoff table, at most 1024 profiles):
+          ``{"players": [["U","M","D"], ["L","R"]], "payoffs": [{"actions": ["U","L"],
+          "utilities": [2, 1]}, ...]}`` (one row per profile; a cell may be an integer or
+          ``{"param": name, "mul": 1, "add": 0}`` resolved from ``game["parameters"]``, where a
+          parameter is an integer or a certified-output reference ``{"source_type":
+          "prediction" | "verify_property", "source_id": N, "field": ..., "mul", "add"}``
+          that the server resolves from a proof-checked record in your organisation and
+          reports in ``inherited_provenance``).
+          Claim arguments in ``space``: ``profile`` (nash_equilibrium / pareto_*; ``pareto_dominated`` is the dual of
+          ``pareto_optimal``: HOLDS = a dominating profile exists, returned as ``witness``;
+          VIOLATED = none does, certified exhaustively),
+          ``player`` + ``action`` [+ ``strict``] (dominant_strategy), ``player`` +
+          ``action`` + ``opponent_profile`` (best_response). ``VIOLATED`` returns the
+          profitable deviation (or, for Pareto, the dominating profile) in ``witness`` and
+          every player's payoff at both profiles in ``witness_recertification``;
+          ``resolved_payoffs`` echoes the table that was decided. A game or claim outside
+          the shape is an ``ABSTAIN`` with a named ``reason`` (``game_too_large``,
+          ``payoff_table_incomplete``, ``over_bound`` ...). See example 77.
         * ``"exactly_one_verdict"`` -- REGIME-GRID TOTALITY + EXCLUSIVITY of THIS
           platform's own active decision rules: for every cell of a grid you declare,
           EXACTLY ONE verdict derives. ``space`` = ``{"variables": [{"field": "priced",

@@ -32,6 +32,8 @@ from .build_request_build_profile import BuildRequestBuildProfile
 from .build_request_config import BuildRequestConfig
 from .build_request_decision_posture_type_0 import BuildRequestDecisionPostureType0
 from .build_request_scored_determinations_type_0 import BuildRequestScoredDeterminationsType0
+from .certified_output_ref import CertifiedOutputRef
+from .certified_output_ref_source_type import CertifiedOutputRefSourceType
 from .compile_policy_request import CompilePolicyRequest
 from .config_field_out import ConfigFieldOut
 from .connector_out import ConnectorOut
@@ -83,6 +85,7 @@ from .domain_detail_eval_config_type_0 import DomainDetailEvalConfigType0
 from .domain_detail_ontology_type_0 import DomainDetailOntologyType0
 from .domain_out import DomainOut
 from .domain_out_decision_table_type_0 import DomainOutDecisionTableType0
+from .domain_search_out import DomainSearchOut
 from .domain_update import DomainUpdate
 from .drift_alert import DriftAlert
 from .drift_baseline_out import DriftBaselineOut
@@ -246,6 +249,10 @@ from .unreachable_outcome import UnreachableOutcome
 from .usage_stats_out import UsageStatsOut
 from .validation_error_model import ValidationErrorModel
 from .validation_error_model_ctx_type_0 import ValidationErrorModelCtxType0
+from .verify_property_game import VerifyPropertyGame
+from .verify_property_game_parameters_type_0 import VerifyPropertyGameParametersType0
+from .verify_property_payoff_expr import VerifyPropertyPayoffExpr
+from .verify_property_payoff_row import VerifyPropertyPayoffRow
 from .verify_property_request import VerifyPropertyRequest
 from .verify_property_space import VerifyPropertySpace
 from .verify_property_started import VerifyPropertyStarted
@@ -280,6 +287,8 @@ __all__ = (
     "BuildRequestConfig",
     "BuildRequestDecisionPostureType0",
     "BuildRequestScoredDeterminationsType0",
+    "CertifiedOutputRef",
+    "CertifiedOutputRefSourceType",
     "CompilePolicyRequest",
     "ConfigFieldOut",
     "ConnectorOut",
@@ -329,6 +338,7 @@ __all__ = (
     "DomainDetailOntologyType0",
     "DomainOut",
     "DomainOutDecisionTableType0",
+    "DomainSearchOut",
     "DomainUpdate",
     "DriftAlert",
     "DriftBaselineOut",
@@ -492,6 +502,10 @@ __all__ = (
     "UsageStatsOut",
     "ValidationErrorModel",
     "ValidationErrorModelCtxType0",
+    "VerifyPropertyGame",
+    "VerifyPropertyGameParametersType0",
+    "VerifyPropertyPayoffExpr",
+    "VerifyPropertyPayoffRow",
     "VerifyPropertyRequest",
     "VerifyPropertySpace",
     "VerifyPropertyStarted",
