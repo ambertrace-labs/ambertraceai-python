@@ -50,6 +50,8 @@ from .data_search_result_out import DataSearchResultOut
 from .dataset_clean_request import DatasetCleanRequest
 from .dataset_derive_request import DatasetDeriveRequest
 from .dataset_derive_request_op import DatasetDeriveRequestOp
+from .dataset_ensure_out import DatasetEnsureOut
+from .dataset_ensure_out_schema_info_type_0 import DatasetEnsureOutSchemaInfoType0
 from .dataset_fetch_multi_request import DatasetFetchMultiRequest
 from .dataset_fetch_multi_request_column_roles_type_0 import DatasetFetchMultiRequestColumnRolesType0
 from .dataset_fetch_multi_request_column_roles_type_0_additional_property import (
@@ -83,6 +85,9 @@ from .domain_detail import DomainDetail
 from .domain_detail_decision_table_type_0 import DomainDetailDecisionTableType0
 from .domain_detail_eval_config_type_0 import DomainDetailEvalConfigType0
 from .domain_detail_ontology_type_0 import DomainDetailOntologyType0
+from .domain_ensure_out import DomainEnsureOut
+from .domain_ensure_out_decision_table_type_0 import DomainEnsureOutDecisionTableType0
+from .domain_ensure_request import DomainEnsureRequest
 from .domain_out import DomainOut
 from .domain_out_decision_table_type_0 import DomainOutDecisionTableType0
 from .domain_search_out import DomainSearchOut
@@ -183,6 +188,8 @@ from .prediction_out_prediction import PredictionOutPrediction
 from .provenance_item import ProvenanceItem
 from .provenance_item_edge import ProvenanceItemEdge
 from .provenance_item_node import ProvenanceItemNode
+from .prune_drafts_out import PruneDraftsOut
+from .prune_drafts_request import PruneDraftsRequest
 from .quality_report_out import QualityReportOut
 from .quality_report_out_completeness import QualityReportOutCompleteness
 from .quality_report_out_consistency import QualityReportOutConsistency
@@ -305,6 +312,8 @@ __all__ = (
     "DatasetCleanRequest",
     "DatasetDeriveRequest",
     "DatasetDeriveRequestOp",
+    "DatasetEnsureOut",
+    "DatasetEnsureOutSchemaInfoType0",
     "DatasetFetchMultiRequest",
     "DatasetFetchMultiRequestColumnRolesType0",
     "DatasetFetchMultiRequestColumnRolesType0AdditionalProperty",
@@ -336,6 +345,9 @@ __all__ = (
     "DomainDetailDecisionTableType0",
     "DomainDetailEvalConfigType0",
     "DomainDetailOntologyType0",
+    "DomainEnsureOut",
+    "DomainEnsureOutDecisionTableType0",
+    "DomainEnsureRequest",
     "DomainOut",
     "DomainOutDecisionTableType0",
     "DomainSearchOut",
@@ -436,6 +448,8 @@ __all__ = (
     "ProvenanceItem",
     "ProvenanceItemEdge",
     "ProvenanceItemNode",
+    "PruneDraftsOut",
+    "PruneDraftsRequest",
     "QualityReportOut",
     "QualityReportOutCompleteness",
     "QualityReportOutConsistency",

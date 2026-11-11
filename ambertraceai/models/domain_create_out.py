@@ -37,6 +37,8 @@ class DomainCreateOut:
         team_id (int | None | Unset):
         updated_at (None | str | Unset):
         visibility (str | Unset):  Default: 'user'.
+        warning (None | str | Unset): Set when a domain with the same name already exists (it is still created); names
+            the existing id and points at domains.get_or_create(). Null otherwise.
     """
 
     id: int
@@ -51,6 +53,7 @@ class DomainCreateOut:
     team_id: int | None | Unset = UNSET
     updated_at: None | str | Unset = UNSET
     visibility: str | Unset = "user"
+    warning: None | str | Unset = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -111,6 +114,12 @@ class DomainCreateOut:
 
         visibility = self.visibility
 
+        warning: None | str | Unset
+        if isinstance(self.warning, Unset):
+            warning = UNSET
+        else:
+            warning = self.warning
+
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
@@ -137,6 +146,8 @@ class DomainCreateOut:
             field_dict["updated_at"] = updated_at
         if visibility is not UNSET:
             field_dict["visibility"] = visibility
+        if warning is not UNSET:
+            field_dict["warning"] = warning
 
         return field_dict
 
@@ -227,6 +238,15 @@ class DomainCreateOut:
 
         visibility = d.pop("visibility", UNSET)
 
+        def _parse_warning(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        warning = _parse_warning(d.pop("warning", UNSET))
+
         domain_create_out = cls(
             id=id,
             name=name,
@@ -240,6 +260,7 @@ class DomainCreateOut:
             team_id=team_id,
             updated_at=updated_at,
             visibility=visibility,
+            warning=warning,
         )
 
         domain_create_out.additional_properties = d

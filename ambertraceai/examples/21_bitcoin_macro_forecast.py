@@ -27,6 +27,9 @@ build on a fresh panel pulled LIVE and merged from the ``coinbase`` + ``fred``
 connectors instead (the refresh path needs a free FRED key, ``FRED_API_KEY`` in
 examples/.env).
 
+NOTE: this demo creates fresh state on every run. For a recurring job, build once and
+reuse it with domains.get_or_create -- see 78_recurring_lifecycle_get_or_create.py.
+
     python 21_bitcoin_macro_forecast.py             # build on the bundled snapshot
     python 21_bitcoin_macro_forecast.py --refresh   # fetch the panel live and build on that
     python 21_bitcoin_macro_forecast.py --standard  # skip the verified profile

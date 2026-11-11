@@ -14,6 +14,9 @@ UNRATE, M2SL.
 
 Creates resources on your account. Run with --help for options.
 
+NOTE: this demo creates fresh state on every run. For a recurring job, build once and
+reuse it with domains.get_or_create -- see 78_recurring_lifecycle_get_or_create.py.
+
     python 20_bond_yield_forecast.py
     python 20_bond_yield_forecast.py --dataset data/fred_economic_data.csv
 """

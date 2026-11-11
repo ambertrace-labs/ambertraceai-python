@@ -10,6 +10,9 @@ Exercises AmbertraceAI as a forecasting back-end via the prediction API:
 Dataset: environmental_monitoring.csv (60 readings, 16 facilities).
 Creates resources on your account. Run with --help for options.
 
+NOTE: this demo creates fresh state on every run. For a recurring job, build once and
+reuse it with domains.get_or_create -- see 78_recurring_lifecycle_get_or_create.py.
+
     python 16_timeseries_forecast.py
 """
 

@@ -25,12 +25,14 @@ from .responses import (
     AuthorizeActionResult,
     BuildQuality,
     BuildQualityCheck,
+    DatasetEnsureOut,
     DatasetOut,
     DecisionTable,
     DiscoveredRules,
     DiscoverySummary,
     DomainCreateOut,
     DomainDetail,
+    DomainEnsureOut,
     DomainOut,
     FindDriversResult,
     ForecastOut,
@@ -89,16 +91,61 @@ class AttrDict(dict):
             raise AttributeError(name) from exc
 
 
+class PaginatedList(list):
+    """A ``list`` of one server-side page that also carries the page metadata.
+
+    Every paginated ``list()`` / ``search()`` returns one: iteration, ``len``,
+    indexing and ``json.dumps`` behave exactly like the plain ``list`` they
+    always were (``len(result)`` is the PAGE size), and the true collection size
+    is on ``.total`` -- no second call, no guessing from ``len``::
+
+        page = api.domains.list(limit=50)
+        page.total, page.limit, page.offset   # e.g. 312, 50, 0
+        more = page.offset + len(page) < page.total
+
+    ``.pagination`` is the raw ``{"total", "limit", "offset"}`` dict. For code
+    written against the raw response envelope, ``page["data"]`` (the items) and
+    ``page["pagination"]`` also resolve.
+    """
+
+    def __init__(self, items: Any = (), *, pagination: dict | None = None):
+        super().__init__(items)
+        self.pagination: dict = dict(pagination or {})
+
+    @property
+    def total(self) -> int | None:
+        return self.pagination.get("total")
+
+    @property
+    def limit(self) -> int | None:
+        return self.pagination.get("limit")
+
+    @property
+    def offset(self) -> int | None:
+        return self.pagination.get("offset")
+
+    def __getitem__(self, key: Any) -> Any:
+        if isinstance(key, str):
+            if key == "data":
+                return list(self)
+            if key == "pagination":
+                return self.pagination
+        return super().__getitem__(key)
+
+
 def _wrap(value: Any) -> Any:
     """Recursively wrap dicts as :class:`AttrDict` (lists element-wise).
 
     Idempotent and cheap: scalars pass through untouched, an existing
-    ``AttrDict`` is returned as-is.
+    ``AttrDict`` is returned as-is. A :class:`PaginatedList` keeps its page
+    metadata.
     """
     if isinstance(value, AttrDict):
         return value
     if isinstance(value, dict):
         return AttrDict(value)
+    if isinstance(value, PaginatedList):
+        return PaginatedList([_wrap(v) for v in value], pagination=value.pagination)
     if isinstance(value, list):
         return [_wrap(v) for v in value]
     return value
@@ -487,6 +534,9 @@ class _Resource:
                     rejected_facts=_pick("rejected_facts"),
                     stalled_stage=_pick("stalled_stage"),
                 )
+            if (isinstance(body, dict) and isinstance(body.get("data"), list)
+                    and isinstance(body.get("pagination"), dict)):
+                return PaginatedList(body["data"], pagination=body["pagination"])
             return body.get("data", body) if isinstance(body, dict) else body
 
     # Terminal job statuses — the same set :meth:`AmbertraceAPI.wait_for_job`
@@ -531,6 +581,9 @@ class DomainResource(_Resource):
              sort: str | None = None, limit: int | None = None,
              offset: int | None = None) -> list[DomainOut]:
         """List domains (``GET /api/v1/domains``), one server-side page.
+
+        Returns a :class:`PaginatedList`: a plain ``list`` of the page that also
+        carries ``.total`` (the true match count), ``.limit`` and ``.offset``.
 
         With no arguments you get the first page (50, ordered by id). For large
         collections filter and page on the server: ``q`` -- case-insensitive
@@ -596,11 +649,45 @@ class DomainResource(_Resource):
         proposes a table from your data's label column or your description (see
         :meth:`set_decision_table`). ``decision_vocabulary`` is NOT a create
         parameter: passing it is rejected with a 400 -- use ``decision_table``.
+
+        ``create`` ALWAYS creates a new domain. If one with the same name
+        already exists the call still succeeds, the response carries a
+        ``warning`` naming the existing id, and a :class:`UserWarning` is
+        emitted -- repeated runs otherwise accumulate duplicates. For a
+        recurring or scheduled job use :meth:`get_or_create`.
         """
         body: dict[str, Any] = {"name": name, "description": description, **kwargs}
         if decision_table is not None:
             body["decision_table"] = decision_table
-        return self._request("POST", "/api/v1/domains", json=body)
+        result = self._request("POST", "/api/v1/domains", json=body)
+        if isinstance(result, dict) and result.get("warning"):
+            warnings.warn(result["warning"], UserWarning, stacklevel=2)
+        return result
+
+    def get_or_create(self, *, name: str, description: str = "",
+                      **kwargs) -> DomainEnsureOut:
+        """Return YOUR existing domain named exactly ``name``, or create it.
+
+        Idempotent (``POST /api/v1/domains/ensure``): call it every run and you
+        get ONE domain, with a stable ``id``, instead of a new duplicate each
+        time. The lookup is by exact name among domains you own (the earliest
+        match when legacy duplicates exist); ``description`` and ``visibility`` /
+        ``team_id`` apply only when the domain is created. Concurrent callers
+        converge on one row.
+
+        The result is the usual domain record plus ``created`` (``True`` when
+        this call made it, ``False`` when it was reused). A reused domain keeps
+        its existing ontology/status -- check ``status`` before rebuilding::
+
+            dom = api.domains.get_or_create(name="Monthly CPI forecast",
+                                            description="...")
+            if dom["created"]:
+                ...  # first run: upload data, build the ontology
+        """
+        body: dict[str, Any] = {"name": name, "description": description, **kwargs}
+        return self._request("POST", "/api/v1/domains/ensure", json=body)
+
+    ensure = get_or_create
 
     def set_decision_table(self, domain_id: int, table: DecisionTable) -> DecisionTable:
         """Declare or replace the domain's **Decision Table** (the outcomes a
@@ -685,6 +772,22 @@ class DomainResource(_Resource):
 
     def delete(self, domain_id: int) -> dict:
         return self._request("DELETE", f"/api/v1/domains/{domain_id}")
+
+    def prune_drafts(self, *, older_than_days: int) -> int:
+        """Delete YOUR abandoned draft domains and return how many were reaped
+        (``POST /api/v1/domains/prune-drafts``).
+
+        An abandoned draft is a ``draft`` domain created more than
+        ``older_than_days`` ago (``0`` = every one) that holds NO dataset and NO
+        platform -- an empty shell left by a run that never finished. Anything
+        with a dataset or platform, any non-draft domain, and domains you could
+        not delete yourself are never touched. Safe to call from a recurring job::
+
+            reaped = api.domains.prune_drafts(older_than_days=30)
+        """
+        result = self._request("POST", "/api/v1/domains/prune-drafts",
+                               json={"older_than_days": older_than_days})
+        return int(result["reaped"])
 
     def build_ontology(self, domain_id: int, *, relations: list[dict] | None = None) -> dict:
         """Build the domain's ontology + rules from its description and data.
@@ -890,6 +993,9 @@ class DatasetResource(_Resource):
              limit: int | None = None, offset: int | None = None) -> list[DatasetOut]:
         """List the caller's datasets (one server-side page; default 50, newest first).
 
+        Returns a :class:`PaginatedList` (a ``list`` carrying ``.total`` /
+        ``.limit`` / ``.offset``).
+
         Each item is an :class:`AttrDict` — subscriptable
         (``ds["row_count"]``) and attribute-accessible (``ds.row_count``,
         ``ds.column_count``, ``ds.decision_column``, ``ds.domain_name``) for
@@ -904,7 +1010,27 @@ class DatasetResource(_Resource):
         params = {k: v for k, v in (
             ("q", q), ("domain_id", domain_id), ("status", status),
             ("sort", sort), ("limit", limit), ("offset", offset)) if v is not None}
-        return [_wrap(d) for d in self._request("GET", "/api/v1/datasets", params=params)]
+        return _wrap(self._request("GET", "/api/v1/datasets", params=params))
+
+    def get_or_create(self, *, domain_id: int, connector_type: str,
+                      config: dict | None = None) -> DatasetEnsureOut:
+        """Idempotent :meth:`fetch`: reuse the domain's dataset already fetched
+        with this connector + config, else fetch a new one.
+
+        ``POST /api/v1/datasets/ensure``. The lookup is by DESCRIPTOR -- the
+        domain, ``connector_type`` and ``config`` (credentials excluded); the
+        earliest match wins and failed fetches are ignored. Use it so a recurring
+        job does not pile up identical datasets. Returns the dataset record plus
+        ``created`` (``False`` when reused). Like :meth:`fetch`, a new async
+        fetch returns ``status == "processing"``. Uploads are not covered
+        (a file has no descriptor): look up by name with
+        ``datasets.list(domain_id=..., q=...)`` before :meth:`upload`.
+        """
+        body = {"domain_id": domain_id, "connector_type": connector_type,
+                "config": config or {}}
+        return _wrap(self._request("POST", "/api/v1/datasets/ensure", json=body))
+
+    ensure = get_or_create
 
     def get(self, dataset_id: int) -> DatasetOut:
         """Fetch one dataset as an :class:`AttrDict`.
@@ -1297,11 +1423,33 @@ class DatasetResource(_Resource):
 
 
 class PlatformResource(_Resource):
-    def list(self) -> list[PlatformOut]:
-        return self._request("GET", "/api/v1/platforms")
+    def list(self, *, q: str | None = None, domain_id: int | None = None,
+             status: str | None = None, sort: str | None = None,
+             limit: int | None = None, offset: int | None = None) -> list[PlatformOut]:
+        """List platforms (``GET /api/v1/platforms``), one server-side page.
 
-    def create(self, *, domain_id: int, dataset_id: int, name: str | None = None, **kwargs) -> AttrDict:
+        Returns a :class:`PaginatedList` (``.total`` is the true count). Each
+        item carries ``domain_name`` and ``dataset_ids`` (the datasets it was
+        built from). Optional filters: ``q`` -- case-insensitive substring of
+        name or description; ``domain_id``; ``status`` -- comma-separated
+        (``"active,building"``); ``sort`` -- ``id | name | status | updated |
+        created`` (prefix ``-`` for descending; default ``-id``); ``limit``
+        1..200 / ``offset``.
+        """
+        params = {k: v for k, v in (
+            ("q", q), ("domain_id", domain_id), ("status", status),
+            ("sort", sort), ("limit", limit), ("offset", offset)) if v is not None}
+        return self._request("GET", "/api/v1/platforms", params=params)
+
+    def create(self, *, domain_id: int, dataset_id: int | None = None,
+               name: str | None = None, **kwargs) -> AttrDict:
         """Create a platform and dispatch its build (async).
+
+        The platform is built from the DOMAIN (its ontology and ALL of its
+        datasets). ``dataset_id`` is informational only: it is accepted for
+        backward compatibility and NOT sent -- it cannot select a subset. Read
+        the datasets a platform was built from on ``platforms.get(id)
+        ["dataset_ids"]``.
 
         Returns an :class:`AttrDict` whose original shape is preserved
         (``result["platform"]["id"]`` / ``result["build_job"]["id"]`` still
@@ -1380,7 +1528,7 @@ class PlatformResource(_Resource):
         over a domain whose description declares N mutually-exclusive labels -- see
         :meth:`DomainResource.build_ontology` and example 38 (it is NOT ``author()``).
         """
-        body: dict[str, Any] = {"domain_id": domain_id, "dataset_id": dataset_id, **kwargs}
+        body: dict[str, Any] = {"domain_id": domain_id, **kwargs}
         if name:
             body["name"] = name
         return _normalise_envelope(self._request("POST", "/api/v1/platforms", json=body))
@@ -1778,7 +1926,9 @@ class PlatformResource(_Resource):
         * ``"nash_equilibrium"`` / ``"dominant_strategy"`` / ``"best_response"`` /
           ``"pareto_optimal"`` / ``"pareto_dominated"`` -- CUSTOM NORMAL-FORM GAME
           properties over a game you declare in ``space["game"]`` (2-6 players, finite
-          action sets, an explicit payoff table, at most 1024 profiles):
+          action sets, an explicit payoff table, at most 1024 profiles; a SYMMETRIC game
+          -- identical action sets, symmetric table -- may have up to 30 players and
+          131072 profiles and is searched over sorted action multisets):
           ``{"players": [["U","M","D"], ["L","R"]], "payoffs": [{"actions": ["U","L"],
           "utilities": [2, 1]}, ...]}`` (one row per profile; a cell may be an integer or
           ``{"param": name, "mul": 1, "add": 0}`` resolved from ``game["parameters"]``, where a
@@ -1794,7 +1944,7 @@ class PlatformResource(_Resource):
           profitable deviation (or, for Pareto, the dominating profile) in ``witness`` and
           every player's payoff at both profiles in ``witness_recertification``;
           ``resolved_payoffs`` echoes the table that was decided. A game or claim outside
-          the shape is an ``ABSTAIN`` with a named ``reason`` (``game_too_large``,
+          the shape is an ``ABSTAIN`` with a named ``reason`` (``game_too_large``, ``asymmetric_games_limited_to_6_players``,
           ``payoff_table_incomplete``, ``over_bound`` ...). See example 77.
         * ``"exactly_one_verdict"`` -- REGIME-GRID TOTALITY + EXCLUSIVITY of THIS
           platform's own active decision rules: for every cell of a grid you declare,
@@ -3240,7 +3390,7 @@ class ConnectorResource(_Resource):
         **UK inflation (ONS CPI, dataset MM23).**  ``q='UK inflation'`` (or
         ``country='GB'``) resolves 62 curated ONS CDIDs — more than the
         default page holds, so pass ``limit=200`` (the maximum) or page with
-        ``offset``; ``pagination['total']`` always reports the full count
+        ``offset``; ``result.total`` always reports the full count
         even when ``data`` is truncated to the default ``limit=50``.  The
         62: the headline index
         and annual rate (``D7BT`` / ``D7G7``), CPIH (``L522`` / ``L55O``),
@@ -3293,9 +3443,12 @@ class ConnectorResource(_Resource):
 
         Returns
         -------
-        dict
-            ``{"data": [...], "pagination": {"total": N, "limit": L, "offset": O}}``
-            where each item has ``level``, ``connector_type``, ``name``,
+        PaginatedList
+            A ``list`` of the page's items with ``.total`` / ``.limit`` /
+            ``.offset`` (the full match count is ``result.total``). The raw
+            envelope keys also resolve: ``result["data"]`` (the items) and
+            ``result["pagination"]`` (``{"total", "limit", "offset"}``). Each
+            item has ``level``, ``connector_type``, ``name``,
             ``description``, ``asset_classes``, ``countries``, ``currencies``,
             and optionally ``tenor``.
 

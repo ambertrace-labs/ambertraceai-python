@@ -1,3 +1,66 @@
+# Migration notes
+
+## 2.10.0 — the Decision Table (decision outcomes are declared, not guessed)
+
+`2.10.0` replaces the decision-vocabulary machinery with a **Decision Table** you
+declare (or confirm). The server contract is **breaking** for code that read
+`decision_vocabulary` or branched on `outcome == "indeterminate"`; this SDK release is
+the matching client.
+
+**Serving: what to branch on.**
+
+| You want to… | Branch on | Notes |
+|---|---|---|
+| execute vs block (permit/deny switching) | `permitted` | `True` iff the deciding row `permits` |
+| run label-specific logic (route `escalate` to a human) | `decision` | always one of your table's labels, as written |
+| tell "no verdict reached" apart | `status` | `decided` / `abstain` / `indeterminate` / `unavailable` |
+
+```python
+# Before
+if v["outcome"] == "indeterminate":      # authorize_action / step verdicts
+    supply(v["missing_inputs"])
+vocab = api.platforms.status(pid)["decision_vocabulary"]   # {"verbs": [...]}
+
+# After
+if v["status"] == "indeterminate":       # outcome is now "permit" | "deny" | None
+    supply(v["missing_inputs"])
+table = api.platforms.status(pid)["decision_table"]        # {"mode", "rows", "provenance", "applied"}
+```
+
+* `abstain` is a `status`, never a `decision` string; `outcome` / `permitted` are
+  `None` when nothing was decided (and always in `partition` mode).
+* `QueryResult` now types `outcome`, `permitted` and `status` (`status` is served once the
+  decision-table query path ships; `None`/absent on an older server).
+* `decision_vocabulary` (on `platforms.status`, `AuthorResult`, `AgentPolicyStatus`) and
+  `vocabulary_declared` (on a query result's `explanation`) are **removed**; read
+  `decision_table`. A rule's `action_type` in `symbolic_trace.rules[]` is now `derive` or
+  `decide`; an abstain is `status: "abstain"` with `decision: None`, never a decision
+  string.
+
+**Declaring the table (new).**
+
+```python
+api.domains.create(name=..., description=..., decision_table=TABLE)   # create + set
+api.domains.set_decision_table(domain_id, TABLE)                      # confirm / edit
+api.agent_policy.author(policy_text, decision_table=TABLE)            # gates: omit => {permit, deny}
+```
+
+A table is `{"mode": "ladder" | "partition", "rows": [{"label", "order", "default",
+"permits", "values"}, ...]}`. Where a dataset's decision column holds cells that differ
+from your labels, list them in the row's `values` (e.g. loan `approved` / `denied`,
+recruitment `Hired` / `Rejected`). If you declare nothing, the platform proposes a table
+from the data's label column or your description: read it, with its `provenance` and
+`guessed` fields and the consistency checks, from
+`datasets.quality(id)["decision_table"]` BEFORE building. A build is refused (409) when a
+decision-column value maps to no row; other findings are advisory
+(`platforms.status(id)["decision_table_warnings"]`). Edits take effect on the next build.
+
+**`domains.get` / `platforms.status` / `author` / `agent_policy.status`** all echo
+`decision_table`. See `examples/71_decision_table_quickstart.py`; the deciding examples
+(11-15, 18, 19, 24, 25, 27, 29, 31, 36-39, 41, 68) each declare theirs.
+
+---
+
 # Migrating to 1.0.0
 
 `ambertraceai` 1.0.0 is the first stable release. It lands **three breaking

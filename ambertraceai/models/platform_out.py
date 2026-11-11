@@ -33,6 +33,8 @@ class PlatformOut:
             Null until the first successful build.
         config (None | PlatformOutConfigType0 | Unset):
         created_at (None | str | Unset):
+        dataset_ids (list[int] | Unset): Ids of the datasets the platform is built from: the datasets of its domain
+            (ascending). Populated on GET /platforms and GET /platforms/{id}.
         description (None | str | Unset):
         domain_name (None | str | Unset): Name of the parent domain (set on GET /platforms).
         error_message (None | str | Unset): Human-readable build failure cause, populated when status is 'error'. Null
@@ -60,6 +62,7 @@ class PlatformOut:
     build_quality: None | PlatformOutBuildQualityType0 | Unset = UNSET
     config: None | PlatformOutConfigType0 | Unset = UNSET
     created_at: None | str | Unset = UNSET
+    dataset_ids: list[int] | Unset = UNSET
     description: None | str | Unset = UNSET
     domain_name: None | str | Unset = UNSET
     error_message: None | str | Unset = UNSET
@@ -110,6 +113,10 @@ class PlatformOut:
             created_at = UNSET
         else:
             created_at = self.created_at
+
+        dataset_ids: list[int] | Unset = UNSET
+        if not isinstance(self.dataset_ids, Unset):
+            dataset_ids = self.dataset_ids
 
         description: None | str | Unset
         if isinstance(self.description, Unset):
@@ -190,6 +197,8 @@ class PlatformOut:
             field_dict["config"] = config
         if created_at is not UNSET:
             field_dict["created_at"] = created_at
+        if dataset_ids is not UNSET:
+            field_dict["dataset_ids"] = dataset_ids
         if description is not UNSET:
             field_dict["description"] = description
         if domain_name is not UNSET:
@@ -276,6 +285,8 @@ class PlatformOut:
             return cast(None | str | Unset, data)
 
         created_at = _parse_created_at(d.pop("created_at", UNSET))
+
+        dataset_ids = cast(list[int], d.pop("dataset_ids", UNSET))
 
         def _parse_description(data: object) -> None | str | Unset:
             if data is None:
@@ -381,6 +392,7 @@ class PlatformOut:
             build_quality=build_quality,
             config=config,
             created_at=created_at,
+            dataset_ids=dataset_ids,
             description=description,
             domain_name=domain_name,
             error_message=error_message,

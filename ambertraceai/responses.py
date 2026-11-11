@@ -193,6 +193,16 @@ class DomainCreateOut(DomainOut, total=False):
     # each {check, kind, row, message}; empty when no table is submitted. Present
     # on the create response only -- never on reads (get / list / update).
     advisories: list[JsonDict]
+    # Set when a domain with the same name already exists (the new one is still
+    # created); names the existing id. Use domains.get_or_create to reuse.
+    warning: str | None
+
+
+class DomainEnsureOut(DomainOut, total=False):
+    """The ``domains.get_or_create`` response: :class:`DomainOut` plus ``created``
+    (``True`` when this call created the domain, ``False`` when reused)."""
+
+    created: Required[bool]
 
 
 class DomainDetail(DomainOut, total=False):
@@ -229,6 +239,14 @@ class DatasetOut(TypedDict, total=False):
     updated_at: str | None
 
 
+class DatasetEnsureOut(DatasetOut, total=False):
+    """The ``datasets.get_or_create`` response: :class:`DatasetOut` plus
+    ``created`` (``True`` when this call fetched a new dataset, ``False`` when an
+    existing one with the same connector descriptor was reused)."""
+
+    created: Required[bool]
+
+
 class PlatformOut(TypedDict, total=False):
     """A platform record (``platforms.get`` / an item of ``platforms.list``).
     Mirrors the ``PlatformOut`` OpenAPI model. ``build_quality`` is the
@@ -244,6 +262,9 @@ class PlatformOut(TypedDict, total=False):
     organisation_id: Required[str]
     status: Required[str]
     version: int
+    # Ids of the datasets the platform is built from (its domain's datasets).
+    dataset_ids: list[int]
+    domain_name: str | None
     visibility: str
     verified_profile: bool
     verified_min_confidence: float | None

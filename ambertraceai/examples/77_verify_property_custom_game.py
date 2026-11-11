@@ -1,7 +1,8 @@
 """77 -- Certified search over YOUR OWN game: Nash equilibrium, dominance, Pareto.
 
 ``platforms.verify_property`` accepts a custom finite *normal-form game* in
-``space["game"]`` -- 2 to 6 players, each with a finite action set, and an explicit payoff
+``space["game"]`` -- 2 to 6 players (up to 30 when the game is symmetric: identical action
+sets and a symmetric table), each with a finite action set, and an explicit payoff
 table (one row per action profile) -- and certifies game-theoretic claims over it by
 exhaustive, machine-checked enumeration:
 

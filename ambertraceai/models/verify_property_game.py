@@ -23,8 +23,9 @@ class VerifyPropertyGame:
     Attributes:
         payoffs (list[VerifyPropertyPayoffRow]): The explicit payoff table: EXACTLY one row per action profile (a
             missing or duplicated profile is an ABSTAIN, never a guess).
-        players (list[list[str]]): Per player (in order), its finite action set: distinct alphanumeric names. 2-6
-            players, at most 8 actions each, at most 1024 profiles.
+        players (list[list[str]]): Per player (in order), its finite action set: distinct alphanumeric names. At most 8
+            actions each. Asymmetric games: 2-6 players, at most 1024 profiles. Symmetric games (every player has the
+            identical action set and the table is symmetric): up to 30 players and 131072 profiles.
         parameters (None | Unset | VerifyPropertyGameParametersType0): Optional named values referenced by payoff cells.
             A plain integer is taken as you typed it (NO provenance claim). A CertifiedOutputRef is resolved by the server
             from a certified output in your organisation (fail-closed: an unknown, other-organisation, uncertified or

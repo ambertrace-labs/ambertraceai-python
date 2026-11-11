@@ -26,6 +26,9 @@ oil (MCOILWTICO), retail sales (RSAFS), capacity utilization (TCU) and housing (
 DATA: all FRED, US-government public domain — the panel is bundled and fully reproducible;
 no API key is needed to run this demo.
 
+NOTE: this demo creates fresh state on every run. For a recurring job, build once and
+reuse it with domains.get_or_create -- see 78_recurring_lifecycle_get_or_create.py.
+
     python 33_credit_spread_macro_forecast.py             # build on the bundled snapshot
     python 33_credit_spread_macro_forecast.py --standard  # skip the verified profile
 """

@@ -18,8 +18,9 @@ example that shows it). If you're unsure whether something is `author()`,
 | Verified query / decision (proof-carrying answer) | `platforms.query(pid, query=..., facts=...)` | 30, 38 |
 | Certified search — prove a mechanism's universal property (e.g. strategy-proofness) over a finite space: exhaustive HOLDS, a certified counterexample, or an explicit ABSTAIN | `platforms.verify_property(pid, property="strategy_proof", space={…, "bound": N})` — dedicated method, see [Certified search](#certified-search--prove-a-property-for-every-case) | 69 |
 | Certified regime-grid totality + exclusivity — for every cell of a grid you declare, EXACTLY ONE verdict derives from the platform's own decision rules (VIOLATED names the uncovered / double-covered cell) | `platforms.verify_property(pid, property="exactly_one_verdict", space={"variables": [{"field": …, "domain": […]}, …], "bound": N})` — same dedicated method, see [Certified search](#certified-search--prove-a-property-for-every-case) | 70 |
+| Certified game theory over YOUR OWN normal-form game — `nash_equilibrium`, `dominant_strategy`, `best_response`, `pareto_optimal` / `pareto_dominated` over an explicit payoff table (2–6 players; symmetric games up to 30); VIOLATED carries the profitable deviation / dominating profile with every player's payoff, re-certified by the trusted kernel | `platforms.verify_property(pid, property="nash_equilibrium", space={"game": {…}, "profile": […], "bound": N})` — same dedicated method, see [Certified search](#certified-search--prove-a-property-for-every-case) | 77 |
 | N-class / multi-class classifier (decision = winning label) | `domains.build_ontology` → `platforms.create(verified_profile=True)` → `platforms.query` — **NOT `author()`** | 38 |
-| Custom decision vocabulary (verbs beyond permit/deny) | phrase the `build_ontology` / `author` description with your verbs; read `query().decision` | 19, 24, 38 |
+| Decision Table — declare your decision outcomes (labels, order, default, permits, data `values`); `permitted` / `decision` / `status` on every verdict | `domains.set_decision_table(id, table)` (or `domains.create(decision_table=…)` / `agent_policy.author(text, decision_table=…)`); the platform PROPOSES one from your data — read it, its `provenance` and consistency checks with `datasets.quality(id)["decision_table"]` | 71, 68, 27, 19, 38 |
 | Build a VERIFIED platform | `platforms.create(verified_profile=True, verified_min_confidence=…, invariant_manifest=…)` | 10, 11, 14 |
 | Open-textured SCORED determination (an LLM-τ score for a judgment predicate deduction can't decide) | `platforms.create(scored_determinations={…})` — the platform's own runtime LLM scores the predicate; admitted as a τ-gated fact (≥τ supports a permit; sub-τ / abstain / OOD → escalate). SERVER-computed, deductive-first, fail-closed | 41 |
 | Cross-domain cueing / relational join inside the proof | `build_ontology(relations=…)` + `platforms.query(relations=…)` (`existsRelated`) | 31 |
@@ -30,6 +31,8 @@ example that shows it). If you're unsure whether something is `author()`,
 | APG distinct-actor quorum + separation-of-duties | `agent_policy.author("… two DIFFERENT approvers, none the author …")` + `authorize_action(relations=…)` | 28 |
 | Explainable symbolic forecasting + WHY | `predictions.symbolic_forecast(...)` (`why` / `prediction_record`) | 23, 26 |
 | Neural-evidence retrieval breadth on a query | `platforms.query(..., top_k=N)` | -- |
+| Reuse instead of re-creating — one domain / dataset per name or connector config, every run | `domains.get_or_create(name=…)` (alias `ensure`), `datasets.get_or_create(domain_id=, connector_type=, config=)`; both return the record plus `created` | 78 |
+| Count, page, filter and traverse a large account — true `total`, platform → datasets, find/tidy abandoned drafts | every `list()` returns a `PaginatedList` (`.total` / `.limit` / `.offset`); `platforms.list(q=, domain_id=, status=, sort=)`; `platforms.get(id)["dataset_ids"]` | 79 |
 | Panel data-sufficiency BEFORE training (usable rows, binding-constraint column, stale/discontinued series) | `datasets.panel_report(dataset_id)` — also persisted at ingest on `schema_info["panel_sufficiency"]` | 44 |
 | Org-capability discovery + 403 handling | `GET /api/v1/capabilities` (user-scoped key) + branch on `AmbertraceError.code == "capability_disabled"` | 42 |
 
@@ -132,8 +135,8 @@ print(answer["explanation"])
 
 | Resource | Methods |
 |----------|---------|
-| `api.domains` | `list`, `create`, `get`, `update`, `delete`, `build_ontology`, `eval_config`, `set_eval_config`, `delete_eval_config`, `suggest_eval_config`, `list_templates`, `create_template`, `update_template`, `delete_template`, `feedback_stats` |
-| `api.datasets` | `list`, `get`, `upload` (incl. `decision_column`), `fetch`, `fetch_multi`, `quality`, `panel_report`, `clean`, `preview`, `delete` |
+| `api.domains` | `list`, `create` (incl. `decision_table`), `get_or_create` (alias `ensure`), `get`, `update`, `delete`, `set_decision_table`, `build_ontology`, `eval_config`, `set_eval_config`, `delete_eval_config`, `suggest_eval_config`, `list_templates`, `create_template`, `update_template`, `delete_template`, `feedback_stats` |
+| `api.datasets` | `list`, `get_or_create` (alias `ensure`), `get`, `upload` (incl. `decision_column`), `fetch`, `fetch_multi`, `quality`, `panel_report`, `clean`, `preview`, `delete` |
 | `api.platforms` | `list`, `create`, `get`, `delete`, `status`, `query`, `verify_property`, `suggest_rules`, `list_suggestions`, `approve_suggestion`, `reject_suggestion`, `graph` |
 | `api.predictions` | `predict`, `list_configs`, `create_config`, `delete_config`, `train`, `list_predictions`, `discover_prediction_rules`, `discovered_prediction_rules`, `neurosymbolic_comparison`, `symbolic_forecast`, `residual_diagnosis` (preview) |
 | `api.connectors` | `list`, `test` |
@@ -220,6 +223,66 @@ if res.result == "VIOLATED":
 * Reachable only through `verify_property` (it is not a `query` mode). Example
   `70_verify_property_regime_grid.py`.
 
+### Custom normal-form games — Nash, dominance, best response, Pareto
+
+`verify_property` also certifies game-theoretic claims over a finite game **you declare**
+in `space.game` — a finite action set per player and an explicit payoff table with exactly
+one row per action profile (a missing or duplicated profile is an `ABSTAIN`, never a guess).
+Asymmetric games: 2–6 players, at most 1024 profiles. **Symmetric games** (every player has
+the identical action set and the table is symmetric under swapping players): up to 30 players
+and 131072 profiles — e.g. 10 players × 3 actions (59049 profiles) is certified over the
+FULL space by searching sorted action multisets (`search.quotient`); a table that is not
+verifiably symmetric is `ABSTAIN table_not_symmetric`:
+
+```python
+game = {"players": [["U", "M", "D"], ["L", "R"]],
+        "payoffs": [{"actions": ["U", "L"], "utilities": [2, 1]},
+                    {"actions": ["U", "R"], "utilities": [0, 0]},
+                    {"actions": ["M", "L"], "utilities": [1, 2]},
+                    {"actions": ["M", "R"], "utilities": [3, 1]},
+                    {"actions": ["D", "L"], "utilities": [0, 0]},
+                    {"actions": ["D", "R"], "utilities": [1, 3]}]}
+res = api.platforms.verify_property(
+    pid, property="nash_equilibrium",
+    space={"game": game, "profile": ["M", "R"], "bound": 1000})
+print(res.witness)                          # {'act_1': 'M', 'act_2': 'R', 'agent': 2, 'misreport': 'L'}
+print(res.witness_recertification["deviated_payoffs"])   # [1, 2]  (every player's payoff)
+```
+
+| `property` | claim arguments in `space` | `HOLDS` means | `VIOLATED` witness |
+|---|---|---|---|
+| `nash_equilibrium` | `profile` | no player profits from a unilateral deviation | the player + the profitable deviation |
+| `dominant_strategy` | `player`, `action`, optional `strict` | the action is never worse (strict: always better) than any alternative against every opponent profile | the opponent profile + the better alternative |
+| `best_response` | `player`, `action`, `opponent_profile` (the other players, in order) | no alternative does strictly better | the better alternative |
+| `pareto_optimal` | `profile` | no profile Pareto-dominates it | the dominating profile |
+| `pareto_dominated` | `profile` | **a dominating profile exists** — it is the `witness` (`certified: "witness"`) | none exists: `VIOLATED` with `certified: "exhaustive"` (the profile is Pareto-optimal) |
+
+* A payoff cell is an integer, or `{"param": name, "mul": 1, "add": 0}` resolved from
+  `game["parameters"]`; the table that was decided is echoed back as `resolved_payoffs`.
+  A parameter is either a plain integer (taken as typed, **no provenance claim**) or a
+  **reference to a certified platform output**:
+  `{"source_type": "prediction" | "verify_property", "source_id": N, "field": "...", "mul": 1, "add": 0}`.
+  The server fetches that record in YOUR organisation, requires it to be proof-checked,
+  reads the whitelisted `field` and resolves `round(value * mul + add)` — you never supply
+  the value. `prediction` fields: `value`, `probability`, `interval.lower`, `interval.upper`;
+  `verify_property` (a completed, proof-checked job): `search.space_size`, `witness_index`,
+  `witness_recertification.agent_gain`, `witness_recertification.truthful_payoffs.N` /
+  `deviated_payoffs.N`. An unknown, other-organisation, uncertified or pending source, or a
+  field outside the list, is an `ABSTAIN` (`parameter_source_not_found` /
+  `parameter_source_not_certified` / `parameter_source_not_completed` /
+  `parameter_field_not_allowed` / `parameter_field_not_numeric`). The verdict lists each
+  source in `inherited_provenance` with its honest `certification_level` (`platform` for a
+  prediction value — certified inputs, not kernel-proven; `binary`; `kernel`), and its
+  `proof_checked` is the game's own AND every source's.
+* `witness_recertification` carries every player's payoff at the claimed and the
+  deviating / dominating profile, the deviating `agent` and its `deviation`; the witness
+  is re-derived through the trusted kernel on a second encoding of the payoff table.
+* \|S\| is the number of (opponent profile × deviation) members the claim quantifies
+  over (e.g. 10 for a Nash check of one profile in the game above); above your `bound` or
+  the platform ceiling it is `ABSTAIN` (`over_bound` / `over_ceiling`), and a game larger
+  than the supported shape is `ABSTAIN game_too_large`. Example
+  `77_verify_property_custom_game.py`.
+
 The search runs as an **async server-side job** (it drives external checker processes):
 the server answers `POST .../verify-property` with `202 {"job_id", "poll", ...}` and the
 SDK polls `GET /api/v1/jobs/{job_id}` every `poll_interval` seconds (default 5) until the job
@@ -271,7 +334,7 @@ reachable at `api.agent_policy.*`:
 
 | Method | What it does |
 |--------|--------------|
-| `author(policy_text)` | Compile an English policy into a verified gate; returns `{platform, admitted, rejected, policy_text}` |
+| `author(policy_text, *, decision_table=None)` | Compile an English policy into a verified gate over a Decision Table (default: the binary `{permit, deny}`; declare `escalate` / `hold` / … rows to keep an open outcome vocabulary); returns `{platform, admitted, rejected, policy_text, decision_table, warnings, unreached_rows}` |
 | `status()` | The live gate: active policy, admitted controls (English), the declared `input_fields` an action must supply, and advisory `findings`. Findings are computed when the policy is compiled, not on read: `findings_compiled_at` / `findings_compiler_build` / `running_build` say when and by which build, and `findings_stale` is `True` after a platform deploy — re-run `author(policy_text)` to regenerate them (a fix to the probe check, e.g. false `V6_probe_mismatch` on multi-action gates, only reaches an existing policy that way) |
 | `examples()` | The built-in example-policy library (`[{id, domain_label, title, policy_text, try_hint}, ...]`) — ready-to-author policies |
 | `authorize_action(platform_id, *, tool, args, context, relations, predictions)` | Gate ONE proposed tool-call — permit/deny **with proof**. `relations` supplies a per-request set (e.g. quorum sign-offs); `predictions={role: {model_id, as_of}}` fans a verified forecast in (fail-closed) |
@@ -298,9 +361,9 @@ api.agent_policy.status()["input_fields"]   # e.g. quantity (int), unit_price (f
 # 3. Gate one action — permit/deny WITH PROOF
 v = api.agent_policy.authorize_action(platform_id, tool="place_order",
                                       args={"quantity": 100, "unit_price": 400})
-v["decision"]       # "permit" | "deny" | a policy's own verb (e.g. "escalate"/"clear")
-v["permitted"]      # True iff the verdict is WITHIN policy (non-restrictive) — the
-                    #   binary execute/block reading when the decision is a domain verb
+v["decision"]       # a Decision Table label: "permit" | "deny" | one you declared (e.g. "escalate")
+v["permitted"]      # True iff the deciding row permits — the execute/block switch
+v["status"]         # "decided" | "indeterminate" | "unavailable" (no verdict reached)
 v["proof_checked"]  # True — the kernel certified the firing set
 
 # For a CUMULATIVE control, mediate a session so the obligation is proven over the
@@ -360,7 +423,7 @@ raise `AmbertraceError` (404) when not enabled on your deployment. The cumulativ
 / exposure / band classes additionally require the platform's numeric obligation
 checker to be enabled. Its endpoints (`/agent-policy-gate*`, `/agent-sessions*`,
 `/example-policies`, `authorize-action`) are part of the public v1 OpenAPI spec
-(`openapi/ambertrace-v1.json`) — the contract is documented there and in the
+([`app.ambertrace.ai/api/v1/openapi.json`](https://app.ambertrace.ai/api/v1/openapi.json)) — the contract is documented there and in the
 generated client, not just this SDK.
 
 **`author()` 404 — feature-off vs not-authorised.** A 404 from `author()` has
@@ -384,7 +447,7 @@ model alone.
 > behind the `AMBERTRACE_SYMBOLIC_FORECAST` server flag — they raise
 > `AmbertraceError` (404) when the feature is not enabled on your deployment.
 > Both are part of the public v1 OpenAPI spec (`/platforms/{id}/symbolic-forecast`,
-> `/platforms/{id}/residual-diagnosis` in `openapi/ambertrace-v1.json`) — the
+> `/platforms/{id}/residual-diagnosis` in the OpenAPI spec) — the
 > contract is documented there and in the generated client, not just this SDK.
 > `discover_prediction_rules` / `neurosymbolic_comparison` are generally available.
 
@@ -557,6 +620,10 @@ api.datasets.fetch(domain_id=1, connector_type="yahoo",
                    config={"symbols": ["AAPL", "SPY"], "range": "2y"})
 api.datasets.fetch(domain_id=1, connector_type="coinbase",
                    config={"product_ids": ["BTC-USD", "ETH-USD"]})
+
+# AI-compute prices (GPU rental + LLM token prices, CC BY 4.0) are keyless:
+api.datasets.fetch(domain_id=1, connector_type="ai_compute",
+                   config={"data_type": "both", "gpu_models": ["h100-sxm"]})
 
 # FRED needs your own free key (https://fred.stlouisfed.org):
 api.datasets.fetch(domain_id=1, connector_type="fred",
@@ -947,6 +1014,72 @@ Agent/LLM orientation: [`AGENTS.md`](AGENTS.md)
 
 ## Changelog
 
+### 2.14.0
+
+**Lifecycle ergonomics -- make reuse the easy path.** `domains.get_or_create(name=...)` and
+`datasets.get_or_create(domain_id=, connector_type=, config=)` (alias `ensure`) are idempotent:
+call them every run and get ONE domain / dataset back (with `created` telling you whether this
+call made it) instead of a new duplicate each time. `domains.create` still always creates, but now
+warns when a domain with the same name already exists. Every `list()` / `search()` returns a
+`PaginatedList` -- a plain `list` that also carries `.total`, `.limit` and `.offset`.
+`platforms.list` gains `q`, `domain_id`, `status`, `sort`, `limit` and `offset` filters, and a
+platform record carries `domain_name` and `dataset_ids` (the datasets it was built from); a
+platform is built from its whole domain, so `platforms.create(dataset_id=...)` is informational
+only. Examples `78_recurring_lifecycle_get_or_create.py` (build once, reuse on every run) and
+`79_paginate_filter_and_reap.py` (count, page, filter, traverse and tidy abandoned draft
+domains). `domains.prune_drafts(older_than_days=N)` deletes your abandoned draft domains (no
+dataset, no platform; `0` = all) in one call and returns how many were reaped -- run it from a
+recurring job, as example 79 shows.
+
+**AI-compute market-data connector -- `connector_type="ai_compute"`.** Keyless GPU rental
+prices (FastGPU daily fixings or per-provider daily prices) and LLM token prices
+(ModelPriceWatch Price Index or per-model input/output prices), both CC BY 4.0 with the
+attribution notice carried in `source_notice`. Discover it with
+`connectors.list(asset_class="ai-compute")`; `data_type` is `gpu_prices`, `token_prices`
+or `both`. Reachable through the generic `datasets.fetch` path (no dedicated method).
+Example `80_ai_compute_connector.py`.
+
+### 2.13.0
+
+**Certified search over custom normal-form games --
+`platforms.verify_property(property="nash_equilibrium" | "dominant_strategy" |
+"best_response" | "pareto_optimal" | "pareto_dominated")`.** Declare a finite game in
+`space.game` (explicit payoff table) and certify Nash equilibrium, dominance, best response
+or Pareto optimality exhaustively; `VIOLATED` returns the deviation / dominating profile
+with every player's payoff, re-certified through the trusted kernel; oversize or malformed
+games are an explicit `ABSTAIN`. New `resolved_payoffs` on `VerifyPropertyResult`. Reachable
+only through `verify_property` (not a `query` mode). Example
+`77_verify_property_custom_game.py`; see [Certified
+search](#custom-normal-form-games--nash-dominance-best-response-pareto).
+
+### 2.12.0
+
+**`jobs.list()`** -- list your jobs (`GET /api/v1/jobs`); `JobOut` gains `ref_type` /
+`ref_id` (additive).
+
+### 2.11.0
+
+**Compound-arithmetic decision rules.** A policy / decision description may now state
+combined-total, nested-ratio and cumulative / running-total conditions; they build into
+verified rules and are served and explained like any other rule. New example
+`76_combined_total_rule.py`.
+
+**`prediction_only` build profile.** The build request's `build_profile` (`full` default |
+`prediction_only`) builds a forecasting platform from the domain's datasets alone -- no
+entities, ontology or decision table required.
+
+**`predictions.symbolic_forecast()` / `find_drivers()` are now async (HTTP 202 + job).**
+The server fit takes minutes on wide panels (longer than a gateway's request
+timeout), so `POST /platforms/{id}/symbolic-forecast` returns `{"job_id", "poll",
+"status": "forecasting", "deduplicated"}` immediately and the forecast is the
+job's `result` (`GET /api/v1/jobs/{id}`). Both methods gain `wait=True,
+timeout=600.0, poll_interval=5.0` (the `train` / `discover_prediction_rules`
+shape): by default they poll to completion and return the SAME forecast payload
+as before, so existing calls (examples 23 / 63 / 66 included) are unchanged. A
+failed fit raises `AmbertraceError` with the reason; `wait=False` returns the raw
+202 envelope. An identical request already in flight returns the existing
+`job_id`. Job polling needs a user/session credential, not a platform-scoped key.
+
 ### 2.10.2
 
 **Consistency refusal -- a build that contradicts your description.** A verified
@@ -1010,6 +1143,33 @@ forecasting. New `72_cross_sectional_regression.py`.
 `73_fx_forwards_connector.py`.
 
 Regenerated client + examples sync.
+
+**Decision Table — decision outcomes are declared, not guessed from verbs.** A platform
+that decides does so over a Decision Table: rows of `{label, order, default, permits,
+values}` (`"mode": "ladder"`) or mutually-exclusive cells (`"mode": "partition"`).
+
+- New `domains.set_decision_table(domain_id, table)` (`PUT /api/v1/domains/{id}/decision-table`),
+  `domains.create(..., decision_table=...)` and `agent_policy.author(policy_text,
+  decision_table=...)` (omitted: the product's binary `{permit, deny}`).
+- `datasets.quality(id)["decision_table"]` shows the proposal inferred from your data's
+  label column / description (with `provenance`, `guessed`), a description scaffold, and the
+  consistency checks between data, description and table (C2 mapping errors block the
+  build; C1/C3/C4/C6 are advisory). `platforms.status` adds `decision_table`,
+  `decision_table_warnings`, `decision_table_note`.
+- Typed: `DecisionTable` / `DecisionTableRow` (+ `DecisionTableQuality`, `QualityReport`,
+  `DomainDetail`); `decision_table` on `DomainOut`, `PlatformStatusOut`, `AuthorResult`,
+  `AgentPolicyStatus`; `outcome` / `permitted` / `status` on `QueryResult`; `status` on
+  `AuthorizeActionResult` with `outcome` narrowed to `permit | deny | None`.
+- **Breaking (server contract):** the gate's `indeterminate` / `unavailable` move from
+  `outcome` to `status`; branch on `permitted` for permit/deny switching, on `decision`
+  for label-specific logic, on `status` for abstain / indeterminate / unavailable.
+  `decision_vocabulary` and `vocabulary_declared` are removed (read `decision_table`).
+- Examples: new `71_decision_table_quickstart.py`; every deciding example declares its
+  table; `68_decision_verb_pinning.py` reads `decision_table`; `27_agent_policy_gate.py`
+  declares and serves `escalate`; `38_symmetric_multiclass_classifier.py` uses
+  `mode: partition`.
+
+Migration table: [`MIGRATION.md`](MIGRATION.md).
 
 ### 2.9.0
 
@@ -1079,7 +1239,7 @@ name the capability gate and the 403 code. See the new
 Policy Gate and the `symbolic_forecast` / `residual_diagnosis` "why" layer were
 already reachable from this SDK but omitted from the public v1 OpenAPI spec, so a
 fresh agent reading ReDoc/the spec as the contract could not discover them. Both
-are now in `openapi/ambertrace-v1.json` (58 -> 69 public paths); no method
+are now in the public OpenAPI spec (58 -> 69 public paths); no method
 signature changed.
 
 **Data redistribution gate -- `forbidden` 403 on non-redistributable sources.**

@@ -8,6 +8,9 @@ Bring your own FRED key (free: https://fred.stlouisfed.org → My Account → AP
 Keys). Add it to examples/.env as:
     FRED_API_KEY=your_fred_key
 
+NOTE: this demo creates fresh state on every run. For a recurring job, build once and
+reuse it with domains.get_or_create -- see 78_recurring_lifecycle_get_or_create.py.
+
     python 08_fred_forecast.py
 """
 
