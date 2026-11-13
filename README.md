@@ -33,6 +33,8 @@ example that shows it). If you're unsure whether something is `author()`,
 | Neural-evidence retrieval breadth on a query | `platforms.query(..., top_k=N)` | -- |
 | Reuse instead of re-creating — one domain / dataset per name or connector config, every run | `domains.get_or_create(name=…)` (alias `ensure`), `datasets.get_or_create(domain_id=, connector_type=, config=)`; both return the record plus `created` | 78 |
 | Count, page, filter and traverse a large account — true `total`, platform → datasets, find/tidy abandoned drafts | every `list()` returns a `PaginatedList` (`.total` / `.limit` / `.offset`); `platforms.list(q=, domain_id=, status=, sort=)`; `platforms.get(id)["dataset_ids"]` | 79 |
+| Retrain only when the data changed — has the training data changed since the active model was trained? (no model load) | `predictions.check_staleness(pid, cid)` → `data_changed` + the two fingerprints; then `predictions.train(pid, cid)` retrains in place under the SAME platform | 81 |
+| Audit which model, trained on which data, served when — every trained version of a config with its provenance (no model load) | `predictions.model_history(pid, cid)` → `model_version`, `dataset_ids`, `dataset_fingerprint`, `trained_at`, `is_active`; the same `model_version` is on `predictions.check_staleness`, the active-model response and the symbolic forecast | 82 |
 | Panel data-sufficiency BEFORE training (usable rows, binding-constraint column, stale/discontinued series) | `datasets.panel_report(dataset_id)` — also persisted at ingest on `schema_info["panel_sufficiency"]` | 44 |
 | Org-capability discovery + 403 handling | `GET /api/v1/capabilities` (user-scoped key) + branch on `AmbertraceError.code == "capability_disabled"` | 42 |
 
@@ -1013,6 +1015,44 @@ Interactive API reference (ReDoc): [`app.ambertrace.ai/docs`](https://app.ambert
 Agent/LLM orientation: [`AGENTS.md`](AGENTS.md)
 
 ## Changelog
+
+### 2.17.0
+
+**Recurring forecaster lifecycle.** New example `83_recurring_retrain_lifecycle.py` ties the
+reuse pattern together on ONE domain, platform and prediction config: `domains.get_or_create`,
+reuse the dataset and platform, `predictions.check_staleness`, `predictions.train` only when the
+data changed, then `predictions.model_history` to audit every version. The forecaster demos
+(`08`, `16`, `20`, `21`, `22`, `32`, `33`) now point to it. Docstring clarifications, no behaviour
+change: `symbolic_forecast(feature_overrides=)` is a what-if on the FROZEN trained model, not a
+retrain; `datasets.upload`, `datasets.fetch` and `datasets.fetch_multi` each CREATE a new dataset
+(and `fetch` / `fetch_multi` WRITE it from the network) -- use `datasets.get_or_create` to reuse one.
+
+### 2.16.0
+
+**Model history -- `predictions.model_history(platform_id, config_id)`.** Lists every trained
+model version of a prediction config, newest first, each with `model_version`, `is_active`,
+`metrics`, `feature_names`, `dataset_ids` and `dataset_fingerprint` (the training data it used)
+and `trained_at`. Retraining on the same platform and config adds a version and never overwrites
+an earlier one, so any past forecast can be audited to the model and data behind it. Reads
+metadata only; no model is loaded. A config never trained returns `[]`; a model trained before
+provenance was recorded reports `dataset_ids` / `dataset_fingerprint` as `None`. The version is
+also exposed where you already look: `model_version` + `dataset_ids` on the active-model
+response and on the symbolic forecast, and `active_model_version` on each prediction config.
+Example `82_model_history.py`. Backed by
+`GET /api/v1/platforms/{id}/prediction-configs/{cid}/model-history`.
+
+### 2.15.0
+
+**Staleness check -- `predictions.check_staleness(platform_id, config_id)`.** Answers "has the
+training data changed since this config's active model was trained?" so a recurring forecaster
+retrains only when it needs to. It returns `data_changed`, `current_data_fingerprint`,
+`training_data_fingerprint`, `current_dataset_ids`, `model_version` (the id of the active
+model) and `trained_at`; it reads dataset files only and loads no model. Upload fresh data to
+the platform's domain and `data_changed` turns True; `predictions.train` on the SAME platform
+and config then retrains in place and it turns False again. The fingerprint covers the raw
+uploaded bytes. A model trained before fingerprints were recorded reports `data_changed: true`
+(retrain once to establish it). Example `81_retrain_when_data_changed.py`. Backed by
+`GET /api/v1/platforms/{id}/prediction-configs/{cid}/staleness`.
 
 ### 2.14.0
 

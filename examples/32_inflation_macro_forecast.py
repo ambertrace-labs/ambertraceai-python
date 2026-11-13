@@ -31,6 +31,7 @@ no API key is needed to run this demo.
 
 NOTE: this demo creates fresh state on every run. For a recurring job, build once and
 reuse it with domains.get_or_create -- see 78_recurring_lifecycle_get_or_create.py.
+Reuse one domain for recurring use -- see example 83 (83_recurring_retrain_lifecycle.py).
 
     python 32_inflation_macro_forecast.py             # build on the bundled snapshot
     python 32_inflation_macro_forecast.py --standard  # skip the verified profile
