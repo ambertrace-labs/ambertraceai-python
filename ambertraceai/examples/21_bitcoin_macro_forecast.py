@@ -29,6 +29,7 @@ examples/.env).
 
 NOTE: this demo creates fresh state on every run. For a recurring job, build once and
 reuse it with domains.get_or_create -- see 78_recurring_lifecycle_get_or_create.py.
+Reuse one domain for recurring use -- see example 83 (83_recurring_retrain_lifecycle.py).
 
     python 21_bitcoin_macro_forecast.py             # build on the bundled snapshot
     python 21_bitcoin_macro_forecast.py --refresh   # fetch the panel live and build on that

@@ -34,6 +34,8 @@ class PredictionConfigOut:
         status (str): Config lifecycle status: 'pending' (created, not yet trained), 'training' (training in progress),
             'trained' (ready to predict), 'failed' (training failed — see error_message).
         target_field (str):
+        active_model_version (int | None | Unset): ID of the model version currently serving this config (null until
+            trained).
         auto_reduce (bool | Unset): Whether auto-reduce is opted in — drop the sparsest auxiliary columns to meet a
             declared sufficiency bar instead of returning HTTP 409. Default: False.
         autoregressive (str | Unset): Autoregression control: 'full' (history allowed, default), 'limited' (drivers + a
@@ -103,6 +105,7 @@ class PredictionConfigOut:
     platform_id: int
     status: str
     target_field: str
+    active_model_version: int | None | Unset = UNSET
     auto_reduce: bool | Unset = False
     autoregressive: str | Unset = "full"
     backtest_config: None | PredictionConfigOutBacktestConfigType0 | Unset = UNSET
@@ -155,6 +158,12 @@ class PredictionConfigOut:
         status = self.status
 
         target_field = self.target_field
+
+        active_model_version: int | None | Unset
+        if isinstance(self.active_model_version, Unset):
+            active_model_version = UNSET
+        else:
+            active_model_version = self.active_model_version
 
         auto_reduce = self.auto_reduce
 
@@ -332,6 +341,8 @@ class PredictionConfigOut:
                 "target_field": target_field,
             }
         )
+        if active_model_version is not UNSET:
+            field_dict["active_model_version"] = active_model_version
         if auto_reduce is not UNSET:
             field_dict["auto_reduce"] = auto_reduce
         if autoregressive is not UNSET:
@@ -415,6 +426,15 @@ class PredictionConfigOut:
         status = d.pop("status")
 
         target_field = d.pop("target_field")
+
+        def _parse_active_model_version(data: object) -> int | None | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(int | None | Unset, data)
+
+        active_model_version = _parse_active_model_version(d.pop("active_model_version", UNSET))
 
         auto_reduce = d.pop("auto_reduce", UNSET)
 
@@ -699,6 +719,7 @@ class PredictionConfigOut:
             platform_id=platform_id,
             status=status,
             target_field=target_field,
+            active_model_version=active_model_version,
             auto_reduce=auto_reduce,
             autoregressive=autoregressive,
             backtest_config=backtest_config,

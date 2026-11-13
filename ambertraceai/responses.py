@@ -407,6 +407,38 @@ class PredictionConfigOut(TypedDict, total=False):
     error_message: str | None
     created_at: str | None
     updated_at: str | None
+    active_model_version: int | None  # id of the serving model version (None until trained)
+
+
+class StalenessOut(TypedDict, total=False):
+    """Result of ``predictions.check_staleness``. Mirrors the ``StalenessOut``
+    OpenAPI model. ``data_changed`` is True when the datasets a retrain would
+    use now differ from the ones the active model trained on; a model trained
+    before provenance was recorded has ``training_data_fingerprint`` None and
+    reports ``data_changed`` True."""
+
+    data_changed: Required[bool]
+    current_data_fingerprint: str | None
+    training_data_fingerprint: str | None
+    current_dataset_ids: list[int]
+    model_version: Required[int]  # id of the active model version
+    trained_at: str | None
+
+
+class ModelVersionOut(TypedDict, total=False):
+    """One item of ``predictions.model_history``. Mirrors the ``ModelVersionOut``
+    OpenAPI model. A model trained before provenance was recorded has
+    ``dataset_ids`` / ``dataset_fingerprint`` None."""
+
+    model_version: Required[int]  # id of this model version
+    prediction_config_id: int
+    is_active: bool  # True for the version currently serving predictions
+    metrics: dict[str, Any] | None
+    feature_names: list[str] | None
+    dataset_ids: list[int] | None  # datasets this version was trained on
+    dataset_fingerprint: str | None  # SHA-256 over their content
+    trained_at: str | None
+    created_at: str | None
 
 
 class ForecastOut(TypedDict, total=False):
@@ -981,6 +1013,8 @@ class SymbolicForecastResult(TypedDict, total=False):
     forecast: Required[ForecastBlock]
     why: Required[list[JsonDict]]
     prediction_record: Required[PredictionRecord]
+    model_version: int | None  # id of the serving model version (None when untrained)
+    dataset_ids: list[int] | None  # datasets that model was trained on
     target_field: str
     horizon: int
     baseline: float

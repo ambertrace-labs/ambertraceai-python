@@ -42,6 +42,8 @@ from .responses import (
     PlatformStatusOut,
     PredictResult,
     PredictionConfigOut,
+    StalenessOut,
+    ModelVersionOut,
     QualityReport,
     ResidualDiagnosis,
     SessionResult,
@@ -1075,6 +1077,10 @@ class DatasetResource(_Resource):
         first/last non-null dates with a staleness flag. Call
         :meth:`panel_report` for the full report (binding constraint, recovery
         groups) before training.
+
+        Each call CREATES a new dataset on the domain (it never updates or replaces
+        one); to reuse an existing dataset, look it up with :meth:`list` first
+        (``examples/83_recurring_retrain_lifecycle.py``).
         """
         with open(file_path, "rb") as f:
             files = {"file": (name or file_path.split("/")[-1], f)}
@@ -1111,6 +1117,10 @@ class DatasetResource(_Resource):
         credentials. See ``api.connectors.list()`` for the full list with
         descriptions and required fields.
 
+        Each call CREATES a new dataset on the domain and WRITES it (a network
+        fetch every time); for a recurring job use :meth:`get_or_create` to reuse
+        the one already fetched.
+
         ASYNC (like :meth:`fetch_multi`): the network fetch runs in the
         background, so this returns the dataset record (HTTP 202) with
         ``status == "processing"`` — poll :meth:`get` until ``status == "ready"``
@@ -1133,6 +1143,9 @@ class DatasetResource(_Resource):
                     require_coverage: dict | None = None) -> DatasetOut:
         """Fetch from two or more sources and MERGE them into ONE date-aligned
         dataset, so a forecaster can train across sources in a single panel.
+
+        Each call CREATES a new merged dataset on the domain (it WRITES; sources are
+        fetched again every time); it never updates an existing dataset.
 
         ``sources`` is a list of source dicts (at least two). Each source is
         EITHER a connector source ``{"connector_type": ..., "config": {...}}``
@@ -2471,6 +2484,57 @@ class PredictionResource(_Resource):
                 )
         return self._request("POST", f"/api/v1/platforms/{platform_id}/prediction-configs", json=kwargs)
 
+    def check_staleness(self, platform_id: int, config_id: int) -> StalenessOut:
+        """Has the training data changed since this config's active model was trained?
+
+        Staleness check for recurring forecasters: retrain only when the data
+        actually changed. Compares a content fingerprint of the datasets a
+        retrain would use now (``current_data_fingerprint``) with the one
+        recorded when the active model trained (``training_data_fingerprint``).
+        It reads dataset files only -- no model is loaded -- so it is cheap to
+        call before every scheduled run.
+
+        Returns ``{data_changed, current_data_fingerprint,
+        training_data_fingerprint, current_dataset_ids, model_version,
+        trained_at}``. ``data_changed`` is True when the fingerprints differ
+        (e.g. fresh data was uploaded to the platform's domain), and also when
+        the active model was trained before fingerprints were recorded
+        (``training_data_fingerprint`` is None) -- retrain once to establish it.
+        ``model_version`` is the id of the active model. The fingerprint covers
+        the raw uploaded bytes. Raises ``AmbertraceError`` (404) when the config
+        has no trained model yet.
+
+        Example: ``if api.predictions.check_staleness(pid, cid)["data_changed"]:
+        api.predictions.train(pid, cid)`` -- see
+        ``examples/81_retrain_when_data_changed.py``.
+        """
+        return self._request(
+            "GET", f"/api/v1/platforms/{platform_id}/prediction-configs/{config_id}/staleness")
+
+    def model_history(self, platform_id: int, config_id: int) -> list[ModelVersionOut]:
+        """Model history: every trained version of a config, newest first.
+
+        Version introspection for a durable platform. Each retrain adds a model
+        version under the SAME platform and config and never overwrites an
+        earlier one; this lists them all so you can audit "which model, trained
+        on which data, was serving then". Reads metadata only -- no model is
+        loaded.
+
+        Each item is ``{model_version, is_active, metrics, feature_names,
+        dataset_ids, dataset_fingerprint, trained_at, created_at, ...}``.
+        ``model_version`` is the id of that version and matches the
+        ``model_version`` on ``check_staleness``, the active-model response and
+        the symbolic forecast; ``dataset_ids`` / ``dataset_fingerprint`` record
+        the training data (both None for a model trained before provenance was
+        recorded). Returns ``[]`` for a config that has never been trained and
+        raises ``AmbertraceError`` (404) for an unknown config.
+
+        Example: ``versions = api.predictions.model_history(pid, cid)`` -- see
+        ``examples/82_model_history.py``.
+        """
+        return self._request(
+            "GET", f"/api/v1/platforms/{platform_id}/prediction-configs/{config_id}/model-history")
+
     def delete_config(self, platform_id: int, config_id: int) -> dict:
         return self._request("DELETE", f"/api/v1/platforms/{platform_id}/prediction-configs/{config_id}")
 
@@ -2865,7 +2929,9 @@ class PredictionResource(_Resource):
         excluded are honestly left unstamped, fail-closed), and a
         ``why_certification`` block (the certified facts, any rejected facts, the
         proof + summary) is attached. ``feature_overrides`` applies what-if values
-        to the most recent row before composing (e.g. ``{"FEDFUNDS": 6.0}``). The
+        to the most recent row before composing (e.g. ``{"FEDFUNDS": 6.0}``); it is a
+        what-if on the FROZEN trained model, NOT a retrain (to retrain on new data
+        use :meth:`train`; see ``examples/83_recurring_retrain_lifecycle.py``). The
         override propagates through BOTH the fired driver-rules AND the neural
         baseline (when ``baseline_mode='neural'`` the GBT anchor is recomputed with
         the overridden engineered features, so the baseline itself moves).

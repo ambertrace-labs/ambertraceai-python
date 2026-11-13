@@ -141,6 +141,8 @@ from .job_out_result_type_0 import JobOutResultType0
 from .linked_dataset_out import LinkedDatasetOut
 from .linked_series_out import LinkedSeriesOut
 from .list_jobs_ref_type_type_0 import ListJobsRefTypeType0
+from .model_version_out import ModelVersionOut
+from .model_version_out_metrics_type_0 import ModelVersionOutMetricsType0
 from .neurosymbolic_comparison_query import NeurosymbolicComparisonQuery
 from .neurosymbolic_comparison_query_feature_overrides_type_0 import NeurosymbolicComparisonQueryFeatureOverridesType0
 from .node_out import NodeOut
@@ -234,6 +236,7 @@ from .schema_reconciliation_augment import SchemaReconciliationAugment
 from .schema_reconciliation_conflict import SchemaReconciliationConflict
 from .sharing_audit_entry_out import SharingAuditEntryOut
 from .sharing_audit_list_out import SharingAuditListOut
+from .staleness_out import StalenessOut
 from .step_request import StepRequest
 from .step_request_context_type_0 import StepRequestContextType0
 from .suggestion_out import SuggestionOut
@@ -401,6 +404,8 @@ __all__ = (
     "LinkedDatasetOut",
     "LinkedSeriesOut",
     "ListJobsRefTypeType0",
+    "ModelVersionOut",
+    "ModelVersionOutMetricsType0",
     "NeurosymbolicComparisonQuery",
     "NeurosymbolicComparisonQueryFeatureOverridesType0",
     "NodeOut",
@@ -494,6 +499,7 @@ __all__ = (
     "SchemaReconciliationConflict",
     "SharingAuditEntryOut",
     "SharingAuditListOut",
+    "StalenessOut",
     "StepRequest",
     "StepRequestContextType0",
     "SuggestionOut",

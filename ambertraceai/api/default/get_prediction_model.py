@@ -65,7 +65,8 @@ def sync_detailed(
     """Get active model metadata
 
      Returns the active trained model's metadata for a prediction config, including evaluation metrics
-    (RMSE, MAE, R2), feature names, and training timestamp.
+    (RMSE, MAE, R2), feature names, training timestamp, the model version (`model_version`) and the
+    datasets it was trained on (`dataset_ids`).
 
     Args:
         id (int): Platform ID
@@ -100,7 +101,8 @@ def sync(
     """Get active model metadata
 
      Returns the active trained model's metadata for a prediction config, including evaluation metrics
-    (RMSE, MAE, R2), feature names, and training timestamp.
+    (RMSE, MAE, R2), feature names, training timestamp, the model version (`model_version`) and the
+    datasets it was trained on (`dataset_ids`).
 
     Args:
         id (int): Platform ID
@@ -130,7 +132,8 @@ async def asyncio_detailed(
     """Get active model metadata
 
      Returns the active trained model's metadata for a prediction config, including evaluation metrics
-    (RMSE, MAE, R2), feature names, and training timestamp.
+    (RMSE, MAE, R2), feature names, training timestamp, the model version (`model_version`) and the
+    datasets it was trained on (`dataset_ids`).
 
     Args:
         id (int): Platform ID
@@ -163,7 +166,8 @@ async def asyncio(
     """Get active model metadata
 
      Returns the active trained model's metadata for a prediction config, including evaluation metrics
-    (RMSE, MAE, R2), feature names, and training timestamp.
+    (RMSE, MAE, R2), feature names, training timestamp, the model version (`model_version`) and the
+    datasets it was trained on (`dataset_ids`).
 
     Args:
         id (int): Platform ID
