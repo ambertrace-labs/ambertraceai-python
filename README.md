@@ -33,7 +33,7 @@ example that shows it). If you're unsure whether something is `author()`,
 | Neural-evidence retrieval breadth on a query | `platforms.query(..., top_k=N)` | -- |
 | Reuse instead of re-creating — one domain / dataset per name or connector config, every run | `domains.get_or_create(name=…)` (alias `ensure`), `datasets.get_or_create(domain_id=, connector_type=, config=)`; both return the record plus `created` | 78 |
 | Count, page, filter and traverse a large account — true `total`, platform → datasets, find/tidy abandoned drafts | every `list()` returns a `PaginatedList` (`.total` / `.limit` / `.offset`); `platforms.list(q=, domain_id=, status=, sort=)`; `platforms.get(id)["dataset_ids"]` | 79 |
-| Retrain only when the data changed — has the training data changed since the active model was trained? (no model load) | `predictions.check_staleness(pid, cid)` → `data_changed` + the two fingerprints; then `predictions.train(pid, cid)` retrains in place under the SAME platform | 81 |
+| Retrain only when the data changed — has the training data changed since the active model was trained? (no model load) | `predictions.check_staleness(pid, cid)` → `data_changed` + the two fingerprints; then `predictions.train(pid, cid)` retrains in place under the SAME platform; `predictions.train(pid, cid, dataset_ids=[new_id])` retrains on a refreshed dataset ALONE (replace, no double-count) | 81, 83 |
 | Audit which model, trained on which data, served when — every trained version of a config with its provenance (no model load) | `predictions.model_history(pid, cid)` → `model_version`, `dataset_ids`, `dataset_fingerprint`, `trained_at`, `is_active`; the same `model_version` is on `predictions.check_staleness`, the active-model response and the symbolic forecast | 82 |
 | Panel data-sufficiency BEFORE training (usable rows, binding-constraint column, stale/discontinued series) | `datasets.panel_report(dataset_id)` — also persisted at ingest on `schema_info["panel_sufficiency"]` | 44 |
 | Org-capability discovery + 403 handling | `GET /api/v1/capabilities` (user-scoped key) + branch on `AmbertraceError.code == "capability_disabled"` | 42 |
@@ -1015,6 +1015,19 @@ Interactive API reference (ReDoc): [`app.ambertrace.ai/docs`](https://app.ambert
 Agent/LLM orientation: [`AGENTS.md`](AGENTS.md)
 
 ## Changelog
+
+### 2.18.0
+
+**Replace a durable platform's training data -- `predictions.train(pid, cid, dataset_ids=[...])`.**
+`train` takes an optional `dataset_ids` list and trains on EXACTLY those datasets (validated:
+in the platform's domain, ingested/ready, carrying the target field; otherwise HTTP 422).
+Omit it and training is unchanged (every usable dataset in the domain). Retrain a recurring
+forecaster on a refreshed dataset alone with `train(pid, cid, dataset_ids=[new_id])` -- same
+platform, same config, no double-counting. Also, timeseries training now de-duplicates rows that
+share a time index across datasets, the most recent dataset winning, so a refresh that re-states
+earlier periods no longer inflates the training and holdout sets even without `dataset_ids`
+(cross-sectional data is not de-duplicated). Datasets remain immutable -- upload new data, then
+retrain. Example `83_recurring_retrain_lifecycle.py` gains `--replace`.
 
 ### 2.17.0
 

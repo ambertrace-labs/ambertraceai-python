@@ -2539,6 +2539,7 @@ class PredictionResource(_Resource):
         return self._request("DELETE", f"/api/v1/platforms/{platform_id}/prediction-configs/{config_id}")
 
     def train(self, platform_id: int, config_id: int, *,
+              dataset_ids: list[int] | None = None,
               wait: bool = True,
               timeout: float = 600.0,
               poll_interval: float = 5.0) -> PredictionConfigOut:
@@ -2556,15 +2557,31 @@ class PredictionResource(_Resource):
         the job yourself (e.g. :meth:`AmbertraceAPI.wait_for_job`), then re-fetch the
         config via :meth:`list_configs`.
 
+        **Replace the training data of a durable platform.** By default training
+        uses EVERY usable (ready/ingested) dataset in the domain. Pass
+        ``dataset_ids=[new_id]`` to train (retrain) on EXACTLY those datasets --
+        e.g. a refreshed upload that supersedes the earlier one -- under the SAME
+        platform and config. Ids are validated server-side (in the platform's
+        domain, ingested/ready, carrying the config's target field); anything else
+        raises ``AmbertraceError`` 422. In timeseries mode, rows sharing a time
+        index across the chosen datasets are de-duplicated, the most recent
+        dataset's row winning, so a refresh that re-states earlier periods is not
+        double-counted. Datasets stay immutable: there is no append/replace-rows
+        call -- upload new data, then retrain with ``dataset_ids=``.
+
         .. versionchanged:: 1.0.0
             ``wait`` now defaults to ``True`` (was ``False``), so ``train`` blocks
             until training settles and returns the trained config instead of the job
             envelope — matching its ``discover_prediction_rules`` sibling. Pass
             ``wait=False`` to restore the historical raw-job return.
         """
+        kwargs: dict[str, Any] = {}
+        if dataset_ids is not None:
+            kwargs["json"] = {"dataset_ids": list(dataset_ids)}
         resp = self._request(
             "POST",
-            f"/api/v1/platforms/{platform_id}/prediction-configs/{config_id}/train")
+            f"/api/v1/platforms/{platform_id}/prediction-configs/{config_id}/train",
+            **kwargs)
         if not wait:
             return resp
         job_id = resp.get("job_id")

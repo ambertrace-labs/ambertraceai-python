@@ -662,9 +662,13 @@ def train_prediction_model(
     config_id: int,
     timeout: int = DEFAULT_BUILD_TIMEOUT,
     poll_interval: int = DEFAULT_POLL_INTERVAL,
+    dataset_ids: list[int] | None = None,
 ) -> dict[str, Any]:
-    """Train a prediction config and wait until it reports a trained status."""
-    resp = api.predictions.train(platform_id, config_id)
+    """Train a prediction config and wait until it reports a trained status.
+
+    ``dataset_ids`` trains on EXACTLY those datasets (default: all usable ones).
+    """
+    resp = api.predictions.train(platform_id, config_id, dataset_ids=dataset_ids)
     job_id = _first(resp, "job_id") or _nested_id(resp, "job")
     if job_id is not None:
         _await_job(api, job_id, f"Training for config {config_id}", timeout, poll_interval)

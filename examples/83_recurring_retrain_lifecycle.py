@@ -13,9 +13,11 @@ prediction config -- run it every night and it creates nothing it already has:
   6. ``predictions.model_history`` -- every model version with the datasets it was trained on.
 
 Run it twice: the second run trains nothing. Add ``--dataset new.csv`` and it retrains in place.
+Add ``--replace`` when the new file SUPERSEDES the old one (a refreshed full history): the
+retrain uses ``train(dataset_ids=[new_id])`` so only the new dataset is trained on.
 (``symbolic_forecast(feature_overrides=)`` is a what-if on the frozen trained model -- not a retrain.)
 
-    python 83_recurring_retrain_lifecycle.py [--dataset new.csv]
+    python 83_recurring_retrain_lifecycle.py [--dataset new.csv [--replace]]
 """
 
 from __future__ import annotations
@@ -102,8 +104,10 @@ def run_retrain_lifecycle(api, args: argparse.Namespace) -> None:
         never_trained, data_changed = True, False
         print("  No trained model yet for this config.")
     if never_trained or data_changed:
-        train_prediction_model(api, platform["id"], config["id"])
-        print("  Trained in place (same platform and config)")
+        only_new = [dataset["id"]] if (args.replace and args.dataset) else None
+        train_prediction_model(api, platform["id"], config["id"], dataset_ids=only_new)
+        print("  Trained in place (same platform and config)"
+              + (f" on dataset {only_new[0]} alone" if only_new else ""))
     else:
         print("  Data unchanged -- skipping retrain.")
 
@@ -124,6 +128,9 @@ def main() -> None:
     parser.add_argument("--dataset", type=Path, default=None,
                         help="Fresh CSV to upload on this run (default: upload "
                              "environmental_monitoring.csv only on the first run)")
+    parser.add_argument("--replace", action="store_true",
+                        help="With --dataset: the new dataset supersedes earlier ones -- "
+                             "retrain on it alone (train(dataset_ids=[new_id]))")
     args = parser.parse_args()
     run_demo(run_retrain_lifecycle, args)
 

@@ -62,12 +62,15 @@ def sync_detailed(
     *,
     client: AuthenticatedClient | Client,
 ) -> Response[list[ValidationErrorModel]]:
-    """Train prediction model
+    r"""Train prediction model
 
      Starts async model training. Returns 202 with job ID. Poll GET /platforms/{id}/prediction-configs to
     check the config status until it transitions from 'training' to 'trained' or 'failed'. Training
     loads datasets (must be 'ready' status), engineers features, fits the model, and runs backtesting.
-    Returns 409 if training is already in progress or no datasets are available.
+    Returns 409 if training is already in progress or no datasets are available. Optional JSON body
+    {\"dataset_ids\": [int]} trains on EXACTLY those datasets (validated: in this domain,
+    ingested/ready, carrying the target field; else 422) instead of every usable dataset — use it to
+    retrain a durable platform on refreshed data alone.
 
     Args:
         id (int): Platform ID
@@ -99,12 +102,15 @@ def sync(
     *,
     client: AuthenticatedClient | Client,
 ) -> list[ValidationErrorModel] | None:
-    """Train prediction model
+    r"""Train prediction model
 
      Starts async model training. Returns 202 with job ID. Poll GET /platforms/{id}/prediction-configs to
     check the config status until it transitions from 'training' to 'trained' or 'failed'. Training
     loads datasets (must be 'ready' status), engineers features, fits the model, and runs backtesting.
-    Returns 409 if training is already in progress or no datasets are available.
+    Returns 409 if training is already in progress or no datasets are available. Optional JSON body
+    {\"dataset_ids\": [int]} trains on EXACTLY those datasets (validated: in this domain,
+    ingested/ready, carrying the target field; else 422) instead of every usable dataset — use it to
+    retrain a durable platform on refreshed data alone.
 
     Args:
         id (int): Platform ID
@@ -131,12 +137,15 @@ async def asyncio_detailed(
     *,
     client: AuthenticatedClient | Client,
 ) -> Response[list[ValidationErrorModel]]:
-    """Train prediction model
+    r"""Train prediction model
 
      Starts async model training. Returns 202 with job ID. Poll GET /platforms/{id}/prediction-configs to
     check the config status until it transitions from 'training' to 'trained' or 'failed'. Training
     loads datasets (must be 'ready' status), engineers features, fits the model, and runs backtesting.
-    Returns 409 if training is already in progress or no datasets are available.
+    Returns 409 if training is already in progress or no datasets are available. Optional JSON body
+    {\"dataset_ids\": [int]} trains on EXACTLY those datasets (validated: in this domain,
+    ingested/ready, carrying the target field; else 422) instead of every usable dataset — use it to
+    retrain a durable platform on refreshed data alone.
 
     Args:
         id (int): Platform ID
@@ -166,12 +175,15 @@ async def asyncio(
     *,
     client: AuthenticatedClient | Client,
 ) -> list[ValidationErrorModel] | None:
-    """Train prediction model
+    r"""Train prediction model
 
      Starts async model training. Returns 202 with job ID. Poll GET /platforms/{id}/prediction-configs to
     check the config status until it transitions from 'training' to 'trained' or 'failed'. Training
     loads datasets (must be 'ready' status), engineers features, fits the model, and runs backtesting.
-    Returns 409 if training is already in progress or no datasets are available.
+    Returns 409 if training is already in progress or no datasets are available. Optional JSON body
+    {\"dataset_ids\": [int]} trains on EXACTLY those datasets (validated: in this domain,
+    ingested/ready, carrying the target field; else 422) instead of every usable dataset — use it to
+    retrain a durable platform on refreshed data alone.
 
     Args:
         id (int): Platform ID
