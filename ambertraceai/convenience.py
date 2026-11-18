@@ -3994,8 +3994,8 @@ class AgentPolicyResource(_Resource):
 
         Returns ``{"decision", "permitted", "proof_checked", "proof_summary",
         "denied_reason", "deciding_rule"?, "certified_facts", "rejected_facts",
-        "status", "outcome", "missing_inputs", "stalled_stage",
-        "query_diagnostics"}``. ``decision`` is the deciding Decision Table row's
+        "stripped_fields", "status", "outcome", "missing_inputs",
+        "stalled_stage", "query_diagnostics"}``. ``decision`` is the deciding Decision Table row's
         label (``permit``/``deny`` on the default binary table, or a row you
         declared with ``author(decision_table=...)``). Fail-closed: a
         rejected/missing fact, a proof-check failure, or an unavailable engine
@@ -4023,6 +4023,14 @@ class AgentPolicyResource(_Resource):
         Migration: code that branched on ``outcome == "indeterminate"`` /
         ``"unavailable"`` now branches on ``status``; ``outcome`` is narrowed to
         ``"permit"`` | ``"deny"`` | None.
+
+        Every submitted input has exactly one of three fates: ``certified_facts``
+        (accepted), ``rejected_facts`` (declared but invalid - fail-closed), or
+        ``stripped_fields`` - ``list[{"field", "reason"}]`` of inputs the gate
+        IGNORED, ``reason`` ``"undeclared"`` (not a field of the policy) or
+        ``"relation_operand"`` (consumed by a ``relations`` row, not a scalar).
+        A stripped input never causes a deny and never reaches the proof; the
+        decision is made on the declared inputs. Field names only, no values.
 
         Supporting diagnostics on a non-permit:
 

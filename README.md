@@ -387,7 +387,7 @@ gates a single action (permit one, deny another, print the proof certificate), a
 mediates a session for a cumulative spend budget.
 
 **What the proof is — and is not.** The verdict's proof certificate (`decision`,
-`permitted`, `proof_checked`, `deciding_rule`, `certified_facts`, `rejected_facts`)
+`permitted`, `proof_checked`, `deciding_rule`, `certified_facts`, `rejected_facts`, `stripped_fields`)
 is an **output** the verified engine produces: it demonstrates the *result* —
 which facts were certified, which rule decided, and that the firing set was
 machine-checked. It does **not** ship or reveal the kernel / Lean formalisation
@@ -1015,6 +1015,16 @@ Interactive API reference (ReDoc): [`app.ambertrace.ai/docs`](https://app.ambert
 Agent/LLM orientation: [`AGENTS.md`](AGENTS.md)
 
 ## Changelog
+
+### 2.19.0
+
+**See which action fields the policy gate ignored -- `stripped_fields`.** `authorize_action`
+responses now include a `stripped_fields` list: any field you sent that the gate did not use in
+the decision, each with a `reason` (`undeclared` -- not in the policy's schema; or
+`relation_operand` -- a column consumed by a relation, not a scalar input). The decision still
+proceeds on your declared inputs. Every field you supply is now explicitly accounted for --
+used (`certified_facts`), rejected with a reason (`rejected_facts`), or stripped with a reason
+(`stripped_fields`) -- so an ignored or mistyped field is never silently dropped.
 
 ### 2.18.0
 
