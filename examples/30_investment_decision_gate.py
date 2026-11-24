@@ -96,6 +96,18 @@ from ambertraceai import AmbertraceError
 
 from _common import add_common_args, print_section, run_demo
 
+# The gate's Decision Table, declared explicitly (it is the product's default binary table, so
+# nothing is left for the platform to infer): `permit` is the default outcome when no obligation
+# is violated; `deny` blocks. `permits` says whether the action may proceed; a gate table is a
+# ladder with at least one permitting and one non-permitting row.
+DECISION_TABLE = {
+    "mode": "ladder",
+    "rows": [
+        {"label": "deny", "order": 2, "permits": False},
+        {"label": "permit", "order": 1, "default": True, "permits": True},
+    ],
+}
+
 # TIER-PARTITIONED conditional permits + SEPARATION OF DUTIES. The trade_tier enum
 # (standard | material) is the mutually-exclusive partition — exactly like 28's
 # target_environment (dev/staging vs production). A standard-tier trade clears on the
@@ -246,7 +258,7 @@ def run_investment_gate_demo(api, args: argparse.Namespace) -> None:
     print(f"  POLICY:\n    {POLICY}\n")
 
     try:
-        result = api.agent_policy.author(POLICY)
+        result = api.agent_policy.author(POLICY, decision_table=DECISION_TABLE)
     except AmbertraceError as exc:
         if getattr(exc, "status_code", None) == 404:
             print("  The Agent Policy Gate is not enabled on this deployment "

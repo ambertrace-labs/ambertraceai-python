@@ -74,24 +74,18 @@ DOMAIN_DESCRIPTION = (
     "financial-institution gift card), conditioned_on_official_action (the gift is offered in "
     "return for or conditioned on an official action by the employee), unsolicited, "
     "is_excluded_item (the item is not a restricted gift: modest refreshments not offered as part "
-    "of a meal, a "
-    "greeting card or item of little intrinsic value, a commercial discount available to the "
+    "of a meal, a greeting card or item of little intrinsic value, a commercial discount available to the "
     "general public, or an item for which the employee pays full market value), and "
     "raises_appearance_concern (the decision turns on a reasonable-person judgment such as an "
     "appearance of influence, suspicious timing, uncertain motivation, or an implausible value "
     "estimate). "
-    "Classify these named conditions: the gift is a bribe when conditioned_on_official_action is "
-    "true; the gift is a cash equivalent when is_cash_or_investment is true; the gift needs a "
-    "judgment call when raises_appearance_concern is true; the gift is an excluded item when "
-    "is_excluded_item is true; the gift qualifies for the small-gift exception when unsolicited "
-    "is true and aggregate_value_this_source_occasion is at most 20 and "
-    "annual_aggregate_this_source "
-    "is at most 50. "
-    "Decide the outcome by the first matching rule: decline when the gift is a bribe; decline "
-    "when the gift is a cash equivalent; escalate when the gift needs a judgment call; permit "
-    "when the "
-    "gift is an excluded item; permit when the gift qualifies for the small-gift exception; "
-    "otherwise decline."
+    "Apply these rules in order. "
+    "If conditioned_on_official_action is true, always decline, regardless of the gift's value, and never permit it. "
+    "If is_cash_or_investment is true, decline. "
+    "If raises_appearance_concern is true, escalate. "
+    "If is_excluded_item is true, permit. "
+    "If unsolicited is true and aggregate_value_this_source_occasion is at most 20 and annual_aggregate_this_source is at most 50, permit. "
+    "Otherwise, decline."
 )
 
 # The Decision Table: a DEFAULT-DENY gate ("otherwise decline"), so the default row is `decline`
@@ -179,7 +173,9 @@ def run_gift_gate(api, args: argparse.Namespace) -> None:
     print_section(3, total, "Building verified platform")
     platform = build_platform(
         api, domain["id"], dataset["id"],
-        verified_profile=not args.standard, verified_min_confidence=args.tau)
+        verified_profile=not args.standard, verified_min_confidence=args.tau,
+        # The table's default row (decline) does not permit: declare the posture explicitly.
+        decision_posture="fail_closed")
     pid = platform["id"]
     print(f"  Platform {pid}: {platform['name']} ({platform.get('status')})")
 

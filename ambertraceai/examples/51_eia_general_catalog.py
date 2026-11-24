@@ -5,7 +5,8 @@ The ``eia`` connector supports two mutually-exclusive modes:
 * **Mode A** -- preset oil series via ``series_ids`` (see example 24).
 * **Mode B** -- the FULL EIA v2 catalog (electricity, natural gas, coal,
   nuclear, renewables, CO2 emissions, international, ...) via ``route`` +
-  ``facets``.  Browse it first with ``api.connectors.eia_discover()``.
+  ``facets``.  Browse it first with ``api.connectors.discover("eia")`` (see example 52
+  for FRED / Yahoo / CFTC).
 
 This example browses the catalog, then pulls monthly retail electricity
 prices for California and Texas -- a non-oil dataset a preset can't reach.
@@ -36,11 +37,11 @@ def main() -> None:
     banner("EIA general v2 catalog (Mode B)")
 
     # --- 1. Browse the catalog --------------------------------------------
-    top = api.connectors.eia_discover()
+    top = api.connectors.discover("eia")
     routes = [r["id"] for r in top.get("routes", [])]
     step(f"Top-level EIA v2 routes ({len(routes)}): {routes}")
 
-    leaf = api.connectors.eia_discover(route="electricity/retail-sales")
+    leaf = api.connectors.discover("eia", route="electricity/retail-sales")
     facet_ids = [f["id"] for f in leaf.get("facets", [])]
     data_cols = list(leaf.get("data", {}).keys())
     step(f"electricity/retail-sales facets: {facet_ids}")

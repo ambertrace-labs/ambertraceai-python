@@ -65,11 +65,8 @@ DOMAIN_DESCRIPTION = (
     "outcome is permit or escalate. Each request has a stated_purpose (the proposed use, free "
     "text), a collection_purpose (why the records were originally collected, free text), and the "
     "flag routine_use_claimed (the agency claims a routine-use basis). "
-    "Classify these named conditions: the routine use has a basis when routine_use_claimed is "
-    "true and compatibility_established is true; the routine use is unverified when "
-    "routine_use_claimed is true and compatibility_established is not true. "
-    "Decide the outcome by the first matching rule: permit when the routine use has a basis; "
-    "escalate when the routine use is unverified; otherwise escalate."
+    "If routine_use_claimed is true and compatibility_established is true, permit. "
+    "Otherwise, escalate: a disclosure whose routine-use basis is claimed but not established, or not claimed at all, must always be escalated to a human and never permitted."
 )
 
 # The Decision Table: "otherwise escalate" makes `escalate` the default row; `permits` is
@@ -187,6 +184,8 @@ def run_records_gate(api, args: argparse.Namespace) -> None:
     verified = not args.standard
     extra = {"verified_profile": True, "verified_min_confidence": args.tau,
              "scored_determinations": SCORED_DETERMINATIONS} if verified else {}
+    # The table's default row (escalate) does not permit: declare the posture explicitly.
+    extra["decision_posture"] = "fail_closed"
     resp = api.platforms.create(domain_id=domain["id"], dataset_id=dataset["id"], **extra)
     pid = resp["id"]
     api.wait_for_job(resp.job_id, type='build')

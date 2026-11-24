@@ -71,15 +71,12 @@ DEFAULT_HOLDOUT = DATA_DIR / "fused_tracks_holdout.csv"
 QUERY_TEXT = "Triage this track."
 
 DOMAIN_NAME = "Cross-Domain Cueing (Fused Track Triage)"
-# Authored in the access-PDP framing (named conditions + a first-match decision
-# ladder + a separate obligation) so the verdict vocabulary is declared — an
-# under-declared verdict field defaults to permit-everything. Both operands of
-# every cross-field comparison are declared inputs/derived heads (engine landmine:
-# an unbound operand defaults open); enums are enumerated positively (no
-# ungroundable set-membership / negation heads); the policy is deliberately
-# atemporal (no native temporal operator).
+# Authored as outcomes-first, ordered if/otherwise rules plus a separate obligation, so the
+# verdict vocabulary is declared (an under-declared verdict field defaults to
+# permit-everything). Every cross-field operand is a declared input; the policy is
+# deliberately atemporal (no native temporal operator).
 DOMAIN_DESCRIPTION = (
-    "Cross-domain fusion triage decision support over a unified surveillance track. "
+    "Decide how to triage each fused surveillance track: escalate, monitor, or clear. "
     "An upstream fusion layer correlates air and maritime-surface tracks by grid square "
     "and emits one flattened fused track per query. Each fused track has a domain "
     "(air or maritime), a grid square, a position source (gps, radar, ais, or sonar), an "
@@ -87,22 +84,16 @@ DOMAIN_DESCRIPTION = (
     "exclusion zone, a track confidence between 0 and 1, whether a confirmed maritime "
     "exclusion breach is present in its grid square, and whether GPS spoofing is present "
     "in its grid square. "
-    "Classify these named conditions: a track is unidentified when its identification is "
-    "unidentified; a track is hostile when its identification is hostile; a track is "
-    "cross-cued when a confirmed maritime exclusion breach is present in its grid square "
-    "and it is unidentified; a track is a zone breach when it is in an exclusion zone and "
-    "is unidentified; a track is confident when its track confidence is at least 0.6; a "
-    "track has a spoofed position when GPS spoofing is present in its grid square and its "
-    "position source is gps. "
-    "Triage each track by the first matching rule: escalate a cross-cued track regardless "
-    "of its individual score; escalate a zone-breach track; escalate a hostile track; "
-    "monitor an unidentified track that is confident; monitor a track that is in an "
-    "exclusion zone; clear the track when none of the above apply. "
-    "Separately, require human review when a track has a spoofed position; and when a "
-    "track has a spoofed position its position is not trusted, so any escalation that "
-    "depends on the reported position must not be certified on position evidence alone. "
-    "Every triage decision must be auditable, and a cross-cued track must always be "
-    "escalated to a human operator and never suppressed."
+    "Apply these rules in order. "
+    "If a confirmed maritime exclusion breach is present in the track's grid square and its identification is unidentified, always escalate, regardless of its individual score, and never suppress it. "
+    "If the track is in an exclusion zone and its identification is unidentified, escalate. "
+    "If its identification is hostile, escalate. "
+    "If its identification is unidentified and its track confidence is at least 0.6, monitor. "
+    "If the track is in an exclusion zone, monitor. "
+    "Otherwise, clear. "
+    "Separately, require human review when GPS spoofing is present in the track's grid square and its position source is gps: "
+    "such a track's position is not trusted, so any escalation that depends on the reported position must not be certified on position evidence alone. "
+    "Every triage decision must be auditable."
 )
 
 # The Decision Table: the outcomes a triage decision can take, declared (not guessed from

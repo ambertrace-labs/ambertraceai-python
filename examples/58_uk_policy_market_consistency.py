@@ -65,8 +65,9 @@ DEFAULT_DATASET = DATA_DIR / "uk_policy_consistency_panel.csv"
 
 DOMAIN_NAME = "UK policy-market consistency (BoE reaction function vs priced OIS path)"
 DOMAIN_DESCRIPTION = (
-    "Decide whether the UK rates market is in a consistency equilibrium or a disequilibrium "
-    "from two signed residuals on each observation: path_reaction_gap and inflation_anchor_gap. "
+    "Classify each observation into exactly one state: COHERENT_HAWKISH, COHERENT_DOVISH, "
+    "DISLOCATED_DOVISH, or DISLOCATED_HAWKISH. The coherent states are equilibria and the dislocated "
+    "states are disequilibria. Each observation has two signed residuals: path_reaction_gap and inflation_anchor_gap. "
     "Both are signed numbers. path_reaction_gap is the market-implied 2-year policy path (from "
     "overnight index swaps) minus the path a Bank of England reaction function prescribes given "
     "inflation and unemployment — at or above zero when the market prices a tighter path than the "
@@ -114,11 +115,26 @@ LANDMARKS: list[tuple[str, dict[str, float], str]] = [
 ]
 
 
+# The Decision Table, in PARTITION mode: the four states are mutually exclusive cells -- no default,
+# no order, no permits. Each cell is a rule the platform proves; zero or several firing is
+# `status == "abstain"` (never a made-up label). `label` is served verbatim in `decision`.
+DECISION_TABLE = {
+    "mode": "partition",
+    "rows": [
+        {"label": "COHERENT_HAWKISH"},
+        {"label": "COHERENT_DOVISH"},
+        {"label": "DISLOCATED_DOVISH"},
+        {"label": "DISLOCATED_HAWKISH"},
+    ],
+}
+
+
 def run_consistency(api, args: argparse.Namespace) -> None:
     total = 5
 
     print_section(1, total, "Creating UK policy-market consistency domain (plain-English)")
-    domain = api.domains.create(name=DOMAIN_NAME, description=DOMAIN_DESCRIPTION)
+    domain = api.domains.create(
+        name=DOMAIN_NAME, description=DOMAIN_DESCRIPTION, decision_table=DECISION_TABLE)
     print(f"  Domain {domain['id']}: {domain['name']} ({domain.get('status')})")
 
     print_section(2, total, "Uploading the real reaction-residual coverage panel")

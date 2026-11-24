@@ -98,39 +98,24 @@ CREDIT_DOMAIN_DESCRIPTION = (
 TIGHTENING_THRESHOLD = 1.20
 LOAN_DOMAIN_NAME = "Macro-aware lending decision"
 #
-# GOTCHA 2 (stratification): the default outcome is NOT phrased "otherwise approve".
-#   That gets induced as "approve if NOT (deny OR refer)", making the outcome depend on
-#   the negation of ITSELF, and the verified build is rejected as non-stratifiable. Fix:
-#   route each decision through intermediate CLASSIFICATION atoms (`blocked`, `needs manual
-#   review`) and define each outcome over those, so negation is only ever over a
-#   lower-stratum atom, never over the outcome.
-#
-# GOTCHA 3 (reachability): the intermediate atoms here use POSITIVE conditions only
-#   ("applicant has weak credit", "credit conditions are tightening"). The FINAL outcome
-#   layer may negate them ("approve when the application is not blocked and does not need
-#   manual review") — that final-layer negation over already-derived intermediate atoms is
-#   fine. It is negation INSIDE an intermediate atom that breaks reachability (see the
-#   companion multi-forecast demo, where it bit and is called out explicitly).
+# Default outcome ("Otherwise, approve."): safe to write flat. The DECISION_TABLE below
+#   declares `approve` as the default row, and the ontology IR carries it as
+#   `default_outcome`, so the default is the table's fall-through when no deny/refer rule
+#   fires -- it is never induced as a negated rule over the outcomes (which would make
+#   the outcome depend on the negation of itself and be rejected as non-stratifiable).
+#   Keep negation inside a rule condition over input facts (e.g. "not well-secured" is
+#   defined by positive terms), not over a derived outcome.
 LOAN_DOMAIN_DESCRIPTION = (
-    "Lending decision support that is aware of the macro credit cycle. Each application has a "
+    "Decide each loan application as approve, refer, or deny, aware of the macro credit cycle. Each application has a "
     "credit score from 300 to 850, a debt-to-income ratio, a loan type (secured or unsecured), a "
     "requested loan amount, a collateral value (zero for unsecured loans), and a "
     "forecast_credit_spread: the one-month-ahead investment-grade credit spread "
     "(Moody's Baa minus Aaa, in percent) produced by the macro forecaster. "
-    "Classify these named conditions: an applicant has strong credit when the credit score is at "
-    "least 740; an applicant has weak credit when the credit score is below 660; an applicant "
-    "is a marginal borrower when the credit score is at least 660 and below 740; debt-to-income "
-    "is high when the debt-to-income ratio is above 0.40; a loan is well-secured when the loan "
-    "type is secured and the loan amount is at most 80% of the collateral value; credit "
-    "conditions are tightening when the forecast_credit_spread is at least 1.20. "
-    "Also classify: the application is blocked when the applicant has weak credit and the loan "
-    "is not well-secured, or when debt-to-income is high and the applicant does not have strong "
-    "credit; the application needs manual review when credit conditions are tightening and the "
-    "applicant is a marginal borrower. "
-    "Decide the lending decision: deny when the application is blocked; refer when the "
-    "application is not blocked and the application needs manual review; approve when the "
-    "application is not blocked and the application does not need manual review. Every lending "
-    "decision must be explainable and auditable for fair-lending compliance."
+    "Apply these rules in order. "
+    "If the credit score is below 660 and the loan is not well-secured, deny; a loan is well-secured only when it is secured and the loan amount is at most 80% of the collateral value. "
+    "If the debt-to-income ratio is above 0.40 and the credit score is below 740, deny. "
+    "If the credit score is at least 660 and below 740 and the forecast_credit_spread is at least 1.20, refer. "
+    "Otherwise, approve. Every lending decision must be explainable and auditable for fair-lending compliance."
 )
 
 # The Decision Table: the lending outcomes, declared. `label` is served verbatim in `decision`;

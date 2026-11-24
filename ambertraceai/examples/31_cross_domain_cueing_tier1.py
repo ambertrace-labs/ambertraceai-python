@@ -8,10 +8,10 @@ underlying maritime / cyber tracks.
 
 **Tier 1 removes the pre-joined booleans and derives the cue INSIDE the proof.** The
 domain declares two certified RELATIONS — ``maritime_track`` and ``cyber_event`` —
-and the description states the cue as an EXISTENTIAL over them:
+and the description states the cue in plain words, as a lookup over them:
 
-    "a track is maritime-cued when there EXISTS a related maritime_track in the same
-     grid_square whose zone_status is exclusion_breach and ais_corroborated is true"
+    "its grid square has a related maritime_track record whose zone_status is
+     exclusion_breach and whose ais_corroborated is true"
 
 The builder authors an ``existsRelated`` derive rule for that clause. At query time
 the caller attaches the related rows for the focal track's grid via
@@ -64,27 +64,20 @@ _CUE_COLS = ("grid_has_confirmed_maritime_exclusion_breach", "grid_has_gps_spoof
 
 DOMAIN_NAME = "Cross-Domain Cueing (Tier 1 — existential join in-proof)"
 DOMAIN_DESCRIPTION = (
-    "Multi-domain track triage for cross-domain cueing. Each track has a domain (air or "
+    "Decide how to triage each track: escalate, monitor, or clear. Each track has a domain (air or "
     "maritime), a grid square, a position source (gps, radar, ais, or sonar), an identification "
     "(unidentified, friendly, hostile, or unknown), whether it is inside an exclusion zone, and a "
     "track confidence between 0 and 1. "
-    "There are related maritime_track records, each with a grid square, a zone status, and whether "
-    "it is ais_corroborated; and related cyber_event records, each with a grid square and an "
-    "event type. "
-    "Classify these named conditions: a track is unidentified when its identification is "
-    "unidentified; a track is hostile when its identification is hostile; a track is maritime-cued "
-    "when there exists a related maritime_track in the same grid_square whose zone_status is "
-    "exclusion_breach and ais_corroborated is true; a track is grid-spoofed when there exists a "
-    "related cyber_event in the same grid_square whose event_type is gps_spoofing; a track is "
-    "position-untrusted when it is grid-spoofed and its position source is gps; a track is a "
-    "cross-domain threat when it is maritime-cued and unidentified; a track is a zone intrusion "
-    "when it is inside an exclusion zone and unidentified; a track is a confident unknown when it "
-    "is unidentified and its track confidence is at least 0.6; a track is zone-resident when it is "
-    "inside an exclusion zone. "
-    "Triage each track by the first matching rule: escalate a cross-domain threat track; escalate "
-    "a zone intrusion track; escalate a hostile track; monitor a confident unknown track; monitor "
-    "a zone-resident track; monitor a position-untrusted track; clear the track when none of the "
-    "above apply."
+    "Related records are looked up by grid square. Each related maritime_track record has a grid square, a zone status, and whether "
+    "it is ais_corroborated; each related cyber_event record has a grid square and an event type. "
+    "Apply these rules in order. "
+    "If the track is unidentified and its grid square has a related maritime_track record whose zone_status is exclusion_breach and whose ais_corroborated is true, always escalate. "
+    "If the track is unidentified and inside an exclusion zone, escalate. "
+    "If its identification is hostile, escalate. "
+    "If its identification is unidentified and its track confidence is at least 0.6, monitor. "
+    "If the track is inside an exclusion zone, monitor. "
+    "If its position source is gps and its grid square has a related cyber_event record whose event_type is gps_spoofing, monitor. "
+    "Otherwise, clear."
 )
 
 # The Decision Table: the outcomes a triage decision can take, declared (not guessed from

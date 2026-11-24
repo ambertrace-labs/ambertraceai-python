@@ -52,8 +52,8 @@ PANEL = DATA_DIR / "macro_regime_momentum.csv"
 
 DOMAIN_NAME = "Macro regime (growth x inflation quadrant)"
 DOMAIN_DESCRIPTION = (
-    "Classify the macroeconomic regime from two signed momentum indicators on each "
-    "observation: real GDP growth momentum (growth_vs_trend) and CPI inflation momentum "
+    "Classify each observation into exactly one macroeconomic regime: reflation, goldilocks, "
+    "stagflation, or deflation. Each observation has two signed momentum indicators: real GDP growth momentum (growth_vs_trend) and CPI inflation momentum "
     "(infl_vs_trend). Both are signed numbers -- at or above zero when the indicator is "
     "running above its recent trend, below zero when it is running below trend. When "
     "growth_vs_trend is at or above zero and infl_vs_trend is at or above zero, the regime "
@@ -64,6 +64,19 @@ DOMAIN_DESCRIPTION = (
     "growth_vs_trend is below zero and infl_vs_trend is below zero, the regime is DEFLATION "
     "(growth and inflation both cooling). Every regime classification must be auditable."
 )
+
+# The Decision Table, in PARTITION mode: the four states are mutually exclusive cells -- no default,
+# no order, no permits. Each cell is a rule the platform proves; zero or several firing is
+# `status == "abstain"` (never a made-up label). `label` is served verbatim in `decision`.
+DECISION_TABLE = {
+    "mode": "partition",
+    "rows": [
+        {"label": "reflation"},
+        {"label": "goldilocks"},
+        {"label": "stagflation"},
+        {"label": "deflation"},
+    ],
+}
 
 CLASSIFY = "Classify the macroeconomic regime."
 
@@ -124,7 +137,8 @@ def run_macro_regime(api, args: argparse.Namespace) -> None:
         return
 
     print_section(1, total, "Creating macro-regime domain (plain-English quadrant policy)")
-    domain = api.domains.create(name=DOMAIN_NAME, description=DOMAIN_DESCRIPTION)
+    domain = api.domains.create(
+        name=DOMAIN_NAME, description=DOMAIN_DESCRIPTION, decision_table=DECISION_TABLE)
     print(f"  Domain {domain['id']}: {domain['name']} ({domain.get('status')})")
 
     print_section(2, total, "Uploading the growth x inflation momentum panel")

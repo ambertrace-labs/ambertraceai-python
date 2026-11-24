@@ -69,8 +69,8 @@ DEFAULT_HOLDOUT = DATA_DIR / "rf_rm_conformance_holdout.csv"
 
 DOMAIN_NAME = "RF Resource Manager Conformance"
 DOMAIN_DESCRIPTION = (
-    "Interface conformance testing of an RF Resource Manager control interface. Each "
-    "record is one observed control exchange between a controller and the unit under "
+    "Decide each control exchange of an RF Resource Manager as permit or deny: permit means the exchange is conformant, deny means it is non-conformant. "
+    "Each record is one observed control exchange between a controller and the unit under "
     "test. Each exchange has a schema version (v1, v2, v3, v0, or v9), a component id "
     "(RRM-1, RRM-2, RRM-3, RRM-4, RRM-0, or UNREG-9), a boolean indicating whether all "
     "mandatory fields are present, a boolean indicating whether every field is within "
@@ -81,32 +81,17 @@ DOMAIN_DESCRIPTION = (
     "a boolean indicating whether pre-emption was performed, an integer acknowledgement "
     "latency in milliseconds, and an integer acknowledgement latency limit in "
     "milliseconds. "
-    "Classify these named conditions: the schema version is unknown when it is v0 or "
-    "v9; the component id is unregistered when it is RRM-0 or UNREG-9; capacity is "
-    "exceeded when the requested capacity is greater than the available capacity; the "
-    "state transition is illegal when the device state transitioned from is IDLE and "
-    "the device state transitioned to is IDLE, or the device state transitioned from is "
-    "IDLE and the device state transitioned to is ACTIVE, or the device state "
-    "transitioned from is INIT and the device state transitioned to is IDLE, or the "
-    "device state transitioned from is INIT and the device state transitioned to is "
-    "INIT, or the device state transitioned from is ACTIVE and the device state "
-    "transitioned to is INIT, or the device state transitioned from is ACTIVE and the "
-    "device state transitioned to is ACTIVE; an activation lacks its health check when "
-    "the device state transitioned to is ACTIVE and the initialisation health check did "
-    "not pass; pre-emption is missing when the request priority is greater than the "
-    "active allocation priority and pre-emption was not performed; the acknowledgement "
-    "latency is exceeded when the acknowledgement latency in milliseconds is greater "
-    "than the acknowledgement latency limit in milliseconds. "
-    "Decide permit or deny by the first matching rule: deny for unknown schema version "
-    "when the schema version is unknown; deny for unregistered component when the "
-    "component id is unregistered; deny for missing mandatory field when the mandatory "
-    "fields are not all present; deny for field out of range when a field is not within "
-    "range; deny for capacity exceeded when capacity is exceeded; deny for illegal state "
-    "transition when the state transition is illegal; deny for activation without health "
-    "check when an activation lacks its health check; deny for missing pre-emption when "
-    "pre-emption is missing; deny for latency exceeded when the acknowledgement latency "
-    "is exceeded; otherwise permit. Every decision must be auditable: a permit verdict "
-    "means the exchange is conformant and a deny verdict means it is non-conformant."
+    "Apply these rules in order. "
+    "If the schema version is v0 or v9, deny. "
+    "If the component id is RRM-0 or UNREG-9, deny. "
+    "If the mandatory fields are not all present, deny. "
+    "If a field is not within range, deny. "
+    "If the requested capacity is greater than the available capacity, deny. "
+    "If the device state goes from IDLE to IDLE or ACTIVE, from INIT to IDLE or INIT, or from ACTIVE to INIT or ACTIVE, deny. "
+    "If the device state transitioned to is ACTIVE and the initialisation health check did not pass, deny. "
+    "If the request priority is greater than the active allocation priority and pre-emption was not performed, deny. "
+    "If the acknowledgement latency in milliseconds is greater than the acknowledgement latency limit in milliseconds, deny. "
+    "Otherwise, permit. Every decision must be auditable."
 )
 
 # The Decision Table: the two outcomes this gate decides. `label` is served verbatim in
@@ -284,6 +269,8 @@ def run_rf_rm_demo(api, args: argparse.Namespace) -> None:
         api, domain["id"], dataset["id"],
         verified_profile=not args.standard,
         verified_min_confidence=args.tau,
+        # The domain's table plants a default outcome: declare it (the platform default is fail-closed, see 72).
+        decision_posture="default_allow",
     )
     profile = "verified" if platform.get("verified_profile") else "standard"
     print(f"  Platform {platform['id']}: {platform['name']} ({platform.get('status')}, {profile})")

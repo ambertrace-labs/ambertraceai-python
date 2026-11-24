@@ -49,6 +49,10 @@ class SymbolicForecastRequest:
                 -> what-if value applied to the most recent row before composing the forecast (e.g. {'inflation': 5.0}). Lets a
                 trader/C2 ask 'which drivers fire, and where does the forecast move, if feature X were Y?'. Omit to forecast
                 from the latest data.
+            force_new (bool | None | Unset): When true, always start a NEW forecast job even if an identical request is
+                already in flight (the default re-attaches to it and returns the existing job_id with deduplicated=true). Use it
+                to launch a fresh run alongside, or after cancelling, a stalled one (POST /jobs/{id}/cancel). Not part of the
+                request identity. Default: False.
             include_fitted_series (bool | Unset): When true, ALSO return the backtest's per-period fitted-vs-actual
                 TIMESERIES under 'fitted_series' so a consumer can chart actual vs symbolic-rules-fitted over history. This is
                 the SAME walk the skill_vs_persistence metric is computed from — no extra fit. Each point is {index
@@ -82,6 +86,7 @@ class SymbolicForecastRequest:
     compact_certification: bool | Unset = True
     entity: None | str | Unset = UNSET
     feature_overrides: None | SymbolicForecastRequestFeatureOverridesType0 | Unset = UNSET
+    force_new: bool | None | Unset = False
     include_fitted_series: bool | Unset = False
     period: None | str | Unset = UNSET
     prediction_model_id: None | str | Unset = UNSET
@@ -119,6 +124,12 @@ class SymbolicForecastRequest:
             feature_overrides = self.feature_overrides.to_dict()
         else:
             feature_overrides = self.feature_overrides
+
+        force_new: bool | None | Unset
+        if isinstance(self.force_new, Unset):
+            force_new = UNSET
+        else:
+            force_new = self.force_new
 
         include_fitted_series = self.include_fitted_series
 
@@ -169,6 +180,8 @@ class SymbolicForecastRequest:
             field_dict["entity"] = entity
         if feature_overrides is not UNSET:
             field_dict["feature_overrides"] = feature_overrides
+        if force_new is not UNSET:
+            field_dict["force_new"] = force_new
         if include_fitted_series is not UNSET:
             field_dict["include_fitted_series"] = include_fitted_series
         if period is not UNSET:
@@ -232,6 +245,15 @@ class SymbolicForecastRequest:
 
         feature_overrides = _parse_feature_overrides(d.pop("feature_overrides", UNSET))
 
+        def _parse_force_new(data: object) -> bool | None | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(bool | None | Unset, data)
+
+        force_new = _parse_force_new(d.pop("force_new", UNSET))
+
         include_fitted_series = d.pop("include_fitted_series", UNSET)
 
         def _parse_period(data: object) -> None | str | Unset:
@@ -287,6 +309,7 @@ class SymbolicForecastRequest:
             compact_certification=compact_certification,
             entity=entity,
             feature_overrides=feature_overrides,
+            force_new=force_new,
             include_fitted_series=include_fitted_series,
             period=period,
             prediction_model_id=prediction_model_id,

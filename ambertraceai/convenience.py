@@ -2770,6 +2770,7 @@ class PredictionResource(_Resource):
                           entity: str | None = None,
                           top_drivers_n: int | None = None,
                           compact_certification: bool = True,
+                          force_new: bool = False,
                           wait: bool = True,
                           timeout: float = 600.0,
                           poll_interval: float = 5.0) -> SymbolicForecastResult:
@@ -2787,7 +2788,9 @@ class PredictionResource(_Resource):
         yourself via :meth:`AmbertraceAPI.wait_for_job` (the job ``result`` is the
         forecast payload). An identical request already in flight returns the
         existing ``job_id`` (``deduplicated=True``) rather than starting a second
-        fit. Requires a user-scoped key or a session: platform-scoped keys receive
+        fit -- pass ``force_new=True`` to ALWAYS start a fresh job instead (e.g.
+        after cancelling a stalled one with :meth:`JobResource.cancel`; see
+        ``examples/84_job_management.py``). Requires a user-scoped key or a session: platform-scoped keys receive
         403 on this endpoint (the job is polled via ``GET /api/v1/jobs/{id}``,
         which is user/session-only).
 
@@ -3149,6 +3152,8 @@ class PredictionResource(_Resource):
             "include_fitted_series": include_fitted_series,
             "compact_certification": compact_certification,
         }
+        if force_new:
+            body["force_new"] = True
         if feature_overrides is not None:
             body["feature_overrides"] = feature_overrides
         # Addressing handles — thread a semantic name/role + the as_of
@@ -3352,7 +3357,7 @@ class ConnectorResource(_Resource):
       US energy: preset oil series via ``series_ids``, or the FULL v2 catalog
       -- electricity, natural gas, coal, nuclear, renewables, CO2 emissions,
       international -- via ``route`` + ``facets``; browse with
-      :meth:`eia_discover`).
+      :meth:`discover`).
     * **Other:** ``rest`` (generic REST/CSV, BYO auth via headers), ``gdelt``
       (news tone), ``sentiment`` (LLM-scored RSS sentiment), ``cftc``
       (keyless: CFTC futures-positioning reports).
@@ -3374,10 +3379,15 @@ class ConnectorResource(_Resource):
     expand to country sets.  A connector tagged ``country='global'`` matches
     every region (e.g. Yahoo Finance under ``region='asia'``).
 
-    **EIA general catalog** (``eia_discover()``): browse the full EIA v2
-    catalog (top-level routes -> child routes -> a leaf dataset's facets/data
-    columns/frequencies) to build a Mode B ``eia`` connector config for any
-    non-oil-preset EIA dataset.
+    **Series-catalog discovery** (``discover()``): find the series/codes to
+    request before building a config.  Supported connectors: ``fred`` /
+    ``fred_sentiment`` (series search or category browse; needs your stored
+    FRED key), ``yahoo`` (symbol search; keyless, unofficial upstream
+    endpoint), ``cftc`` (commodity codes per COT report; keyless) and ``eia``
+    (the full EIA v2 catalog -- top-level routes -> child routes -> a leaf
+    dataset's facets/data columns/frequencies -- for a Mode B ``eia`` config).
+    Any other connector returns HTTP 422.  ``eia_discover()`` is kept as an
+    alias for ``discover("eia", ...)``.
     """
 
     def list(self) -> list[dict]:
@@ -3572,8 +3582,46 @@ class ConnectorResource(_Resource):
             params["limit"] = limit
         return self._request("GET", "/api/v1/data/search", params=params)
 
+    def discover(self, connector_type: str, **kwargs: Any) -> dict:
+        """Browse a connector's series catalog (series/code discovery).
+
+        Supported connectors and their keyword parameters:
+
+        * ``eia`` -- ``route`` (str, optional): omit for the 14 top-level
+          routes, pass a route for its children, or a leaf dataset route
+          (e.g. ``'electricity/retail-sales'``) for its facets, data columns
+          and frequencies.  Returns the raw EIA v2 metadata.
+        * ``fred`` / ``fred_sentiment`` -- ``search_text`` (str) for a series
+          search, or ``category_id`` (int, default 0 = root) to browse the
+          category tree.  Needs your FRED key (stored credential).
+          Returns ``{'series': [...], 'count', 'offset', 'limit'}`` or
+          ``{'categories': [...]}``.
+        * ``yahoo`` -- ``q`` (str, required): symbol search text.  Keyless.
+          Backed by Yahoo's unofficial search endpoint, so it may change
+          without notice.  Returns ``{'quotes': [...]}``.
+        * ``cftc`` -- ``report`` (``'disaggregated'`` default, ``'legacy'`` or
+          ``'financial'``).  Keyless.  Returns ``{'report', 'codes': [...]}``;
+          feed the ``code`` values into the connector's ``commodity_codes``.
+
+        Any other connector returns HTTP 422 (discovery unsupported).
+        Parameters that are ``None`` are not sent.
+
+        Example::
+
+            hits = api.connectors.discover("fred", search_text="interest rate")
+            print([s["id"] for s in hits["series"][:5]])
+            codes = api.connectors.discover("cftc", report="disaggregated")
+            quotes = api.connectors.discover("yahoo", q="crude oil")
+        """
+        params = {k: v for k, v in kwargs.items() if v is not None}
+        return self._request(
+            "GET", f"/api/v1/connectors/{connector_type}/discover", params=params,
+        )
+
     def eia_discover(self, *, route: str | None = None) -> dict:
         """Browse the EIA v2 general data catalog.
+
+        Alias for ``discover("eia", route=...)``.
 
         The ``eia`` connector supports two mutually-exclusive modes: **Mode
         A**, preset oil series via ``series_ids`` (``PET.RWTC.W`` etc.), and
@@ -4146,6 +4194,26 @@ class JobResource(_Resource):
             ("ref_id", ref_id), ("since", since), ("limit", limit),
         ) if v is not None}
         return self._request("GET", "/api/v1/jobs", params=params)
+
+    def cancel(self, job_id: int) -> JobOut:
+        """Cancel a pending or running job (``POST /api/v1/jobs/{id}/cancel``).
+
+        Job management: :meth:`list` finds in-flight jobs, ``cancel`` stops one,
+        and ``predictions.symbolic_forecast(..., force_new=True)`` launches a fresh
+        run (cancel + ``force_new`` is the re-trigger). Works on generic jobs
+        (symbolic forecast, prediction training, ontology build, rule
+        suggestion/discovery); platform-build and cleaning jobs are not
+        cancellable (404).
+
+        The job is marked ``failed`` with ``error_message == "Cancelled by user."``
+        so an identical forecast request is no longer de-duplicated onto it; a
+        cancelled training job also releases its prediction config so training
+        can be started again. Work already underway may run to its end but
+        the job stays failed. Returns the updated job. Raises
+        :class:`AmbertraceError` with ``status_code`` 409 if the job already
+        completed or failed, 404 if it is not found.
+        """
+        return self._request("POST", f"/api/v1/jobs/{job_id}/cancel")
 
     def get(self, job_id: int | str, *, type: str | None = None) -> JobOut:
         """Fetch a job by id.

@@ -38,6 +38,8 @@ example that shows it). If you're unsure whether something is `author()`,
 | Panel data-sufficiency BEFORE training (usable rows, binding-constraint column, stale/discontinued series) | `datasets.panel_report(dataset_id)` — also persisted at ingest on `schema_info["panel_sufficiency"]` | 44 |
 | Org-capability discovery + 403 handling | `GET /api/v1/capabilities` (user-scoped key) + branch on `AmbertraceError.code == "capability_disabled"` | 42 |
 
+**MCP (Model Context Protocol):** connect any MCP client to AmberTrace's verified organs (preview). See the [MCP quickstart](examples/MCP_QUICKSTART.md) and examples 85-87.
+
 Full method surface is in **Resources** below; the runnable demos are in `examples/`.
 
 ## Install
@@ -610,6 +612,9 @@ config, then ingest it as a dataset linked to a domain:
 ```python
 api.connectors.list()   # discover connectors + their required config fields
 
+# Find a series/code before fetching (fred, yahoo, cftc, eia; others -> HTTP 422):
+api.connectors.discover("fred", search_text="interest rate")
+
 # Check a config WITHOUT fetching any data. Required for ASYNC connectors
 # (boe_yield_curves, swap_curves, sentiment, ...): a plain test() on one of
 # those returns 422 because it cannot be tested inline.
@@ -1015,6 +1020,39 @@ Interactive API reference (ReDoc): [`app.ambertrace.ai/docs`](https://app.ambert
 Agent/LLM orientation: [`AGENTS.md`](AGENTS.md)
 
 ## Changelog
+
+### Next release
+
+_No unreleased changes._
+
+### 2.20.0
+
+**Manage long-running jobs -- `jobs.cancel(job_id)` and `symbolic_forecast(force_new=True)`.**
+Re-sending an identical `symbolic_forecast` while one is still in flight returns the existing
+job (`deduplicated=True`); a stalled job used to trap you on it. Now `jobs.cancel(job_id)` stops
+a pending or running job (it becomes `failed` with `"Cancelled by user."`; HTTP 409 if it already
+finished) and `symbolic_forecast(..., force_new=True)` always starts a fresh run. A cancelled
+training job also frees its prediction config so training can be restarted. Together with
+`jobs.list(status="pending,running")` this is the full lifecycle -- see
+`examples/84_job_management.py`. Cancel is reachable on generic jobs (forecast, training,
+ontology, rule suggestion); platform-build and cleaning jobs are not cancellable.
+
+**Series-catalog discovery -- `connectors.discover(connector_type, **params)`.** Find the series or
+codes to request before you fetch: FRED / `fred_sentiment` (`search_text=` series search or
+`category_id=` category browse; needs your stored FRED key), Yahoo (`q=` symbol search; keyless,
+unofficial upstream endpoint that may change without notice), CFTC (`report=` -> commodity codes;
+keyless) and EIA (`route=`). Any other connector returns HTTP 422. `eia_discover()` is kept as an
+alias for `discover("eia", ...)`. See `examples/52_connector_discovery.py`.
+
+**MCP client examples** -- `examples/85_mcp_raw_client.py` (raw JSON-RPC), `86_mcp_python_client.py`
+(official MCP SDK) and `87_mcp_langgraph_agent.py` (LangGraph agent, bring your own local LLM), plus
+`examples/MCP_QUICKSTART.md`. The MCP endpoint now answers the standard `initialize` handshake, so
+standard MCP clients connect. MCP is a preview capability; reachable only where enabled.
+
+**SDK examples model the canonical authoring pattern.** Every policy-authoring example now sets an
+explicit `decision_table` + posture and reads as plain `if … / otherwise …`, with named intermediate
+conditions for compound rules. Agents copy examples rather than read docs, so each example now carries
+the full, unambiguous pattern -- no reliance on implicit text-inferred defaults.
 
 ### 2.19.0
 

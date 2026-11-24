@@ -95,9 +95,9 @@ def sync_detailed(
     IS the forecast payload described above; on failure the job status is failed, `error_message`
     carries the reason and `result.error` the structured {code, message, http_status} (the status the
     former synchronous endpoint returned, e.g. 409 target absent, 422 validation). An identical request
-    already in flight returns the existing job_id (deduplicated=true). The 404 (flag off), 403 and
-    config-not-found errors are still returned synchronously. Requires a user or session credential
-    (platform-scoped keys get 403), since the job is polled via GET /jobs/{id}.
+    already in flight returns the existing job_id (deduplicated=true) unless force_new=true. The 404
+    (flag off), 403 and config-not-found errors are still returned synchronously. Requires a user or
+    session credential (platform-scoped keys get 403), since the job is polled via GET /jobs/{id}.
 
     Capability gating: requires the \"predictions\" capability (see GET /api/v1/capabilities). Returns
     403 capability_disabled when the capability is not enabled for the org.
@@ -166,9 +166,9 @@ def sync(
     IS the forecast payload described above; on failure the job status is failed, `error_message`
     carries the reason and `result.error` the structured {code, message, http_status} (the status the
     former synchronous endpoint returned, e.g. 409 target absent, 422 validation). An identical request
-    already in flight returns the existing job_id (deduplicated=true). The 404 (flag off), 403 and
-    config-not-found errors are still returned synchronously. Requires a user or session credential
-    (platform-scoped keys get 403), since the job is polled via GET /jobs/{id}.
+    already in flight returns the existing job_id (deduplicated=true) unless force_new=true. The 404
+    (flag off), 403 and config-not-found errors are still returned synchronously. Requires a user or
+    session credential (platform-scoped keys get 403), since the job is polled via GET /jobs/{id}.
 
     Capability gating: requires the \"predictions\" capability (see GET /api/v1/capabilities). Returns
     403 capability_disabled when the capability is not enabled for the org.
@@ -232,9 +232,9 @@ async def asyncio_detailed(
     IS the forecast payload described above; on failure the job status is failed, `error_message`
     carries the reason and `result.error` the structured {code, message, http_status} (the status the
     former synchronous endpoint returned, e.g. 409 target absent, 422 validation). An identical request
-    already in flight returns the existing job_id (deduplicated=true). The 404 (flag off), 403 and
-    config-not-found errors are still returned synchronously. Requires a user or session credential
-    (platform-scoped keys get 403), since the job is polled via GET /jobs/{id}.
+    already in flight returns the existing job_id (deduplicated=true) unless force_new=true. The 404
+    (flag off), 403 and config-not-found errors are still returned synchronously. Requires a user or
+    session credential (platform-scoped keys get 403), since the job is polled via GET /jobs/{id}.
 
     Capability gating: requires the \"predictions\" capability (see GET /api/v1/capabilities). Returns
     403 capability_disabled when the capability is not enabled for the org.
@@ -301,9 +301,9 @@ async def asyncio(
     IS the forecast payload described above; on failure the job status is failed, `error_message`
     carries the reason and `result.error` the structured {code, message, http_status} (the status the
     former synchronous endpoint returned, e.g. 409 target absent, 422 validation). An identical request
-    already in flight returns the existing job_id (deduplicated=true). The 404 (flag off), 403 and
-    config-not-found errors are still returned synchronously. Requires a user or session credential
-    (platform-scoped keys get 403), since the job is polled via GET /jobs/{id}.
+    already in flight returns the existing job_id (deduplicated=true) unless force_new=true. The 404
+    (flag off), 403 and config-not-found errors are still returned synchronously. Requires a user or
+    session credential (platform-scoped keys get 403), since the job is polled via GET /jobs/{id}.
 
     Capability gating: requires the \"predictions\" capability (see GET /api/v1/capabilities). Returns
     403 capability_disabled when the capability is not enabled for the org.

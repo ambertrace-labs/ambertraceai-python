@@ -166,6 +166,22 @@ over a Decision Table: the binary `{permit, deny}` by default, or your own rows 
 | `40_agent_policy_gate_temporal.py` | **Temporal precedence (review-before-deploy)** — a NATIVE happens-before obligation authored in English (`precededBy`): a deploy permits only when an approval for the SAME service preceded it in the session's ORDERED ledger. Mediates sessions to show the order-sensitivity payoff (approve-then-deploy permits; deploy-then-approve and un-preceded deploy both deny) — the thing a caller-supplied boolean cannot do |
 | `59_claude_code_policy_gate_hook.py` | **Gate Claude Code's tool calls** — a PreToolUse hook that puts a machine-checked proof between Claude Code and its tools: `author` compiles a plain-English coding-agent policy (tool allowlist + protected-branch / secrets / workspace / force flags) and self-scores a 12-probe matrix; `hook` reads the proposed tool call from stdin, derives typed facts, and exits 0 only on a proof-checked permit (exit 2 blocks, deny reason fed back to the model — fail-closed on any error). One settings.json entry to wire in |
 
+### MCP integration (Model Context Protocol)
+
+Connect any MCP-compatible client (Claude, LangGraph, a custom agent) to
+AmberTrace's three verified organs -- decide (query), predict, authorize -- over
+a single stateless endpoint. MCP is in preview (enabled server-side); the
+endpoint returns 404 when not enabled, and each demo reports that cleanly.
+
+**New here? Start with the [MCP quickstart](MCP_QUICKSTART.md)** -- the endpoint,
+auth, discovery, and the verified organs.
+
+| Script | What it shows |
+|--------|---------------|
+| `85_mcp_raw_client.py` | Raw JSON-RPC 2.0 -- connect with `httpx`, discover tools, call the organs, read the proof certificate |
+| `86_mcp_python_client.py` | Official MCP Python SDK -- same flow using `ClientSession` from the `mcp` package |
+| `87_mcp_langgraph_agent.py` | LangGraph ReAct agent -- a full agent loop that calls AmberTrace's MCP tools as LangChain tools (bring your own local LLM) |
+
 ### Forecasting demos
 
 Time-series and scenario forecasting via the prediction API. Create a domain,

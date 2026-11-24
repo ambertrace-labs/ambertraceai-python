@@ -116,34 +116,26 @@ FORECAST_ORDER = ["inflation", "gdp", "credit"]
 
 POLICY_DOMAIN_NAME = "Monetary policy stance"
 #
-# GOTCHA 2 (stratification): the stance is routed through intermediate `rate hike is
-#   warranted` / `rate cut is warranted` atoms; the outcome never negates itself. A plain
-#   "otherwise hold" phrasing gets induced as "hold if NOT (hike OR cut)" and the verified
-#   build is REJECTED as non-stratifiable.
+# Default outcome ("Otherwise, hold."): safe to write flat. The DECISION_TABLE below
+#   declares `hold` as the default row, and the ontology IR carries it as `default_outcome`,
+#   so the default is the table's fall-through when no hike/cut rule fires -- it is never
+#   induced as "hold if NOT (hike OR cut)" (an outcome depending on the negation of itself,
+#   rejected as non-stratifiable).
 #
-# GOTCHA 3 (reachability — the one THIS demo hit): the intermediate warrant atoms use
-#   POSITIVE conditions only ("... and growth IS STRONG"). An earlier draft phrased tightening
-#   as "inflation is hot and growth is NOT weak"; it built fine but the verified engine
-#   ABSTAINED at query time — "a declared restrictive outcome has no reachable certifying path"
-#   — because the negated intermediate never derived. NEGATION belongs only at the final stance
-#   layer ("cut when a cut is warranted and a hike is NOT warranted"); keep it OUT of the
-#   intermediate atoms. This is DISTINCT from GOTCHA 2: (2) is a build-time stratification
-#   rejection over the OUTCOME; (3) is a query-time abstain from negation INSIDE an intermediate.
+# Reachability: keep each rule's condition POSITIVE over the forecast thresholds ("growth
+#   is at most 1.0", not "growth is NOT weak"). A negated derived intermediate never
+#   derives, and the verified engine ABSTAINS at query time ("a declared restrictive
+#   outcome has no reachable certifying path").
 POLICY_DOMAIN_DESCRIPTION = (
-    "Monetary policy stance decision from three macro forecasts: forecast_inflation (the "
+    "Decide the monetary policy stance as hike, cut, or hold from three macro forecasts: forecast_inflation (the "
     "year-over-year CPI inflation rate, in percent), forecast_gdp_growth (real GDP growth, "
     "annualized percent) and forecast_credit_spread (the investment-grade credit spread, Moody's "
     "Baa minus Aaa, in percent). "
-    "Classify these named conditions: inflation is hot when forecast_inflation is at least 3.0; "
-    "growth is strong when forecast_gdp_growth is at least 2.5; growth is weak when "
-    "forecast_gdp_growth is at most 1.0; credit is stressed when forecast_credit_spread is at "
-    "least 1.20. "
-    "Also classify (using only positive conditions, so each has a reachable certifying path): a "
-    "rate hike is warranted when inflation is hot and growth is strong; a rate cut is warranted "
-    "when growth is weak; a rate cut is warranted when credit is stressed. "
-    "Decide the policy stance: hike when a rate hike is warranted; cut when a rate cut is "
-    "warranted and a rate hike is not warranted; hold when a rate hike is not warranted and a "
-    "rate cut is not warranted. Every policy decision must be explainable and auditable."
+    "Apply these rules in order. "
+    "If forecast_inflation is at least 3.0 and forecast_gdp_growth is at least 2.5, hike. "
+    "If forecast_gdp_growth is at most 1.0, cut. "
+    "If forecast_credit_spread is at least 1.20, cut. "
+    "Otherwise, hold. Every policy decision must be explainable and auditable."
 )
 
 # The Decision Table: the policy stances, declared. Read the stance from `decision`; `permits`

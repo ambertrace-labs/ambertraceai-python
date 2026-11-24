@@ -104,6 +104,18 @@ from ambertraceai import AmbertraceError
 
 from _common import add_common_args, print_section, run_demo
 
+# The gate's Decision Table, declared explicitly (it is the product's default binary table, so
+# nothing is left for the platform to infer): `permit` is the default outcome when no obligation
+# is violated; `deny` blocks. `permits` says whether the action may proceed; a gate table is a
+# ladder with at least one permitting and one non-permitting row.
+DECISION_TABLE = {
+    "mode": "ladder",
+    "rows": [
+        {"label": "deny", "order": 2, "permits": False},
+        {"label": "permit", "order": 1, "default": True, "permits": True},
+    ],
+}
+
 # The coding-agent policy, authored in plain English. Deliberately inside the
 # known-clean compile shapes: an enum allowlist (tool) + four boolean flags.
 POLICY = (
@@ -272,7 +284,7 @@ def run_author(api, args: argparse.Namespace) -> None:
     print_section(1, 2, "Authoring the coding-agent policy (plain English in)")
     print(f"  POLICY:\n    {POLICY}\n")
     try:
-        result = api.agent_policy.author(POLICY)
+        result = api.agent_policy.author(POLICY, decision_table=DECISION_TABLE)
     except AmbertraceError as exc:
         if getattr(exc, "status_code", None) == 404:
             print("  The Agent Policy Gate is not enabled on this deployment "

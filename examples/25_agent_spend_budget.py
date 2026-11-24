@@ -45,6 +45,18 @@ from ambertraceai import AmbertraceError
 
 from _common import add_common_args, print_section, run_demo
 
+# The gate's Decision Table, declared explicitly (it is the product's default binary table, so
+# nothing is left for the platform to infer): `permit` is the default outcome when no obligation
+# is violated; `deny` blocks. `permits` says whether the action may proceed; a gate table is a
+# ladder with at least one permitting and one non-permitting row.
+DECISION_TABLE = {
+    "mode": "ladder",
+    "rows": [
+        {"label": "deny", "order": 2, "permits": False},
+        {"label": "permit", "order": 1, "default": True, "permits": True},
+    ],
+}
+
 # The budget. Cumulative spend = sum of (quantity x unit_price) over the ledger.
 BUDGET = 100_000
 
@@ -149,7 +161,7 @@ def _author_and_run(api, policy_text: str, stream, title: str) -> bool:
 
     Returns False (and reports cleanly) if the gate is not enabled (404)."""
     try:
-        result = api.agent_policy.author(policy_text)
+        result = api.agent_policy.author(policy_text, decision_table=DECISION_TABLE)
     except AmbertraceError as exc:
         if getattr(exc, "status_code", None) == 404:
             print("\n  The Agent Policy Gate is not enabled on this deployment "
@@ -188,7 +200,7 @@ def run_spend_budget_demo(api, args: argparse.Namespace) -> None:
         # and read back the admitted interval-band obligation, the discoverable
         # proof that English -> a verified band control compiles.
         try:
-            result = api.agent_policy.author(SPEND_POLICY_BAND)
+            result = api.agent_policy.author(SPEND_POLICY_BAND, decision_table=DECISION_TABLE)
         except AmbertraceError as exc:
             if getattr(exc, "status_code", None) == 404:
                 print("\n  The Agent Policy Gate is not enabled — skipping band variant.")
