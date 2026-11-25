@@ -1508,7 +1508,7 @@ class PlatformResource(_Resource):
           situation TEXT and returns a *calibrated probability* the predicate holds,
           admitted as a confidence-carrying fact subject to τ
           (``verified_min_confidence``): ``p >= τ`` supports a permit;
-          ``p < τ`` OR an abstain / out-of-distribution / high self-consistency
+          ``p < τ`` OR an abstain / out-of-distribution / high scoring
           dispersion determination admits NO fact and routes to ``escalate`` (never
           a permit -- deductive-first, fail-closed). The score is SERVER-COMPUTED
           from the text (a caller cannot hand-set it). Shape::
@@ -1867,7 +1867,7 @@ class PlatformResource(_Resource):
 
         Returns ``{platform_id, results: [{index, status, data?, error?}, ...]}``.
 
-        Maximum 50 queries per batch.
+        Maximum 10 queries per batch.
 
         Example::
 
@@ -3118,7 +3118,7 @@ class PredictionResource(_Resource):
         (it is a proof-carrying handle re-checked by the decision layer, never a
         second copy of the fact list) regardless of the flag.
 
-        Neural-tier model selection + ReAct trajectory (response-only keys)
+        Neural-tier model selection + fit trajectory (response-only keys)
         -------------------------------------------------------------------
         ``neural_model_name`` (str | None) — the registry key of the neural-tier
         winner selected during fit (e.g. ``"gbt"``, ``"ridge"``, ``"lasso"``,
@@ -3133,10 +3133,10 @@ class PredictionResource(_Resource):
         fitted at, never a client-side assumption.
 
         ``prediction_react_trajectory`` (dict | None) — when the prediction was
-        built via the agentic ReAct proposer loop, this carries the trajectory
+        built via the iterative rule-fitting process, this carries the trajectory
         summary: ``total_turns``, ``best_turn``, ``best_skill``,
         ``skill_trajectory`` (list of per-turn skills), ``stop_reason``, and
-        ``screen`` (the holdout screen applied). ``None`` when the proposer was
+        ``screen`` (the holdout screen applied). ``None`` when the iterative fit was
         not used.
 
         ``prediction_screen_enabled`` (bool) — whether the holdout prediction
@@ -4625,7 +4625,7 @@ class AmbertraceAPI:
         stale poll (no forward progress) and resets on progress.
 
         **Long ontology builds.** ``domains.build_ontology`` on a hard domain
-        (ReAct-authored rules) can take 15-20 minutes, so the default
+        (complex domains) can take 15-20 minutes, so the default
         ``timeout=600`` is not enough. Use
         ``wait_for_job(job_id, timeout=1800, poll_interval=10, stall_timeout=300)``:
         the ontology job reports a rising ``progress`` and a descriptive

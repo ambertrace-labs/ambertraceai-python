@@ -15,7 +15,7 @@ confidence-carrying fact subject to the fact-gate threshold τ
 
   * ``compatibility_established`` (the scored head) with ``p >= τ`` -> ``routine_use_basis``
     derives -> **permit**;
-  * ``p < τ`` OR an abstain / out-of-distribution / high self-consistency dispersion
+  * ``p < τ`` OR an abstain / out-of-distribution / high scoring dispersion
     determination admits NO fact -> ``routine_use_unverified`` derives (it is NOT
     established) -> **escalate**, never a permit.
 

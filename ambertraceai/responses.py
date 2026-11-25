@@ -938,11 +938,11 @@ class SymbolicForecastResult(TypedDict, total=False):
     ``skill_vs_persistence`` of the winning neural model; ``None`` when no
     neural model was fitted.
 
-    ``prediction_react_trajectory`` (dict | None) — the ReAct proposer's
-    trajectory summary when the prediction was built via the agentic
-    proposer loop. Carries ``total_turns``, ``best_turn``, ``best_skill``,
+    ``prediction_react_trajectory`` (dict | None) — the iterative-fit
+    trajectory summary when the prediction was built via the iterative
+    rule-fitting process. Carries ``total_turns``, ``best_turn``, ``best_skill``,
     ``skill_trajectory`` (list of per-turn skills), ``stop_reason``, and
-    ``screen`` (the holdout screen applied). ``None`` when the proposer was
+    ``screen`` (the holdout screen applied). ``None`` when the iterative fit was
     not used.
 
     ``prediction_screen_enabled`` (bool) — whether the holdout prediction

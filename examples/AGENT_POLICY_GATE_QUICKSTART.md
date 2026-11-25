@@ -3,7 +3,7 @@
 Proof-carrying governance for an AI agent's actions, authored in **plain English**.
 You write the rules an agent must obey; Ambertrace compiles them to a *verified*
 policy and proves every proposed tool-call permit/deny against it — **fail-closed**,
-with a machine-checked proof. The LLM only *proposes*; the kernel *proves*.
+with a machine-checked proof.
 
 Everything below is under `api.agent_policy.*`. For full runnable demos see
 [`27_agent_policy_gate.py`](27_agent_policy_gate.py) (single-action) and
@@ -195,5 +195,5 @@ for order in proposed_orders:
 `authorize_action` / `step` return a proof *certificate*: `decision`, `permitted`, `status`,
 `proof_checked`, `deciding_rule`, `certified_facts`, `rejected_facts`, `denied_reason`. It demonstrates the
 **result** (which facts were certified, which rule decided, that the firing set was
-machine-checked). It does **not** ship or reveal the kernel / Lean formalisation that
+machine-checked). It does **not** ship or reveal the kernel formalisation that
 produces it — you read the certificate; the engine stays internal.

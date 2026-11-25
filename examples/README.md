@@ -131,7 +131,7 @@ Author a governance policy in **plain English**, then **prove every proposed
 agent action permit/deny** against it — fail-closed, with a machine-checked proof.
 No dataset upload: the policy is authored from English. The proof certificate is
 an OUTPUT (which facts were certified, which rule decided, machine-checked) — it
-does not reveal the kernel/Lean engine that produces it. Preview capability:
+does not reveal the kernel engine that produces it. Preview capability:
 feature-flagged server-side; the endpoints return 404 when not enabled (each demo
 reports that cleanly and skips).
 
@@ -180,7 +180,7 @@ auth, discovery, and the verified organs.
 |--------|---------------|
 | `85_mcp_raw_client.py` | Raw JSON-RPC 2.0 -- connect with `httpx`, discover tools, call the organs, read the proof certificate |
 | `86_mcp_python_client.py` | Official MCP Python SDK -- same flow using `ClientSession` from the `mcp` package |
-| `87_mcp_langgraph_agent.py` | LangGraph ReAct agent -- a full agent loop that calls AmberTrace's MCP tools as LangChain tools (bring your own local LLM) |
+| `87_mcp_langgraph_agent.py` | LangGraph agent -- a full agent loop that calls AmberTrace's MCP tools as LangChain tools (bring your own local LLM) |
 
 ### Forecasting demos
 

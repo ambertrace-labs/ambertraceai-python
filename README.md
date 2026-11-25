@@ -329,8 +329,7 @@ The join is thus verified, not caller-asserted.
 
 Write the rules an AI agent must obey in **plain English**; Ambertrace compiles
 them to a verified policy and **proves every proposed tool-call permit/deny** —
-fail-closed, with a machine-checked proof. The LLM only *proposes*; the kernel
-*proves*. You author *English* and read back the admitted rules (also in English)
+fail-closed, with a machine-checked proof. You author *English* and read back the admitted rules (also in English)
 plus a permit/deny verdict with its proof; the compiled form stays internal.
 
 The gate is feature-flagged server-side (`AMBERTRACE_AGENT_POLICY_GATE`) and
@@ -392,7 +391,7 @@ mediates a session for a cumulative spend budget.
 `permitted`, `proof_checked`, `deciding_rule`, `certified_facts`, `rejected_facts`, `stripped_fields`)
 is an **output** the verified engine produces: it demonstrates the *result* —
 which facts were certified, which rule decided, and that the firing set was
-machine-checked. It does **not** ship or reveal the kernel / Lean formalisation
+machine-checked. It does **not** ship or reveal the kernel formalisation
 that produces it; you read the certificate, the engine stays internal.
 
 ### Obligation classes — the English-in authoring contract
@@ -832,7 +831,7 @@ if job["status"] == "error":
     print(f"Failed: {job.get('error_message')}")
 ```
 
-**Long ontology builds.** Ontology builds on hard domains (ReAct-authored rules) can run
+**Long ontology builds.** Ontology builds on a hard domain (complex domains) can run
 15-20 minutes; the default `timeout=600` is not enough. Use
 `api.wait_for_job(job_id, timeout=1800, poll_interval=10, stall_timeout=300)` -- the job's
 `progress` rises throughout the build, so `stall_timeout` separates "slow but progressing"
@@ -1024,6 +1023,16 @@ Agent/LLM orientation: [`AGENTS.md`](AGENTS.md)
 ### Next release
 
 _No unreleased changes._
+
+### 2.20.1
+
+**Documentation clarity.** Docstrings and this README now describe *what* each capability
+guarantees -- verified decisions, proof-backed results -- without implementation detail. No API,
+behaviour, or signature change; a drop-in upgrade.
+
+**`query_batch` batch size corrected to 10.** The `query_batch` docstring previously said
+"Maximum 50 queries per batch"; the service enforces **10** (a synchronous-latency budget), and
+batches over 10 were already rejected. The docstring now matches the server.
 
 ### 2.20.0
 
@@ -1484,12 +1493,12 @@ Where a decision turns on an OPEN-TEXTURED predicate that bright-line rules cann
 platform's OWN runtime LLM score it. `platforms.create(scored_determinations={…})` (or
 `platforms.update`) declares a determination: a `head` field, the `question`, the legal /
 domain `doctrine` (the tuning surface), and the `situation_fields` (request text fields).
-At query time the platform scores the predicate with self-consistency, calibrates it, and
+At query time the platform scores the predicate, calibrates it, and
 admits the result as a **confidence-carrying fact subject to τ** (`verified_min_confidence`):
 
 - `p ≥ τ` → the head fact is admitted and can support a **permit** (with an honest
-  certificate: LLM model + prompt version, K, self-consistency dispersion, calibrator);
-- `p < τ` **OR** an abstain / out-of-distribution / high self-consistency dispersion
+  certificate: scoring-method metadata, confidence dispersion, calibrator);
+- `p < τ` **OR** an abstain / out-of-distribution / high scoring dispersion
   determination admits **no fact** → the request routes to **escalate**, never a permit.
 
 **DEDUCTIVE-FIRST + fail-closed.** The LLM-τ score fills ONLY the open-textured joint;
@@ -1662,7 +1671,7 @@ before/after and the escape hatch for each.
   per-action policy, gate a PERMIT case and a DENY case, and print the verdict's
   proof certificate (`decision`, `permitted`, `proof_checked`, `deciding_rule`,
   `certified_facts`, `rejected_facts`, `denied_reason`). The proof certificate is
-  an **output** demonstrating the result; it does not reveal the kernel/Lean
+  an **output** demonstrating the result; it does not reveal the kernel
   engine that produces it. The gate is a preview capability (feature-flagged
   server-side; its endpoints return `AmbertraceError` (404) when not enabled).
   No client API changed — `AgentPolicyResource` already shipped.
@@ -1691,7 +1700,7 @@ before/after and the escape hatch for each.
 
 ### 0.11.1
 
-- **Sound neurosymbolic loop + `include_pending` preview.** `neurosymbolic_comparison`
+- **Sound neurosymbolic scoring + `include_pending` preview.** `neurosymbolic_comparison`
   now accepts `include_pending=True` — a read-only "what-if" that applies the
   accepted-but-pending discovered rules before the human approval gate (`mode`
   switches to `preview_pending`, with `n_pending_rules`); default scores active

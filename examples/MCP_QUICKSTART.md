@@ -32,7 +32,7 @@ the endpoint returns 404 and each example below says so and exits cleanly.
 |--------|-------|
 | `85_mcp_raw_client.py` | Raw JSON-RPC over `httpx` -- the wire format, no abstractions |
 | `86_mcp_python_client.py` | The official MCP Python SDK (`pip install "mcp>=1.0"`) |
-| `87_mcp_langgraph_agent.py` | A LangGraph ReAct agent calling the tools; bring your own local LLM via `OPENAI_API_BASE` |
+| `87_mcp_langgraph_agent.py` | A LangGraph agent calling the tools; bring your own local LLM via `OPENAI_API_BASE` |
 
 ## Claude Desktop / Claude Code
 

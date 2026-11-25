@@ -244,5 +244,5 @@ if __name__ == "__main__":
 #
 # Above that envelope the platform degrades GRACEFULLY (it abstains / returns a
 # fail-safe rather than silently mis-labelling) — the binding constraint is the
-# LLM proposer's authoring reliability, not the verified kernel. Keep the axes
+# authoring engine's reliability on complex grids, not the verification kernel. Keep the axes
 # few and each label a clean conjunction and the classifier stays certifiable.

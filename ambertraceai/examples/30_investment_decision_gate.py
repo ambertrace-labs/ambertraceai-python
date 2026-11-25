@@ -4,8 +4,7 @@ Proves that an AI investment agent FOLLOWED A DEFINED DECISION PROCESS before an
 trade is allowed to stand. An untrusted execution agent proposes buy / sell trades;
 Ambertrace compiles the English policy to a verified policy and PROVES every
 proposed action permit/deny against it — fail-closed, with a machine-checked proof
-that becomes the decision's audit record. The LLM only *proposes*; the kernel
-*proves*.
+that becomes the decision's audit record.
 
 Companion to 27 (single-action clinical-triage) and 28 (CI/CD deploy gate). This
 one is the strongest *vertical* story: a fiduciary investment decision process,
@@ -237,7 +236,7 @@ def _print_inputs(status: dict) -> None:
 def _print_certificate(verdict: dict, expected: str) -> None:
     """Print the verdict's PROOF CERTIFICATE — the engine's OUTPUT.
 
-    These fields demonstrate the RESULT; they do not reveal the kernel/Lean
+    These fields demonstrate the RESULT; they do not reveal the kernel
     formalisation that produced them.
     """
     decision = verdict.get("decision")

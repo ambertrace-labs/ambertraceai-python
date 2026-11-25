@@ -3,8 +3,7 @@
 Proof-carrying governance for an AI agent's actions, authored in PLAIN ENGLISH.
 You write the policy an agent must obey in a few sentences; Ambertrace compiles it
 to a verified policy and PROVES every proposed tool-call permit/deny against it —
-fail-closed, with a machine-checked proof. The LLM only *proposes*; the kernel
-*proves*.
+fail-closed, with a machine-checked proof.
 
 The scenario: a clinical-triage assistant agent. The policy (a real preset from
 ``api.agent_policy.examples()``, the "healthcare-triage" one) admits a few
@@ -34,7 +33,7 @@ proof_checked, deciding_rule, certified_facts, rejected_facts, denied_reason.
 
 IP boundary: the proof certificate is an OUTPUT the verified engine produces — it
 demonstrates the RESULT (which facts were certified, which rule decided, that the
-firing set was machine-checked). It does NOT ship or reveal the kernel / Lean
+firing set was machine-checked). It does NOT ship or reveal the kernel
 formalisation that produces it; you read the certificate, the engine stays
 internal.
 
@@ -157,7 +156,7 @@ def _print_inputs(status: dict) -> None:
 def _print_certificate(verdict: dict, expected: str) -> None:
     """Print the verdict's PROOF CERTIFICATE — the engine's OUTPUT.
 
-    These fields demonstrate the RESULT; they do not reveal the kernel/Lean
+    These fields demonstrate the RESULT; they do not reveal the kernel
     formalisation that produced them.
     """
     decision = verdict.get("decision")
@@ -220,7 +219,7 @@ def run_agent_policy_gate_demo(api, args: argparse.Namespace) -> None:
           "certified the action satisfies every policy requirement; a deny means it "
           "could NOT, fail-closed, naming the requirement that failed. The proof "
           "certificate is the engine's OUTPUT — it shows the result, not the "
-          "kernel/Lean formalisation that produced it.")
+          "kernel formalisation that produced it.")
 
 
 def main() -> None:
